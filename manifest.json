@@ -1,0 +1,104 @@
+{
+    "name": "Grandiel Scan - Manhwas en Español",
+    "short_name": "Grandiel Scan",
+    "description": "Lee los mejores manhwas y mangas en español gratis. Actualizaciones diarias de tus series favoritas.",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#ff0000",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "es",
+    "categories": ["entertainment", "books", "magazines"],
+    "icons": [
+        {
+            "src": "/img/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/img/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/img/screenshots/home.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Página de inicio de Grandiel Scan"
+        },
+        {
+            "src": "/img/screenshots/manga-list.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Catálogo de mangas"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Catálogo de Mangas",
+            "short_name": "Mangas",
+            "description": "Ver todos los mangas disponibles",
+            "url": "/Mangas.html",
+            "icons": [{ "src": "/img/icons/manga-icon.png", "sizes": "96x96" }]
+        },
+        {
+            "name": "Actualizaciones",
+            "short_name": "Updates",
+            "description": "Ver las últimas actualizaciones",
+            "url": "/Actualizaciones.html",
+            "icons": [{ "src": "/img/icons/update-icon.png", "sizes": "96x96" }]
+        },
+        {
+            "name": "Nuevos Títulos",
+            "short_name": "Nuevos",
+            "description": "Descubrir nuevos mangas",
+            "url": "/Nuevos.html",
+            "icons": [{ "src": "/img/icons/new-icon.png", "sizes": "96x96" }]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
+}

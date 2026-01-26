@@ -1,0 +1,57 @@
+/**
+ * Style.css - Archivo Principal CSS
+ * Grandiel Scan - Fase 2 Refactorización CSS
+ *
+ * Este archivo importa todos los módulos CSS en el orden correcto.
+ *
+ * Estructura:
+ * 1. base.css     - Reset y variables CSS
+ * 2. layout.css   - Grid, contenedores, navegación
+ * 3. components.css - Botones, cards, breadcrumbs
+ * 4. utilities.css - Clases de utilidad
+ * 5. theme.css    - Sistema de temas oscuro/claro
+ */
+
+/* ===== IMPORTS ===== */
+@import url('base.css');
+@import url('layout.css');
+@import url('components.css');
+@import url('utilities.css');
+@import url('theme.css');
+@import url('pwa.css');
+
+/* ===== FUENTES EXTERNAS ===== */
+@import url('https://fonts.googleapis.com/css?family=Raleway:200');
+
+/*
+ * NOTA: Los archivos CSS modulares están separados para:
+ * - Mejor organización del código
+ * - Facilitar el mantenimiento
+ * - Permitir carga selectiva si es necesario
+ * - Seguir la metodología de arquitectura CSS modular
+ *
+ * Variables CSS disponibles (definidas en base.css):
+ *
+ * Colores:
+ *   --color-primary: #ff0000
+ *   --color-bg: #000000
+ *   --color-bg-secondary: #1B2631
+ *   --color-text: #ffffff
+ *
+ * Espaciados:
+ *   --spacing-xs: 4px
+ *   --spacing-sm: 8px
+ *   --spacing-md: 16px
+ *   --spacing-lg: 24px
+ *   --spacing-xl: 32px
+ *
+ * Fuentes:
+ *   --font-primary: 'Dosis', sans-serif
+ *   --font-secondary: 'Coming Soon', cursive
+ *
+ * Breakpoints (para media queries):
+ *   --breakpoint-sm: 576px
+ *   --breakpoint-md: 768px
+ *   --breakpoint-lg: 992px
+ *   --breakpoint-xl: 1200px
+ */

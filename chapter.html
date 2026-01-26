@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Grandiel Scan">
+
+    <!-- Meta tags dinamicos -->
+    <meta name="description" id="meta-description" content="Lee capitulo en espanol gratis en Grandiel Scan">
+    <meta name="keywords" id="meta-keywords" content="manga, manhwa, capitulo, leer online, espanol">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="book">
+    <meta property="og:url" id="og-url" content="">
+    <meta property="og:title" id="og-title" content="Grandiel Scan">
+    <meta property="og:description" id="og-description" content="">
+    <meta property="og:image" id="og-image" content="">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" id="twitter-url" content="">
+    <meta property="twitter:title" id="twitter-title" content="Grandiel Scan">
+    <meta property="twitter:description" id="twitter-description" content="">
+    <meta property="twitter:image" id="twitter-image" content="">
+
+    <link rel="stylesheet" href="/Styles/Style.css">
+    <link rel="shortcut icon" href="/img/logo.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Coming+Soon&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@200&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
+    <script defer src="/Styles/Stylejava.js"></script>
+    <title id="page-title">Cargando... - Grandiel Scan</title>
+</head>
+<body class="fondo">
+    <nav role="navigation" aria-label="Navegacion principal">
+        <div class="logo">
+            <a href="/index.html" aria-label="Ir a inicio"><img src="/img/logo.gif" alt="Grandiel Scan Logo" width="120"></a>
+        </div>
+        <ul class="list">
+            <li><a href="/Mangas.html"><span>Mangas</span></a></li>
+            <li><a href="/Actualizaciones.html"><span>Actualizaciones</span></a></li>
+            <li><a href="/Nuevos.html"><span>Nuevos</span></a></li>
+        </ul>
+        <div class="barra" action="/resultado-busqueda" method="GET">
+            <input type="text" name="q" placeholder="Buscar" aria-label="Buscador">
+            <div class="btn" role="button" tabindex="0" aria-label="Buscar">
+                <i class="fa fa-search" aria-hidden="true"></i>
+            </div>
+        </div>
+    </nav>
+    <hr class="br">
+
+    <!-- Barra de progreso de lectura -->
+    <div id="progress-bar"></div>
+
+    <!-- Breadcrumbs -->
+    <nav aria-label="Migas de pan" class="breadcrumbs">
+        <ol itemscope itemtype="https://schema.org/BreadcrumbList">
+            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                <a itemprop="item" href="/index.html">
+                    <span itemprop="name">Inicio</span>
+                </a>
+                <meta itemprop="position" content="1" />
+            </li>
+            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                <a itemprop="item" href="" id="breadcrumb-manga-link">
+                    <span itemprop="name" id="breadcrumb-manga-title">Manga</span>
+                </a>
+                <meta itemprop="position" content="2" />
+            </li>
+            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                <span itemprop="name" id="breadcrumb-chapter">Capitulo</span>
+                <meta itemprop="position" content="3" />
+            </li>
+        </ol>
+    </nav>
+
+    <br>
+
+    <!-- Navegacion de capitulos -->
+    <div class="sig" role="navigation" aria-label="Navegacion de capitulos">
+        <a href="#" id="prev-chapter" aria-label="Capitulo anterior"><b id="prev-symbol" style="color: gray;">&lt;</b></a>
+        <a href="#" id="manga-link"><b id="current-chapter">Cargando...</b></a>
+        <a href="#" id="next-chapter" aria-label="Siguiente capitulo"><b id="next-symbol">&gt;</b></a>
+    </div>
+    <br>
+
+    <!-- Selector de capitulo -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <select id="chapter-selector" style="padding: 10px 20px; font-size: 16px; background: #1B2631; color: white; border: 1px solid #ff0000; border-radius: 5px; cursor: pointer;">
+            <option value="">Seleccionar capitulo...</option>
+        </select>
+    </div>
+
+    <!-- Contenedor de imagenes del capitulo -->
+    <div class="dede" id="chapter-images">
+        <p style="color: #888; text-align: center; padding: 50px;">Cargando imagenes...</p>
+    </div>
+
+    <!-- Navegacion inferior -->
+    <div class="sig" role="navigation" aria-label="Navegacion de capitulos" style="margin-top: 20px;">
+        <a href="#" id="prev-chapter-bottom" aria-label="Capitulo anterior"><b id="prev-symbol-bottom" style="color: gray;">&lt;</b></a>
+        <a href="#" id="manga-link-bottom"><b>Volver al manga</b></a>
+        <a href="#" id="next-chapter-bottom" aria-label="Siguiente capitulo"><b id="next-symbol-bottom">&gt;</b></a>
+    </div>
+    <br>
+
+    <footer class="footer" role="contentinfo">
+        <div><p>2026 Grandiel Scan</p></div>
+        <div><p>Contactos:</p></div>
+    </footer>
+
+    <script src="/Styles/chapter-renderer.js"></script>
+    <script src="/Styles/nav.js"></script>
+    <script src="/Styles/theme-toggle.js"></script>
+</body>
+</html>

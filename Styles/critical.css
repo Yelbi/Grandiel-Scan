@@ -1,0 +1,163 @@
+/**
+ * critical.css - CSS Crítico para Carga Inicial
+ * Grandiel Scan - Fase 4 Optimización de Performance
+ *
+ * Este CSS debe ser inlineado en el <head> para evitar
+ * bloqueo de renderizado. Contiene solo los estilos
+ * necesarios para el contenido "above the fold".
+ */
+
+/* Reset mínimo */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+/* Variables críticas */
+:root{
+--color-primary:#ff0000;
+--color-bg:#000;
+--color-bg-secondary:#1a1a1a;
+--color-text:#fff;
+--color-text-secondary:#b0b0b0;
+--color-border:#333;
+--font-primary:'Dosis',-apple-system,BlinkMacSystemFont,sans-serif;
+--nav-height:70px;
+}
+
+/* Tema claro */
+[data-theme="light"]{
+--color-bg:#f0f0f0;
+--color-bg-secondary:#fff;
+--color-text:#1a1a1a;
+--color-text-secondary:#4a4a4a;
+--color-border:#d0d0d0;
+}
+
+/* Body base */
+body{
+font-family:var(--font-primary);
+font-size:16px;
+line-height:1.6;
+color:var(--color-text);
+background-color:var(--color-bg);
+min-height:100vh;
+-webkit-font-smoothing:antialiased;
+}
+
+/* Fondo */
+.fondo{background-color:var(--color-bg);min-height:100vh}
+
+/* Navegación crítica */
+.alpha,nav:not(.breadcrumbs){
+position:sticky;
+top:0;
+z-index:1000;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:24px;
+height:var(--nav-height);
+padding:0 32px;
+background-color:var(--color-bg-secondary);
+border-bottom:1px solid var(--color-border);
+}
+
+/* Logo */
+.logo{flex-shrink:0}
+.logo img{width:50px;height:50px;border-radius:50%;object-fit:cover}
+
+/* Lista de navegación */
+.list{display:flex;align-items:center;gap:16px}
+.list a{
+display:block;
+padding:8px 16px;
+font-size:16px;
+font-weight:500;
+color:var(--color-text-secondary);
+text-decoration:none;
+text-transform:uppercase;
+letter-spacing:.5px;
+border-radius:4px;
+}
+
+/* Contenedor principal */
+.curva{padding:32px 24px;max-width:1400px;margin:0 auto}
+
+/* Títulos */
+h1{
+font-size:40px;
+color:var(--color-primary);
+text-align:center;
+margin-bottom:24px;
+font-weight:600;
+}
+
+/* Grid de mangas (primera carga) */
+.mami,#lista{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+gap:24px;
+padding:16px 0;
+}
+
+/* Cards de manga */
+.mami img,#lista img{
+width:100%;
+aspect-ratio:2/3;
+object-fit:cover;
+border-radius:8px;
+background-color:var(--color-bg-secondary);
+}
+
+/* Placeholder para imágenes */
+.mami img[loading="lazy"],
+#lista img[loading="lazy"]{
+background:linear-gradient(90deg,var(--color-bg-secondary) 25%,var(--color-bg) 50%,var(--color-bg-secondary) 75%);
+background-size:200% 100%;
+animation:shimmer 1.5s infinite;
+}
+
+@keyframes shimmer{
+0%{background-position:200% 0}
+100%{background-position:-200% 0}
+}
+
+/* Ocultar contenido no crítico inicialmente */
+.br{display:none}
+
+/* Galería inicial */
+.Galeria{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:16px;
+max-width:1400px;
+margin:0 auto;
+}
+
+.Galeria a{
+aspect-ratio:2/3;
+border-radius:8px;
+background-position:center;
+background-size:cover;
+background-color:var(--color-bg-secondary);
+}
+
+/* Responsive crítico */
+@media(max-width:768px){
+.alpha,nav:not(.breadcrumbs){
+padding:8px 16px;
+height:auto;
+min-height:60px;
+flex-wrap:wrap;
+gap:8px;
+}
+.logo img{width:40px;height:40px}
+.list{order:3;width:100%;justify-content:center;flex-wrap:wrap;gap:4px}
+.list a{padding:4px 8px;font-size:12px}
+.curva{padding:24px 16px}
+h1{font-size:32px}
+.mami,#lista{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px}
+}
+
+@media(max-width:480px){
+.mami,#lista{grid-template-columns:repeat(2,1fr)}
+.Galeria{grid-template-columns:1fr}
+}

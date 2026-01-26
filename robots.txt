@@ -1,0 +1,12 @@
+# robots.txt para Grandiel Scan
+
+User-agent: *
+Allow: /
+Disallow: /Styles/
+Disallow: /.vscode/
+
+# Sitemap
+Sitemap: https://grandielscan.com/sitemap.xml
+
+# Crawl delay para ser respetuosos con los servidores
+Crawl-delay: 10

@@ -1,0 +1,27 @@
+{
+  "name": "grandiel-scan",
+  "version": "1.0.0",
+  "description": "Grandiel Scan - Lee manhwas en español gratis",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "python server.py",
+    "optimize-images": "node scripts/optimize-images.js"
+  },
+  "keywords": [
+    "manhwa",
+    "manga",
+    "español",
+    "scan"
+  ],
+  "author": "Grandiel Scan",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-pwa": "^0.17.0",
+    "sharp": "^0.33.0",
+    "workbox-build": "^7.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python fix-html.py:*)",
+      "Bash(python:*)",
+      "Bash(dir /s /b)",
+      "Bash(tree:*)",
+      "Bash(Sort-Object)",
+      "Bash(dir:*)",
+      "Bash(du:*)",
+      "Bash(node -c \"c:\\\\Users\\\\bgran\\\\OneDrive\\\\Escritorio\\\\Grandiel-Scan-main\\\\vite.config.js\")"
+    ]
+  }
+}

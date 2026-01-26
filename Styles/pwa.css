@@ -1,0 +1,265 @@
+/**
+ * pwa.css - Estilos para componentes PWA
+ * Grandiel Scan - Fase 4 Optimización de Performance
+ */
+
+/* ===== BANNER DE CONECTIVIDAD ===== */
+.connectivity-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    z-index: 9999;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.connectivity-banner[style*="display: block"],
+.connectivity-banner[style*="display: flex"] {
+    transform: translateY(0);
+}
+
+.connectivity-banner.offline {
+    background-color: #f44336;
+    color: white;
+}
+
+.connectivity-banner.online {
+    background-color: #4caf50;
+    color: white;
+}
+
+/* ===== BANNER DE ACTUALIZACIÓN ===== */
+.update-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 9998;
+}
+
+.update-banner span {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+}
+
+.update-banner #update-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.update-banner #update-btn:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.update-banner #dismiss-update-btn {
+    padding: var(--spacing-xs);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.update-banner #dismiss-update-btn:hover {
+    color: var(--color-text);
+}
+
+/* ===== BOTÓN DE INSTALACIÓN ===== */
+.pwa-install-btn {
+    position: fixed;
+    bottom: calc(var(--spacing-lg) + 60px);
+    right: var(--spacing-lg);
+    display: none;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    z-index: 999;
+    transition: all 0.2s ease;
+}
+
+.pwa-install-btn:hover {
+    background-color: var(--color-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 0, 0, 0.3);
+}
+
+.pwa-install-btn i {
+    font-size: 16px;
+}
+
+/* ===== INDICADOR DE CARGA ===== */
+.loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 9997;
+}
+
+.loading-indicator.active {
+    display: flex;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* ===== PÁGINA OFFLINE ===== */
+.offline-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: var(--spacing-xl);
+    text-align: center;
+}
+
+.offline-page i {
+    font-size: 64px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-lg);
+}
+
+.offline-page h2 {
+    color: var(--color-text);
+    margin-bottom: var(--spacing-md);
+}
+
+.offline-page p {
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-lg);
+    max-width: 400px;
+}
+
+.offline-page button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.offline-page button:hover {
+    background-color: var(--color-primary-hover);
+}
+
+/* ===== SKELETON LOADERS ===== */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--color-bg-secondary) 25%,
+        var(--color-bg-tertiary) 50%,
+        var(--color-bg-secondary) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-card {
+    aspect-ratio: 2/3;
+    border-radius: var(--border-radius-md);
+}
+
+.skeleton-text {
+    height: 16px;
+    border-radius: var(--border-radius-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.skeleton-title {
+    height: 24px;
+    width: 60%;
+    margin: 0 auto;
+    border-radius: var(--border-radius-sm);
+}
+
+/* ===== RESPONSIVE PWA ===== */
+@media (max-width: 768px) {
+    .pwa-install-btn {
+        bottom: calc(var(--spacing-md) + 50px);
+        right: var(--spacing-md);
+        padding: var(--spacing-sm);
+    }
+
+    .pwa-install-btn span {
+        display: none;
+    }
+
+    .update-banner {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .connectivity-banner {
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+}
+
+/* ===== TRANSICIÓN DE TEMA PARA PWA ===== */
+.theme-transition .connectivity-banner,
+.theme-transition .update-banner,
+.theme-transition .pwa-install-btn {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

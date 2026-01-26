@@ -1,0 +1,105 @@
+/**
+ * utilities.css - Clases de Utilidad Esenciales
+ * Grandiel Scan - Diseño Minimalista
+ */
+
+/* ===== DISPLAY ===== */
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+.d-grid { display: grid !important; }
+
+/* ===== FLEXBOX ===== */
+.flex-column { flex-direction: column !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+.justify-center { justify-content: center !important; }
+.justify-between { justify-content: space-between !important; }
+.align-center { align-items: center !important; }
+.flex-1 { flex: 1 !important; }
+
+/* ===== ESPACIADO ===== */
+.m-0 { margin: 0 !important; }
+.m-auto { margin: auto !important; }
+.mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.mt-md { margin-top: var(--spacing-md) !important; }
+.mt-lg { margin-top: var(--spacing-lg) !important; }
+.mb-md { margin-bottom: var(--spacing-md) !important; }
+.mb-lg { margin-bottom: var(--spacing-lg) !important; }
+
+.p-0 { padding: 0 !important; }
+.p-sm { padding: var(--spacing-sm) !important; }
+.p-md { padding: var(--spacing-md) !important; }
+.p-lg { padding: var(--spacing-lg) !important; }
+
+/* ===== TIPOGRAFÍA ===== */
+.text-center { text-align: center !important; }
+.text-left { text-align: left !important; }
+.text-sm { font-size: var(--font-size-sm) !important; }
+.text-lg { font-size: var(--font-size-lg) !important; }
+.font-bold { font-weight: 600 !important; }
+.uppercase { text-transform: uppercase !important; }
+
+.truncate {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* ===== COLORES ===== */
+.text-primary { color: var(--color-primary) !important; }
+.text-muted { color: var(--color-text-muted) !important; }
+.bg-primary { background-color: var(--color-primary) !important; }
+.bg-secondary { background-color: var(--color-bg-secondary) !important; }
+
+/* ===== BORDES ===== */
+.border { border: 1px solid var(--color-border) !important; }
+.border-0 { border: 0 !important; }
+.rounded { border-radius: var(--border-radius-md) !important; }
+.rounded-sm { border-radius: var(--border-radius-sm) !important; }
+.rounded-full { border-radius: var(--border-radius-full) !important; }
+
+/* ===== DIMENSIONES ===== */
+.w-full { width: 100% !important; }
+.h-full { height: 100% !important; }
+
+/* ===== POSICIONAMIENTO ===== */
+.relative { position: relative !important; }
+.absolute { position: absolute !important; }
+.fixed { position: fixed !important; }
+
+/* ===== OVERFLOW ===== */
+.overflow-hidden { overflow: hidden !important; }
+.overflow-auto { overflow: auto !important; }
+
+/* ===== CURSOR ===== */
+.cursor-pointer { cursor: pointer !important; }
+
+/* ===== GAP ===== */
+.gap-sm { gap: var(--spacing-sm) !important; }
+.gap-md { gap: var(--spacing-md) !important; }
+.gap-lg { gap: var(--spacing-lg) !important; }
+
+/* ===== ACCESIBILIDAD ===== */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .md-d-none { display: none !important; }
+  .md-d-block { display: block !important; }
+  .md-text-center { text-align: center !important; }
+}
+
+@media (max-width: 480px) {
+  .sm-d-none { display: none !important; }
+  .sm-d-block { display: block !important; }
+}
