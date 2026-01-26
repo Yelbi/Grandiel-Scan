@@ -24,13 +24,13 @@
 }
 
 .connectivity-banner.offline {
-    background-color: #f44336;
-    color: white;
+    background-color: var(--color-error);
+    color: var(--color-text);
 }
 
 .connectivity-banner.online {
-    background-color: #4caf50;
-    color: white;
+    background-color: var(--color-success);
+    color: var(--color-text);
 }
 
 /* ===== BANNER DE ACTUALIZACIÓN ===== */
@@ -262,4 +262,301 @@
 .theme-transition .update-banner,
 .theme-transition .pwa-install-btn {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ===== INDICADOR OFFLINE EN NAV ===== */
+.offline-indicator {
+    display: none;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-error-light);
+    border: 1px solid var(--color-error);
+    border-radius: var(--border-radius-lg);
+    font-size: var(--font-size-xs);
+    color: var(--color-error);
+    animation: pulse-offline 2s infinite;
+}
+
+.offline-indicator.show {
+    display: flex;
+}
+
+.offline-indicator i {
+    font-size: 14px;
+}
+
+@keyframes pulse-offline {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* ===== BADGE OFFLINE PARA CONTENIDO ===== */
+.offline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-warning-light);
+    border: 1px solid var(--color-warning);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-warning);
+}
+
+.offline-badge i {
+    font-size: 10px;
+}
+
+/* ===== INDICADOR DE ESTADO DE CACHE ===== */
+.cache-status {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background: var(--color-bg-secondary, #1B2631);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-size: 13px;
+    color: var(--color-text, #fff);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 9990;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.cache-status.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.cache-status-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cache-status-icon.loading {
+    animation: spin 1s linear infinite;
+}
+
+.cache-status-icon.success {
+    color: #4caf50;
+}
+
+.cache-status-icon.error {
+    color: #f44336;
+}
+
+/* ===== CONTENIDO DISPONIBLE OFFLINE ===== */
+.available-offline {
+    position: relative;
+}
+
+.available-offline::after {
+    content: '';
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    width: 8px;
+    height: 8px;
+    background: var(--color-success);
+    border-radius: var(--border-radius-full);
+    border: 2px solid var(--color-bg);
+}
+
+/* ===== MENSAJE OFFLINE EN CARDS ===== */
+.manga-card.offline-content::before {
+    content: 'Disponible offline';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: var(--spacing-xs);
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+    color: var(--color-text);
+    font-size: var(--font-size-xs);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 2;
+}
+
+/* ===== SYNC STATUS ===== */
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-info-light);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-xs);
+    color: var(--color-info);
+}
+
+.sync-status.syncing i {
+    animation: spin 1s linear infinite;
+}
+
+.sync-status.synced {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.sync-status.error {
+    background: var(--color-error-light);
+    color: var(--color-error);
+}
+
+/* ===== FLOATING INSTALL PROMPT ===== */
+.install-prompt {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(150%);
+    max-width: 400px;
+    width: calc(100% - 32px);
+    padding: 20px;
+    background: var(--color-bg-secondary, #1B2631);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.install-prompt.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.install-prompt-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.install-prompt-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.install-prompt-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.install-prompt-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text, #fff);
+    margin: 0;
+}
+
+.install-prompt-subtitle {
+    font-size: 12px;
+    color: var(--color-text-muted, #888);
+    margin: 0;
+}
+
+.install-prompt-body {
+    font-size: 14px;
+    color: var(--color-text-muted, #888);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.install-prompt-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.install-prompt-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.install-prompt-btn.primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+    color: var(--color-text);
+}
+
+.install-prompt-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--color-primary-light);
+}
+
+.install-prompt-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text, #fff);
+}
+
+.install-prompt-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* ===== PWA STANDALONE ADJUSTMENTS ===== */
+@media (display-mode: standalone) {
+    /* Cuando se ejecuta como app instalada */
+    .pwa-install-btn {
+        display: none !important;
+    }
+
+    .install-prompt {
+        display: none !important;
+    }
+
+    /* Ajustar padding superior para notch/barra de estado */
+    body {
+        padding-top: env(safe-area-inset-top, 0);
+    }
+
+    /* Ajustar navegación inferior */
+    .bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+    .install-prompt {
+        bottom: 16px;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .install-prompt-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .install-prompt-title {
+        font-size: 14px;
+    }
+
+    .cache-status {
+        bottom: 70px;
+        left: 16px;
+        right: 16px;
+        transform: none;
+        max-width: none;
+    }
 }

@@ -65,21 +65,44 @@
             "name": "Catalogo de Mangas",
             "short_name": "Mangas",
             "description": "Ver todos los mangas disponibles",
-            "url": "/Mangas.html"
+            "url": "/Mangas.html",
+            "icons": [{ "src": "/img/icons/icon-96x96.png", "sizes": "96x96" }]
+        },
+        {
+            "name": "Mis Favoritos",
+            "short_name": "Favoritos",
+            "description": "Ver tus mangas favoritos",
+            "url": "/Favoritos.html",
+            "icons": [{ "src": "/img/icons/icon-96x96.png", "sizes": "96x96" }]
+        },
+        {
+            "name": "Historial de Lectura",
+            "short_name": "Historial",
+            "description": "Ver tu historial de lectura",
+            "url": "/Historial.html",
+            "icons": [{ "src": "/img/icons/icon-96x96.png", "sizes": "96x96" }]
         },
         {
             "name": "Actualizaciones",
             "short_name": "Updates",
             "description": "Ver las ultimas actualizaciones",
-            "url": "/Actualizaciones.html"
-        },
-        {
-            "name": "Nuevos Titulos",
-            "short_name": "Nuevos",
-            "description": "Descubrir nuevos mangas",
-            "url": "/Nuevos.html"
+            "url": "/Actualizaciones.html",
+            "icons": [{ "src": "/img/icons/icon-96x96.png", "sizes": "96x96" }]
         }
     ],
+    "share_target": {
+        "action": "/Mangas.html",
+        "method": "GET",
+        "params": {
+            "title": "search",
+            "text": "search",
+            "url": "url"
+        }
+    },
+    "handle_links": "preferred",
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    },
     "related_applications": [],
     "prefer_related_applications": false
 }

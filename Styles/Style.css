@@ -19,6 +19,11 @@
 @import url('utilities.css');
 @import url('theme.css');
 @import url('pwa.css');
+@import url('user.css');
+@import url('comments.css');
+@import url('notifications.css');
+@import url('reader.css');
+@import url('download.css');
 
 /* ===== FUENTES EXTERNAS ===== */
 @import url('https://fonts.googleapis.com/css?family=Raleway:200');

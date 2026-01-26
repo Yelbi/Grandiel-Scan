@@ -77,14 +77,68 @@ class PWAManager {
         window.addEventListener('online', () => {
             this.isOnline = true;
             this.showConnectivityStatus('online');
+            this.updateOfflineIndicator(false);
             console.log('[PWA] Conexión restaurada');
+
+            // Disparar evento para otros módulos
+            window.dispatchEvent(new CustomEvent('grandiel:online'));
         });
 
         window.addEventListener('offline', () => {
             this.isOnline = false;
             this.showConnectivityStatus('offline');
+            this.updateOfflineIndicator(true);
             console.log('[PWA] Sin conexión');
+
+            // Disparar evento para otros módulos
+            window.dispatchEvent(new CustomEvent('grandiel:offline'));
         });
+
+        // Crear indicador offline en la navegación
+        this.createOfflineIndicator();
+
+        // Verificar estado inicial
+        if (!navigator.onLine) {
+            this.updateOfflineIndicator(true);
+        }
+    }
+
+    /**
+     * Crea el indicador offline en la navegación
+     */
+    createOfflineIndicator() {
+        const nav = document.querySelector('.ctn-icon, .nav-icons, header nav');
+        if (!nav) return;
+
+        let indicator = document.getElementById('offline-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'offline-indicator';
+            indicator.className = 'offline-indicator';
+            indicator.innerHTML = `
+                <i class="fas fa-wifi-slash" aria-hidden="true"></i>
+                <span>Offline</span>
+            `;
+            nav.insertBefore(indicator, nav.firstChild);
+        }
+    }
+
+    /**
+     * Actualiza el indicador offline
+     * @param {boolean} isOffline
+     */
+    updateOfflineIndicator(isOffline) {
+        const indicator = document.getElementById('offline-indicator');
+        if (indicator) {
+            if (isOffline) {
+                indicator.classList.add('show');
+            } else {
+                indicator.classList.remove('show');
+            }
+        }
+
+        // Añadir clase al body para estilos condicionales
+        document.body.classList.toggle('is-offline', isOffline);
     }
 
     /**
@@ -103,12 +157,18 @@ class PWAManager {
         }
 
         if (status === 'offline') {
-            banner.textContent = 'Sin conexión - Algunas funciones no están disponibles';
+            banner.innerHTML = `
+                <i class="fas fa-wifi-slash" aria-hidden="true"></i>
+                Sin conexion - Algunas funciones no estan disponibles
+            `;
             banner.classList.add('offline');
             banner.classList.remove('online');
             banner.style.display = 'block';
         } else {
-            banner.textContent = 'Conexión restaurada';
+            banner.innerHTML = `
+                <i class="fas fa-wifi" aria-hidden="true"></i>
+                Conexion restaurada
+            `;
             banner.classList.add('online');
             banner.classList.remove('offline');
 
@@ -116,6 +176,50 @@ class PWAManager {
             setTimeout(() => {
                 banner.style.display = 'none';
             }, 3000);
+        }
+    }
+
+    /**
+     * Muestra estado de caché
+     * @param {string} message
+     * @param {string} type - 'loading', 'success', 'error'
+     */
+    showCacheStatus(message, type = 'loading') {
+        let status = document.getElementById('cache-status');
+
+        if (!status) {
+            status = document.createElement('div');
+            status.id = 'cache-status';
+            status.className = 'cache-status';
+            document.body.appendChild(status);
+        }
+
+        const icons = {
+            loading: '<i class="fas fa-sync-alt"></i>',
+            success: '<i class="fas fa-check"></i>',
+            error: '<i class="fas fa-exclamation-circle"></i>'
+        };
+
+        status.innerHTML = `
+            <span class="cache-status-icon ${type}">${icons[type]}</span>
+            <span>${message}</span>
+        `;
+        status.classList.add('show');
+
+        if (type !== 'loading') {
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+    }
+
+    /**
+     * Oculta estado de caché
+     */
+    hideCacheStatus() {
+        const status = document.getElementById('cache-status');
+        if (status) {
+            status.classList.remove('show');
         }
     }
 
@@ -145,6 +249,12 @@ class PWAManager {
      * Muestra el botón de instalación
      */
     showInstallButton() {
+        // Mostrar prompt mejorado después de un delay
+        setTimeout(() => {
+            this.showEnhancedInstallPrompt();
+        }, 3000);
+
+        // También mostrar botón simple
         let installBtn = document.getElementById('pwa-install-btn');
 
         if (!installBtn) {
@@ -163,6 +273,69 @@ class PWAManager {
     }
 
     /**
+     * Muestra el prompt de instalación mejorado
+     */
+    showEnhancedInstallPrompt() {
+        // No mostrar si ya está instalado o si ya se mostró
+        if (this.isInstalled() || sessionStorage.getItem('install-prompt-dismissed')) {
+            return;
+        }
+
+        let prompt = document.getElementById('install-prompt');
+
+        if (!prompt) {
+            prompt = document.createElement('div');
+            prompt.id = 'install-prompt';
+            prompt.className = 'install-prompt';
+            prompt.innerHTML = `
+                <div class="install-prompt-header">
+                    <div class="install-prompt-icon">
+                        <img src="/img/logo.gif" alt="Grandiel Scan">
+                    </div>
+                    <div>
+                        <h3 class="install-prompt-title">Instalar Grandiel Scan</h3>
+                        <p class="install-prompt-subtitle">Acceso rapido desde tu pantalla</p>
+                    </div>
+                </div>
+                <p class="install-prompt-body">
+                    Instala la app para acceder mas rapido, recibir notificaciones de nuevos capitulos y leer offline.
+                </p>
+                <div class="install-prompt-actions">
+                    <button class="install-prompt-btn secondary" id="install-prompt-dismiss">
+                        Ahora no
+                    </button>
+                    <button class="install-prompt-btn primary" id="install-prompt-accept">
+                        <i class="fas fa-download"></i> Instalar
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(prompt);
+
+            document.getElementById('install-prompt-dismiss').addEventListener('click', () => {
+                this.hideEnhancedInstallPrompt();
+                sessionStorage.setItem('install-prompt-dismissed', 'true');
+            });
+
+            document.getElementById('install-prompt-accept').addEventListener('click', () => {
+                this.hideEnhancedInstallPrompt();
+                this.promptInstall();
+            });
+        }
+
+        setTimeout(() => prompt.classList.add('show'), 100);
+    }
+
+    /**
+     * Oculta el prompt de instalación mejorado
+     */
+    hideEnhancedInstallPrompt() {
+        const prompt = document.getElementById('install-prompt');
+        if (prompt) {
+            prompt.classList.remove('show');
+        }
+    }
+
+    /**
      * Oculta el botón de instalación
      */
     hideInstallButton() {
@@ -170,6 +343,7 @@ class PWAManager {
         if (installBtn) {
             installBtn.style.display = 'none';
         }
+        this.hideEnhancedInstallPrompt();
     }
 
     /**
@@ -319,5 +493,7 @@ window.PWA = {
     clearCache: () => pwaManager.clearCache(),
     getVersion: () => pwaManager.getVersion(),
     isInstalled: () => pwaManager.isInstalled(),
-    isOnline: () => pwaManager.isOnline
+    isOnline: () => pwaManager.isOnline,
+    showCacheStatus: (msg, type) => pwaManager.showCacheStatus(msg, type),
+    hideCacheStatus: () => pwaManager.hideCacheStatus()
 };

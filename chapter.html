@@ -89,35 +89,33 @@
         </ol>
     </nav>
 
-    <br>
-
+    <main id="main-content" class="curva" role="main">
     <!-- Navegacion de capitulos -->
     <div class="sig" role="navigation" aria-label="Navegacion de capitulos">
-        <a href="#" id="prev-chapter" aria-label="Capitulo anterior"><b id="prev-symbol" style="color: gray;">&lt;</b></a>
+        <a href="#" id="prev-chapter" class="nav-disabled" aria-label="Capitulo anterior"><b id="prev-symbol">&lt;</b></a>
         <a href="#" id="manga-link"><b id="current-chapter">Cargando...</b></a>
         <a href="#" id="next-chapter" aria-label="Siguiente capitulo"><b id="next-symbol">&gt;</b></a>
     </div>
-    <br>
 
     <!-- Selector de capitulo -->
-    <div style="text-align: center; margin-bottom: 20px;">
-        <select id="chapter-selector" style="padding: 10px 20px; font-size: 16px; background: #1B2631; color: white; border: 1px solid #ff0000; border-radius: 5px; cursor: pointer;">
+    <div class="chapter-selector-wrapper">
+        <select id="chapter-selector" class="chapter-selector-select" aria-label="Seleccionar capitulo">
             <option value="">Seleccionar capitulo...</option>
         </select>
     </div>
 
     <!-- Contenedor de imagenes del capitulo -->
     <div class="dede" id="chapter-images">
-        <p style="color: #888; text-align: center; padding: 50px;">Cargando imagenes...</p>
+        <p class="loading-message">Cargando imagenes...</p>
     </div>
 
     <!-- Navegacion inferior -->
-    <div class="sig" role="navigation" aria-label="Navegacion de capitulos" style="margin-top: 20px;">
-        <a href="#" id="prev-chapter-bottom" aria-label="Capitulo anterior"><b id="prev-symbol-bottom" style="color: gray;">&lt;</b></a>
+    <div class="sig" role="navigation" aria-label="Navegacion de capitulos">
+        <a href="#" id="prev-chapter-bottom" class="nav-disabled" aria-label="Capitulo anterior"><b id="prev-symbol-bottom">&lt;</b></a>
         <a href="#" id="manga-link-bottom"><b>Volver al manga</b></a>
         <a href="#" id="next-chapter-bottom" aria-label="Siguiente capitulo"><b id="next-symbol-bottom">&gt;</b></a>
     </div>
-    <br>
+    </main>
 
     <footer class="footer" role="contentinfo">
         <div><p>2026 Grandiel Scan</p></div>

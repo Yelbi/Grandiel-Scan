@@ -1,0 +1,416 @@
+/**
+ * reader.css - Estilos del Modo de Lectura Mejorado
+ * Grandiel Scan - Fase 6.2 Características Avanzadas
+ */
+
+/* ===== PANEL DE CONTROLES ===== */
+.reader-controls {
+    position: fixed;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+}
+
+.reader-controls-toggle {
+    width: 48px;
+    height: 48px;
+    background: var(--color-primary, #ff0000);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    font-size: 18px;
+    box-shadow: 0 4px 16px rgba(255, 0, 0, 0.4);
+    transition: all 0.2s ease;
+}
+
+.reader-controls-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(255, 0, 0, 0.5);
+}
+
+.reader-controls-panel {
+    position: absolute;
+    right: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 280px;
+    background: #1B2631;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+.reader-controls-panel.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.reader-controls-title {
+    color: var(--color-text, #fff);
+    font-size: 14px;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ===== GRUPOS DE CONTROL ===== */
+.reader-control-group {
+    margin-bottom: 16px;
+}
+
+.reader-control-group:last-child {
+    margin-bottom: 0;
+}
+
+.reader-control-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.reader-control-label i {
+    color: var(--color-primary, #ff0000);
+    width: 16px;
+}
+
+.reader-control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ===== SLIDERS ===== */
+.reader-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+}
+
+.reader-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--color-primary, #ff0000);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.reader-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.reader-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--color-primary, #ff0000);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+/* ===== BOTONES ===== */
+.reader-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 6px;
+    color: var(--color-text, #fff);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.reader-btn:hover {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+.reader-btn:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+/* ===== BOTONES DE AJUSTE ===== */
+.reader-fit-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.reader-fit-btn {
+    flex: 1;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.reader-fit-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text, #fff);
+}
+
+.reader-fit-btn.active {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: var(--color-primary, #ff0000);
+    color: var(--color-primary, #ff0000);
+}
+
+.reader-fit-btn:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+/* ===== BOTONES DE FONDO ===== */
+.reader-bg-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.reader-bg-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.reader-bg-btn:hover {
+    transform: scale(1.1);
+}
+
+.reader-bg-btn.active {
+    border-color: var(--color-primary, #ff0000);
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
+}
+
+.reader-bg-btn:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+/* ===== ACCIONES ===== */
+.reader-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reader-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-primary, #ff0000);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.reader-action-btn:hover {
+    background: #cc0000;
+}
+
+.reader-action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #888;
+}
+
+.reader-action-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--color-text, #fff);
+}
+
+.reader-action-btn:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* ===== PANEL DE AYUDA ===== */
+.reader-help-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+.reader-help-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.reader-help-panel {
+    position: relative;
+    background: #1B2631;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+}
+
+.reader-help-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.reader-help-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text, #fff);
+}
+
+.reader-help-panel h3 {
+    color: var(--color-text, #fff);
+    font-size: 18px;
+    margin: 0 0 24px 0;
+    text-align: center;
+}
+
+.reader-shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reader-shortcut {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.reader-shortcut kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: var(--color-text, #fff);
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.reader-shortcut span {
+    color: #888;
+    font-size: 13px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .reader-controls {
+        right: 8px;
+        bottom: 80px;
+        top: auto;
+        transform: none;
+    }
+
+    .reader-controls-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    .reader-controls-panel {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        left: 0;
+        transform: none;
+        width: 100%;
+        border-radius: 16px 16px 0 0;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .reader-controls-panel.active {
+        transform: translateY(0);
+    }
+
+    .reader-help-panel {
+        margin: 16px;
+        padding: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .reader-fit-buttons {
+        flex-wrap: wrap;
+    }
+
+    .reader-fit-btn {
+        flex: 1 1 calc(33% - 8px);
+        min-width: 0;
+    }
+
+    .reader-shortcut {
+        flex-wrap: wrap;
+    }
+
+    .reader-shortcut kbd {
+        font-size: 11px;
+        min-width: 28px;
+    }
+}
+
+/* ===== FULLSCREEN MODE ===== */
+:fullscreen .reader-controls {
+    z-index: 10001;
+}
+
+:fullscreen #chapter-images {
+    min-height: 100vh;
+}

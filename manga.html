@@ -68,28 +68,24 @@
     <hr class="br">
 
     <main id="main-content" class="curva" role="main">
-        <br>
         <!-- Contenedor de la portada -->
-        <div style="text-align: center;">
-            <img id="manga-cover" style="border-radius: 5%;" src="" alt="" width="300" height="430" loading="lazy">
+        <div class="manga-cover-wrapper">
+            <img id="manga-cover" class="manga-cover-img" src="" alt="" width="300" height="430" loading="lazy">
         </div>
-        <br>
 
         <!-- Titulo del manga -->
-        <h1 id="manga-title" style="text-align: center;">Cargando...</h1>
-        <br>
+        <h1 id="manga-title">Cargando...</h1>
 
         <!-- Descripcion -->
         <div class="parrafo">
             <p id="manga-description">Cargando descripcion...</p>
         </div>
-        <br>
 
         <!-- Info adicional -->
-        <div id="manga-info" style="text-align: center; color: #888; margin-bottom: 20px;">
-            <span id="manga-type"></span> |
-            <span id="manga-status"></span> |
-            <span id="manga-genres"></span>
+        <div id="manga-info" class="manga-info">
+            <span id="manga-type" class="manga-info-item"></span>
+            <span id="manga-status" class="manga-info-item"></span>
+            <span id="manga-genres" class="manga-info-item"></span>
         </div>
 
         <!-- Lista de capitulos -->
@@ -99,7 +95,6 @@
             </div>
         </section>
     </main>
-    <br>
 
     <footer class="footer" role="contentinfo">
         <div><p>2026 Grandiel Scan</p></div>

@@ -1,0 +1,254 @@
+/**
+ * download.css - Estilos del Sistema de Descarga
+ * Grandiel Scan - Fase 6.2 Características Avanzadas
+ */
+
+/* ===== BOTON DE DESCARGA ===== */
+.download-chapter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-md) auto;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+    border: none;
+    border-radius: var(--border-radius-md);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: 0 4px 12px var(--color-success-light);
+}
+
+.download-chapter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--color-success-light);
+}
+
+.download-chapter-btn:active {
+    transform: translateY(0);
+}
+
+.download-chapter-btn:focus-visible {
+    outline: 3px solid var(--color-success);
+    outline-offset: 2px;
+}
+
+.download-chapter-btn i {
+    font-size: var(--font-size-base);
+}
+
+/* ===== MODAL DE PROGRESO ===== */
+.download-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.download-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.download-modal-content {
+    background: #1B2631;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.download-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-lg);
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+    color: var(--color-text);
+    animation: pulse-download 2s infinite;
+}
+
+@keyframes pulse-download {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 var(--color-success-light);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 20px transparent;
+    }
+}
+
+.download-title {
+    color: var(--color-text, #fff);
+    font-size: 20px;
+    margin: 0 0 8px 0;
+}
+
+.download-status {
+    color: #888;
+    font-size: 14px;
+    margin: 0 0 24px 0;
+}
+
+/* ===== BARRA DE PROGRESO ===== */
+.download-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.download-progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+    border-radius: var(--border-radius-sm);
+    transition: width var(--transition-slow);
+}
+
+.download-percent {
+    color: var(--color-success);
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin: 0 0 var(--spacing-lg) 0;
+}
+
+.download-cancel-btn {
+    padding: 10px 24px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #888;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.download-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text, #fff);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.download-cancel-btn:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+/* ===== TOAST DE DESCARGA ===== */
+.download-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 14px 24px;
+    background: #1B2631;
+    border-radius: 8px;
+    color: var(--color-text, #fff);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10002;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+}
+
+.download-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.download-toast-success {
+    border-left: 4px solid var(--color-success);
+}
+
+.download-toast-success i {
+    color: var(--color-success);
+}
+
+.download-toast-error {
+    border-left: 4px solid var(--color-error);
+}
+
+.download-toast-error i {
+    color: var(--color-error);
+}
+
+.download-toast-warning {
+    border-left: 4px solid var(--color-warning);
+}
+
+.download-toast-warning i {
+    color: var(--color-warning);
+}
+
+.download-toast-info {
+    border-left: 4px solid var(--color-info);
+}
+
+.download-toast-info i {
+    color: var(--color-info);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .download-chapter-btn {
+        width: calc(100% - 32px);
+        max-width: 300px;
+    }
+
+    .download-modal-content {
+        padding: 32px 24px;
+    }
+
+    .download-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 24px;
+    }
+
+    .download-title {
+        font-size: 18px;
+    }
+
+    .download-percent {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .download-toast {
+        left: 16px;
+        right: 16px;
+        transform: translateX(0) translateY(100px);
+        max-width: calc(100% - 32px);
+    }
+
+    .download-toast.show {
+        transform: translateX(0) translateY(0);
+    }
+}

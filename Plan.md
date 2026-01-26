@@ -607,23 +607,232 @@ MEJORAS DE CÓDIGO:
 - Mejor manejo de errores con try/catch donde es necesario
 
 FASE 6: Funcionalidades Nuevas (Prioridad Baja)
-6.1 Sistema de Usuarios
-Registro/Login
-Favoritos
-Historial de lectura
-Modo lectura continua
+6.1 Sistema de Usuarios ✅ COMPLETADA
+✅ Registro/Login (localStorage-based)
+   - UserProfileStorage con create, update, logout
+   - Modal de registro con selección de avatar
+   - Modal de perfil con estadísticas
+   - Sincronización entre pestañas
+✅ Favoritos
+   - Página Favoritos.html
+   - FavoritesStorage API
+   - Botones de favorito en tarjetas de manga
+   - Grid responsive de favoritos
+✅ Historial de lectura
+   - Página Historial.html
+   - HistoryStorage API con agrupación por fecha
+   - Registro automático al leer capítulos
+   - Botón de limpiar historial
+✅ Modo lectura continua
+   - ReadingModeStorage con toggle
+   - Modo continuo: scroll vertical de todas las páginas
+   - Modo paginado: una página a la vez con navegación
+   - Atajos de teclado (flechas, A/D)
+   - Click en imagen para cambiar página
+   - Guardado de preferencia en perfil de usuario
 
-6.2 Características Avanzadas
-Sistema de comentarios
-Notificaciones de nuevos capítulos
-Modo lector mejorado
-Descarga de capítulos
+ARCHIVOS CREADOS EN FASE 6.1:
+- /js/modules/user.js - Sistema de UI de usuario
+- /js/modules/storage.js - UserProfileStorage, ReadingModeStorage (extendido)
+- /js/pages/favorites.js - Módulo de página de favoritos
+- /js/pages/history.js - Módulo de página de historial
+- /Favoritos.html - Página de favoritos
+- /Historial.html - Página de historial de lectura
+- /Styles/user.css - Estilos del sistema de usuario
+- /img/avatars/*.svg - Avatares de usuario (4 colores)
+- /img/default-avatar.svg - Avatar por defecto
 
-6.3 PWA
-Manifest.json
-Service Worker
-Modo offline
-Instalable en dispositivos
+ARCHIVOS MODIFICADOS EN FASE 6.1:
+- /js/config.js - STORAGE_KEYS.USER_PROFILE, EVENTS nuevos, AppState actualizado
+- /js/main.js - Imports de user system, inicialización
+- /Styles/Style.css - Import de user.css
+- /Styles/chapter-renderer.js - Soporte para modos de lectura
+
+6.2 Características Avanzadas ✅ COMPLETADA
+✅ Sistema de comentarios
+   - CommentsStorage API (add, edit, delete, getByManga, getByChapter)
+   - Formulario de comentarios con contador de caracteres
+   - Edición y eliminación de comentarios propios
+   - Timestamps relativos (hace X tiempo)
+   - Requiere usuario logueado para comentar
+   - Se inicializa automáticamente en páginas de manga y capítulo
+
+✅ Notificaciones de nuevos capítulos
+   - SeenChaptersStorage API (markSeen, getUnseen, countUnseen)
+   - Campana de notificaciones en navegación
+   - Badge animado con contador de capítulos no leídos
+   - Panel de notificaciones con lista de mangas con capítulos nuevos
+   - Badges en tarjetas de manga para indicar capítulos nuevos
+   - Solo muestra notificaciones de mangas favoritos
+   - Marcar como visto automáticamente al leer capítulo
+
+✅ Modo lector mejorado
+   - ReaderSettingsStorage para guardar preferencias
+   - Panel de controles flotante
+   - Zoom: slider + botones + atajos (+ / - / 0)
+   - Brillo: ajustable 50-150%
+   - Contraste: ajustable 50-150%
+   - Modos de ajuste: ancho, alto, original
+   - Colores de fondo: negro, gris, azul, blanco
+   - Pantalla completa (F)
+   - Panel de atajos de teclado (?)
+   - Atajos: ←/→ páginas, +/- zoom, F fullscreen, W/H ajuste
+
+✅ Descarga de capítulos
+   - Botón de descarga en página de capítulo
+   - Descarga todas las imágenes del capítulo
+   - Crea archivo ZIP con JSZip (cargado dinámicamente)
+   - Modal de progreso con barra animada
+   - Manejo de errores CORS con fallback a canvas
+   - Cancelación de descarga
+   - Notificaciones toast de estado
+
+ARCHIVOS CREADOS EN FASE 6.2:
+- /js/modules/comments.js - Sistema de comentarios
+- /js/modules/notifications.js - Sistema de notificaciones
+- /js/modules/reader.js - Lector mejorado
+- /js/modules/download.js - Descarga de capítulos
+- /Styles/comments.css - Estilos de comentarios
+- /Styles/notifications.css - Estilos de notificaciones
+- /Styles/reader.css - Estilos del lector
+- /Styles/download.css - Estilos de descarga
+
+ARCHIVOS MODIFICADOS EN FASE 6.2:
+- /js/config.js - STORAGE_KEYS y EVENTS nuevos
+- /js/modules/storage.js - CommentsStorage, SeenChaptersStorage, ReaderSettingsStorage
+- /js/main.js - Imports e inicialización de todos los módulos
+- /Styles/Style.css - Imports de nuevos CSS
+
+6.3 PWA ✅ COMPLETADA
+✅ Página offline mejorada
+   - /offline.html con diseño atractivo
+   - Detección automática de conexión
+   - Botón de reintentar conexión
+   - Lista dinámica de páginas en caché
+   - Redirección automática al restaurar conexión
+   - Indicador de estado de conexión
+
+✅ Service Worker actualizado (v2.0.0)
+   - Todos los assets de Fase 6.1 y 6.2 agregados al caché
+   - Fallback a offline.html para navegación sin conexión
+   - Placeholder SVG para imágenes offline
+   - Respuesta JSON vacía para datos offline
+   - Estrategias de caché optimizadas
+
+✅ Manifest.json mejorado
+   - Share target para recibir contenido compartido
+   - Shortcuts actualizados (Favoritos, Historial)
+   - Launch handler configurado
+   - Handle links preferido
+
+✅ Indicadores offline mejorados
+   - Indicador en navegación (offline-indicator)
+   - Banner de conectividad animado
+   - Estado de caché visible
+   - Clase body.is-offline para estilos condicionales
+   - Badge "Disponible offline" para contenido cacheado
+
+✅ Prompt de instalación mejorado
+   - Diseño atractivo con modal flotante
+   - Icono y descripción de beneficios
+   - Botones de instalar/posponer
+   - No se muestra si ya está instalado
+   - Se guarda dismissal en sessionStorage
+
+✅ Estilos PWA expandidos
+   - Estilos para modo standalone
+   - Safe area insets para notch
+   - Indicador de sincronización
+   - Skeleton loaders para carga
+
+ARCHIVOS CREADOS EN FASE 6.3:
+- /offline.html - Página de fallback offline
+
+ARCHIVOS MODIFICADOS EN FASE 6.3:
+- /sw.js - v2.0.0, nuevos assets, fallback offline
+- /manifest.json - share_target, shortcuts, launch_handler
+- /js/pwa.js - Indicadores offline, prompt mejorado, cache status
+- /Styles/pwa.css - Estilos expandidos para offline
+
+═══════════════════════════════════════════════════════════════════════════════
+CORRECCIÓN DE ERRORES DE DISEÑO (2026-01-26)
+═══════════════════════════════════════════════════════════════════════════════
+
+ANÁLISIS Y CORRECCIONES REALIZADAS:
+
+1. VARIABLES CSS EXPANDIDAS (base.css)
+   ✅ Agregadas variables de colores semánticos:
+      - --color-success, --color-success-hover, --color-success-light
+      - --color-warning, --color-warning-hover, --color-warning-light
+      - --color-error, --color-error-hover, --color-error-light
+      - --color-info, --color-info-hover, --color-info-light
+   ✅ Mejorado contraste de --color-text-muted para cumplir WCAG AA
+      - Tema oscuro: #707070 → #9a9a9a
+      - Tema claro: #6a6a6a → #666666
+   ✅ Agregadas variables de z-index documentadas:
+      - --z-dropdown: 100
+      - --z-sticky: 500
+      - --z-fixed: 1000
+      - --z-modal-backdrop: 9000
+      - --z-modal: 9500
+      - --z-popover: 10000
+      - --z-toast: 10500
+      - --z-tooltip: 11000
+   ✅ Agregadas variables de dimensiones:
+      - --modal-max-width, --search-width, --search-width-focus
+   ✅ Agregada variable --shadow-focus para estados de foco
+
+2. ACCESIBILIDAD MEJORADA (base.css)
+   ✅ Corregido outline:none global - ahora solo oculta en :focus, mantiene :focus-visible
+   ✅ Agregados estados de validación para formularios:
+      - input:valid, input:invalid
+      - Indicador de campo requerido con asterisco
+   ✅ Todos los :focus cambiados a :focus-visible
+
+3. COLORES HARDCODED CONVERTIDOS A VARIABLES
+   ✅ download.css - Todos los verdes (#2ecc71) ahora usan --color-success
+   ✅ pwa.css - Colores de estado (rojo, verde, naranja, azul) usan variables semánticas
+   ✅ user.css - #888, #666, #4ade80 convertidos a variables
+   ✅ comments.css - Colores hardcoded convertidos
+
+4. ENLACES ROTOS CORREGIDOS (index.html)
+   ✅ Galería "Recomendados" ahora usa /manga.html?id=* en lugar de /Mangas/*.html
+   ✅ Estilos inline movidos a clases CSS (.galeria-item, .galeria-*)
+
+5. ESTILOS INLINE ELIMINADOS
+   ✅ chapter.html - Todos los estilos inline movidos a CSS
+      - Creadas clases: .chapter-selector-wrapper, .chapter-selector-select, .loading-message, .nav-disabled
+   ✅ manga.html - Estilos inline movidos a CSS
+      - Creadas clases: .manga-cover-wrapper, .manga-cover-img, .manga-info, .manga-info-item
+   ✅ Eliminados <br> innecesarios, agregada estructura semántica con <main>
+
+6. Z-INDEX NORMALIZADO
+   ✅ Todos los z-index ahora usan variables CSS documentadas
+   ✅ layout.css, user.css actualizados
+
+7. COMPONENTES MEJORADOS
+   ✅ Slider: Pausa en hover, respeta prefers-reduced-motion
+   ✅ Botones: Estados :disabled agregados a .btn, .sortable button, .btn-primary, .btn-secondary
+   ✅ .capitulos: Responsive para tablet (600px) agregado
+   ✅ Focus states: Todos normalizados a 3px solid var(--color-primary)
+
+8. TEMA CLARO EXPANDIDO
+   ✅ Colores semánticos agregados para tema claro
+   ✅ --shadow-focus ajustado para tema claro
+
+ARCHIVOS MODIFICADOS:
+- /Styles/base.css - Variables expandidas, accesibilidad
+- /Styles/layout.css - Z-index, estilos de capítulos, responsive
+- /Styles/components.css - Slider, botones, galería
+- /Styles/download.css - Colores semánticos
+- /Styles/pwa.css - Colores semánticos
+- /Styles/user.css - Variables CSS, z-index
+- /Styles/comments.css - Variables CSS
+- /index.html - Enlaces corregidos, estilos movidos a CSS
+- /chapter.html - Estilos inline eliminados
+- /manga.html - Estilos inline eliminados
+
+═══════════════════════════════════════════════════════════════════════════════
 
 FASE 7: Backend y Base de Datos (Prioridad Media-Baja)
 7.1 Infraestructura

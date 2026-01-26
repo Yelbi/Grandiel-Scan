@@ -31,6 +31,18 @@
   outline-offset: 2px;
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:disabled:hover {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
 .btn i {
   font-size: var(--font-size-sm);
 }
@@ -161,18 +173,35 @@
   max-width: var(--container-max-width);
 }
 
-.Galeria a {
+.Galeria a,
+.galeria-item {
   aspect-ratio: 2/3;
   border-radius: var(--border-radius-md);
   background-position: center;
   background-size: cover;
+  background-color: var(--color-bg-secondary);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.Galeria a:hover {
+.Galeria a:hover,
+.galeria-item:hover {
   transform: scale(1.02);
   box-shadow: var(--shadow-md);
 }
+
+.Galeria a:focus-visible,
+.galeria-item:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Imágenes de galería específicas */
+.galeria-maldita { background-image: url('/img/Maldita Reencarnación galeria.webp'); }
+.galeria-dungeon { background-image: url('/img/Dungeon Reset galeria.jpg'); }
+.galeria-existencia { background-image: url('/img/Existencia galeria.jpg'); }
+.galeria-nano { background-image: url('/img/Nano Machine galeria.jpg'); }
+.galeria-nueva-vida { background-image: url('/img/Nueva Vida del Jugador galeria.webp'); }
+.galeria-dice { background-image: url('/img/Dice El Cubo que lo Cambia Todo galeria.jpg'); }
 
 /* ===== SLIDER ===== */
 .slider {
@@ -207,6 +236,18 @@
   animation: scroll 60s linear infinite;
 }
 
+/* Pausar animación en hover */
+.slider:hover .slide-track {
+  animation-play-state: paused;
+}
+
+/* Respetar preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .slider .slide-track {
+    animation: none;
+  }
+}
+
 .slider .slide {
   flex-shrink: 0;
   padding: var(--spacing-sm);
@@ -218,6 +259,11 @@
   object-fit: cover;
   border-radius: var(--border-radius-md);
   background: var(--color-bg-secondary);
+  transition: transform var(--transition-fast);
+}
+
+.slider .slide img:hover {
+  transform: scale(1.05);
 }
 
 @keyframes scroll {

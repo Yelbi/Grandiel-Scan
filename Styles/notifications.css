@@ -1,0 +1,282 @@
+/**
+ * notifications.css - Estilos del Sistema de Notificaciones
+ * Grandiel Scan - Fase 6.2 Características Avanzadas
+ */
+
+/* ===== CAMPANA DE NOTIFICACIONES ===== */
+.notification-nav-item {
+    position: relative;
+}
+
+.notification-bell {
+    position: relative;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--color-text, #fff);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+}
+
+.notification-bell:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-primary, #ff0000);
+}
+
+.notification-bell:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+.notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--color-primary, #ff0000);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* ===== PANEL DE NOTIFICACIONES ===== */
+.notification-center {
+    position: fixed;
+    top: 70px;
+    right: 16px;
+    width: 360px;
+    max-height: 480px;
+    background: #1B2631;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.notification-center.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification-header h3 {
+    color: var(--color-text, #fff);
+    font-size: 16px;
+    margin: 0;
+}
+
+.mark-all-read {
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.mark-all-read:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-primary, #ff0000);
+}
+
+.mark-all-read:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+.notification-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ===== ITEM DE NOTIFICACION ===== */
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.notification-item:hover {
+    background: rgba(255, 0, 0, 0.1);
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-image {
+    width: 48px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    color: var(--color-text, #fff);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-text {
+    color: var(--color-primary, #ff0000);
+    font-size: 12px;
+    margin: 0;
+}
+
+.notification-dismiss {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.notification-dismiss:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text, #fff);
+}
+
+.notification-dismiss:focus {
+    outline: 2px solid var(--color-primary, #ff0000);
+    outline-offset: 2px;
+}
+
+/* ===== ESTADO VACIO ===== */
+.notification-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.notification-empty i {
+    font-size: 40px;
+    margin-bottom: 12px;
+    color: #444;
+}
+
+.notification-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ===== BADGE EN TARJETAS DE MANGA ===== */
+.manga-new-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background: var(--color-primary, #ff0000);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
+    animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 2px 16px rgba(255, 0, 0, 0.6);
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .notification-center {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 60vh;
+        border-radius: 16px 16px 0 0;
+        transform: translateY(100%);
+    }
+
+    .notification-center.active {
+        transform: translateY(0);
+    }
+
+    .notification-bell {
+        padding: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .notification-item {
+        padding: 10px 12px;
+    }
+
+    .notification-image {
+        width: 40px;
+        height: 54px;
+    }
+
+    .notification-title {
+        font-size: 13px;
+    }
+}

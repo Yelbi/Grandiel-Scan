@@ -22,7 +22,9 @@ export const CONFIG = {
         UPDATES: '/Actualizaciones.html',
         NEW: '/Nuevos.html',
         MANGA_TEMPLATE: '/manga.html',
-        CHAPTER_TEMPLATE: '/chapter.html'
+        CHAPTER_TEMPLATE: '/chapter.html',
+        FAVORITES: '/Favoritos.html',
+        HISTORY: '/Historial.html'
     },
 
     // Configuración de búsqueda
@@ -74,7 +76,11 @@ export const CONFIG = {
         LAST_READ: 'grandiel-last-read',
         SEARCH_HISTORY: 'grandiel-search-history',
         PREFERENCES: 'grandiel-preferences',
-        FILTERS: 'grandiel-filters'
+        FILTERS: 'grandiel-filters',
+        USER_PROFILE: 'grandiel-user-profile',
+        COMMENTS: 'grandiel-comments',
+        SEEN_CHAPTERS: 'grandiel-seen-chapters',
+        READER_SETTINGS: 'grandiel-reader-settings'
     },
 
     // Configuración de caché
@@ -106,7 +112,12 @@ export const EVENTS = {
     FILTER_UPDATE: 'grandiel:filter-update',
     DATA_LOADED: 'grandiel:data-loaded',
     FAVORITE_TOGGLE: 'grandiel:favorite-toggle',
-    HISTORY_UPDATE: 'grandiel:history-update'
+    HISTORY_UPDATE: 'grandiel:history-update',
+    USER_PROFILE_CHANGE: 'grandiel:user-profile-change',
+    READING_MODE_CHANGE: 'grandiel:reading-mode-change',
+    COMMENT_ADDED: 'grandiel:comment-added',
+    COMMENT_DELETED: 'grandiel:comment-deleted',
+    NEW_CHAPTER_AVAILABLE: 'grandiel:new-chapter-available'
 };
 
 // Estado global de la aplicación
@@ -124,7 +135,9 @@ export const AppState = {
     },
     favorites: [],
     history: [],
-    theme: CONFIG.THEME.DEFAULT
+    theme: CONFIG.THEME.DEFAULT,
+    userProfile: null,
+    readingMode: 'paginated' // 'paginated' o 'continuous'
 };
 
 /**

@@ -9,11 +9,16 @@
 import { CONFIG, EVENTS, getState, updateState } from './config.js';
 
 // Importar módulos
-import { ThemeStorage, FavoritesStorage, HistoryStorage } from './modules/storage.js';
+import { ThemeStorage, FavoritesStorage, HistoryStorage, UserProfileStorage, ReadingModeStorage } from './modules/storage.js';
 import Theme from './modules/theme.js';
 import Search from './modules/search.js';
 import Filter from './modules/filter.js';
 import Navigation from './modules/navigation.js';
+import { initUserSystem } from './modules/user.js';
+import { initComments } from './modules/comments.js';
+import { initNotifications, markChapterSeen } from './modules/notifications.js';
+import { initEnhancedReader } from './modules/reader.js';
+import { initDownloader } from './modules/download.js';
 
 /**
  * Clase principal de la aplicación
@@ -50,6 +55,12 @@ class GrandielApp {
             // Detectar y configurar página actual
             this.setupCurrentPage();
 
+            // Inicializar sistema de usuario
+            initUserSystem();
+
+            // Inicializar sistema de notificaciones
+            initNotifications();
+
             this.isInitialized = true;
             console.log('[Grandiel Scan] Aplicación inicializada correctamente');
 
@@ -78,6 +89,14 @@ class GrandielApp {
         // Cargar historial
         const history = HistoryStorage.getAll();
         updateState('history', history);
+
+        // Cargar perfil de usuario
+        const userProfile = UserProfileStorage.get();
+        updateState('userProfile', userProfile);
+
+        // Cargar modo de lectura
+        const readingMode = ReadingModeStorage.get();
+        updateState('readingMode', readingMode);
     }
 
     /**
@@ -177,6 +196,32 @@ class GrandielApp {
         if (path === '/' || path.includes('index.html')) {
             this.setupHomePage();
         }
+
+        // Página de favoritos
+        if (path.includes('Favoritos.html')) {
+            this.setupFavoritesPage();
+        }
+
+        // Página de historial
+        if (path.includes('Historial.html')) {
+            this.setupHistoryPage();
+        }
+    }
+
+    /**
+     * Configura la página de favoritos
+     */
+    setupFavoritesPage() {
+        console.log('[Grandiel Scan] Configurando página de Favoritos');
+        // La página tiene su propio módulo que se inicializa automáticamente
+    }
+
+    /**
+     * Configura la página de historial
+     */
+    setupHistoryPage() {
+        console.log('[Grandiel Scan] Configurando página de Historial');
+        // La página tiene su propio módulo que se inicializa automáticamente
     }
 
     /**
@@ -216,6 +261,9 @@ class GrandielApp {
             if (favoriteBtn) {
                 this.updateFavoriteButton(favoriteBtn, mangaId);
             }
+
+            // Inicializar sistema de comentarios
+            initComments(mangaId, null);
         }, 100);
     }
 
@@ -241,8 +289,26 @@ class GrandielApp {
             title: manga?.title || mangaId
         });
 
+        // Marcar capítulo como visto (para notificaciones)
+        markChapterSeen(mangaId, chapter);
+
         // Barra de progreso de lectura
         this.setupReadingProgress();
+
+        // Inicializar sistema de comentarios para este capítulo
+        setTimeout(() => {
+            initComments(mangaId, chapter);
+        }, 500);
+
+        // Inicializar lector mejorado
+        setTimeout(() => {
+            initEnhancedReader();
+        }, 300);
+
+        // Inicializar sistema de descarga
+        setTimeout(() => {
+            initDownloader();
+        }, 400);
     }
 
     /**
@@ -481,6 +547,8 @@ window.GrandielApp = {
     // Storage
     Favorites: FavoritesStorage,
     History: HistoryStorage,
+    UserProfile: UserProfileStorage,
+    ReadingMode: ReadingModeStorage,
 
     // Estado
     getState,

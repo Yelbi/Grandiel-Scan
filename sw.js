@@ -6,8 +6,9 @@
  * mejoras de rendimiento para la PWA.
  */
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v2.0.0';
 const CACHE_NAME = `grandiel-scan-${CACHE_VERSION}`;
+const OFFLINE_PAGE = '/offline.html';
 
 // Assets estáticos que siempre se cachean
 const STATIC_ASSETS = [
@@ -18,22 +19,47 @@ const STATIC_ASSETS = [
     '/Nuevos.html',
     '/manga.html',
     '/chapter.html',
+    '/Favoritos.html',
+    '/Historial.html',
+    '/offline.html',
+    // CSS Principal y módulos
     '/Styles/Style.css',
     '/Styles/base.css',
     '/Styles/layout.css',
     '/Styles/components.css',
     '/Styles/utilities.css',
     '/Styles/theme.css',
+    '/Styles/pwa.css',
+    '/Styles/user.css',
+    '/Styles/comments.css',
+    '/Styles/notifications.css',
+    '/Styles/reader.css',
+    '/Styles/download.css',
+    // JavaScript Principal y módulos
     '/js/main.js',
     '/js/config.js',
+    '/js/pwa.js',
     '/js/modules/storage.js',
     '/js/modules/theme.js',
     '/js/modules/search.js',
     '/js/modules/filter.js',
     '/js/modules/navigation.js',
+    '/js/modules/user.js',
+    '/js/modules/comments.js',
+    '/js/modules/notifications.js',
+    '/js/modules/reader.js',
+    '/js/modules/download.js',
+    '/js/pages/favorites.js',
+    '/js/pages/history.js',
+    // Datos y recursos
     '/data/mangas.json',
     '/img/logo.gif',
     '/img/logo.jpg',
+    '/img/default-avatar.svg',
+    '/img/avatars/avatar1.svg',
+    '/img/avatars/avatar2.svg',
+    '/img/avatars/avatar3.svg',
+    '/img/avatars/avatar4.svg',
     '/manifest.json'
 ];
 
@@ -156,7 +182,7 @@ async function cacheFirst(request) {
         return networkResponse;
     } catch (error) {
         console.error('[SW] Error en cacheFirst:', error);
-        return new Response('Offline', { status: 503 });
+        return getOfflineFallback(request);
     }
 }
 
@@ -178,8 +204,50 @@ async function networkFirst(request) {
         if (cachedResponse) {
             return cachedResponse;
         }
-        return new Response('Offline', { status: 503 });
+        return getOfflineFallback(request);
     }
+}
+
+/**
+ * Obtiene la respuesta de fallback offline
+ * @param {Request} request
+ * @returns {Promise<Response>}
+ */
+async function getOfflineFallback(request) {
+    const url = new URL(request.url);
+
+    // Para navegación (HTML), mostrar página offline
+    if (request.mode === 'navigate' ||
+        request.headers.get('accept')?.includes('text/html') ||
+        url.pathname.endsWith('.html') ||
+        url.pathname === '/') {
+        const offlineResponse = await caches.match(OFFLINE_PAGE);
+        if (offlineResponse) {
+            return offlineResponse;
+        }
+    }
+
+    // Para imágenes, devolver placeholder
+    if (request.destination === 'image') {
+        return new Response(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#1B2631" width="200" height="200"/><text fill="#666" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14">Sin conexión</text></svg>',
+            { headers: { 'Content-Type': 'image/svg+xml' } }
+        );
+    }
+
+    // Para JSON, devolver objeto vacío
+    if (url.pathname.endsWith('.json')) {
+        return new Response(JSON.stringify({ offline: true, data: [] }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // Respuesta genérica offline
+    return new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/plain' }
+    });
 }
 
 /**
@@ -200,9 +268,10 @@ async function staleWhileRevalidate(request) {
         })
         .catch((error) => {
             console.warn('[SW] Error actualizando caché:', error);
+            return getOfflineFallback(request);
         });
 
-    // Devolver caché si existe, sino esperar fetch
+    // Devolver caché si existe, sino esperar fetch o fallback
     return cachedResponse || fetchPromise;
 }
 

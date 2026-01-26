@@ -1,6 +1,10 @@
 /**
  * Chapter Renderer - Renderiza dinamicamente las paginas de capitulos
  * Uso: chapter.html?manga=nano-machine&cap=1
+ *
+ * Soporta dos modos de lectura:
+ * - Paginado: muestra paginas una a una
+ * - Continuo: muestra todas las paginas en scroll vertical
  */
 
 (function() {
@@ -19,6 +23,9 @@
     // Variables globales para navegacion
     let mangaData = null;
     let allChapters = [];
+    let currentReadingMode = getReadingMode();
+    let chapterPages = [];
+    let currentPageIndex = 0;
 
     // Cargar datos
     loadData();
@@ -197,21 +204,17 @@
             return;
         }
 
-        let html = '';
-        pages.forEach((page, index) => {
-            const imageUrl = chapter.baseUrl + page;
-            html += `<img src="${imageUrl}" alt="${mangaData.title} Capitulo ${chapterNum} - Pagina ${index + 1}" loading="lazy" style="min-height: initial;">`;
-        });
+        // Guardar paginas para uso en modos de lectura
+        chapterPages = pages.map((page, index) => ({
+            url: chapter.baseUrl + page,
+            index: index
+        }));
 
-        container.innerHTML = html;
+        // Configurar controles de modo de lectura
+        setupReadingModeControls();
 
-        // Agregar manejo de errores para imagenes
-        container.querySelectorAll('img').forEach(img => {
-            img.addEventListener('error', function() {
-                this.style.display = 'none';
-                console.warn('Error cargando imagen:', this.src);
-            });
-        });
+        // Renderizar segun el modo actual
+        renderImagesForMode();
     }
 
     function showError(message) {
@@ -278,4 +281,277 @@
     if (mangaId && !isNaN(chapterNum)) {
         saveReadingProgress();
     }
+
+    // ===== MODO DE LECTURA =====
+
+    /**
+     * Obtiene el modo de lectura actual
+     */
+    function getReadingMode() {
+        if (!isLocalStorageAvailable()) return 'continuous';
+        try {
+            // Intentar obtener del perfil de usuario primero
+            const userProfile = JSON.parse(localStorage.getItem('grandiel-user-profile') || 'null');
+            if (userProfile && userProfile.settings && userProfile.settings.readingMode) {
+                return userProfile.settings.readingMode;
+            }
+            // Si no hay perfil, usar preferencia independiente
+            return localStorage.getItem('grandiel-reading-mode') || 'continuous';
+        } catch (e) {
+            return 'continuous';
+        }
+    }
+
+    /**
+     * Guarda el modo de lectura
+     */
+    function setReadingMode(mode) {
+        if (!isLocalStorageAvailable()) return;
+        try {
+            localStorage.setItem('grandiel-reading-mode', mode);
+            currentReadingMode = mode;
+
+            // Disparar evento para sincronizar
+            window.dispatchEvent(new CustomEvent('grandiel:reading-mode-change', {
+                detail: { mode }
+            }));
+        } catch (e) {
+            console.warn('No se pudo guardar el modo de lectura:', e.message);
+        }
+    }
+
+    /**
+     * Alterna el modo de lectura
+     */
+    function toggleReadingMode() {
+        const newMode = currentReadingMode === 'continuous' ? 'paginated' : 'continuous';
+        setReadingMode(newMode);
+        updateReadingModeUI();
+        renderImagesForMode();
+    }
+
+    /**
+     * Actualiza la UI del modo de lectura
+     */
+    function updateReadingModeUI() {
+        const toggleBtn = document.getElementById('reading-mode-toggle');
+        const modeLabel = document.getElementById('reading-mode-label');
+        const container = document.getElementById('chapter-images');
+
+        if (toggleBtn) {
+            const icon = toggleBtn.querySelector('i');
+            if (icon) {
+                icon.className = currentReadingMode === 'continuous'
+                    ? 'fas fa-scroll'
+                    : 'fas fa-file-image';
+            }
+        }
+
+        if (modeLabel) {
+            modeLabel.textContent = currentReadingMode === 'continuous'
+                ? 'Continuo'
+                : 'Paginado';
+        }
+
+        if (container) {
+            container.className = currentReadingMode === 'continuous'
+                ? 'dede reading-mode-continuous'
+                : 'dede reading-mode-paginated';
+        }
+
+        // Mostrar/ocultar controles de paginacion
+        const pageControls = document.getElementById('page-controls');
+        if (pageControls) {
+            pageControls.style.display = currentReadingMode === 'paginated' ? 'flex' : 'none';
+        }
+    }
+
+    /**
+     * Renderiza imagenes segun el modo actual
+     */
+    function renderImagesForMode() {
+        if (chapterPages.length === 0) return;
+
+        const container = document.getElementById('chapter-images');
+        if (!container) return;
+
+        if (currentReadingMode === 'continuous') {
+            renderContinuousMode(container);
+        } else {
+            renderPaginatedMode(container);
+        }
+    }
+
+    /**
+     * Renderiza en modo continuo (todas las paginas)
+     */
+    function renderContinuousMode(container) {
+        let html = '';
+        chapterPages.forEach((page, index) => {
+            html += `<img src="${page.url}" alt="${mangaData.title} Capitulo ${chapterNum} - Pagina ${index + 1}" loading="lazy" class="chapter-page">`;
+        });
+        container.innerHTML = html;
+
+        // Manejo de errores
+        container.querySelectorAll('img').forEach(img => {
+            img.addEventListener('error', function() {
+                this.style.display = 'none';
+                console.warn('Error cargando imagen:', this.src);
+            });
+        });
+    }
+
+    /**
+     * Renderiza en modo paginado (una pagina a la vez)
+     */
+    function renderPaginatedMode(container) {
+        if (chapterPages.length === 0) return;
+
+        const page = chapterPages[currentPageIndex];
+        container.innerHTML = `
+            <div class="paginated-container">
+                <img src="${page.url}" alt="${mangaData.title} Capitulo ${chapterNum} - Pagina ${currentPageIndex + 1}" class="chapter-page-single">
+            </div>
+        `;
+
+        // Actualizar contador de paginas
+        updatePageCounter();
+
+        // Manejo de errores
+        const img = container.querySelector('img');
+        if (img) {
+            img.addEventListener('error', function() {
+                this.alt = 'Error al cargar imagen';
+                console.warn('Error cargando imagen:', this.src);
+            });
+
+            // Click para avanzar pagina
+            img.addEventListener('click', function(e) {
+                const rect = this.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const halfWidth = rect.width / 2;
+
+                if (clickX > halfWidth) {
+                    nextPage();
+                } else {
+                    prevPage();
+                }
+            });
+        }
+    }
+
+    /**
+     * Actualiza el contador de paginas
+     */
+    function updatePageCounter() {
+        const counter = document.getElementById('page-counter');
+        if (counter) {
+            counter.textContent = `${currentPageIndex + 1} / ${chapterPages.length}`;
+        }
+    }
+
+    /**
+     * Va a la pagina anterior
+     */
+    function prevPage() {
+        if (currentPageIndex > 0) {
+            currentPageIndex--;
+            renderPaginatedMode(document.getElementById('chapter-images'));
+            window.scrollTo(0, 0);
+        }
+    }
+
+    /**
+     * Va a la pagina siguiente
+     */
+    function nextPage() {
+        if (currentPageIndex < chapterPages.length - 1) {
+            currentPageIndex++;
+            renderPaginatedMode(document.getElementById('chapter-images'));
+            window.scrollTo(0, 0);
+        }
+    }
+
+    /**
+     * Configura los controles de modo de lectura
+     */
+    function setupReadingModeControls() {
+        // Crear controles si no existen
+        let controlsContainer = document.getElementById('reading-controls');
+        if (!controlsContainer) {
+            const chapterSelector = document.getElementById('chapter-selector');
+            if (chapterSelector && chapterSelector.parentElement) {
+                controlsContainer = document.createElement('div');
+                controlsContainer.id = 'reading-controls';
+                controlsContainer.className = 'reading-controls';
+                controlsContainer.innerHTML = `
+                    <button type="button" id="reading-mode-toggle" class="reading-mode-btn" title="Cambiar modo de lectura">
+                        <i class="${currentReadingMode === 'continuous' ? 'fas fa-scroll' : 'fas fa-file-image'}" aria-hidden="true"></i>
+                        <span id="reading-mode-label">${currentReadingMode === 'continuous' ? 'Continuo' : 'Paginado'}</span>
+                    </button>
+                `;
+                chapterSelector.parentElement.appendChild(controlsContainer);
+            }
+        }
+
+        // Crear controles de paginacion
+        let pageControls = document.getElementById('page-controls');
+        if (!pageControls) {
+            const container = document.getElementById('chapter-images');
+            if (container && container.parentElement) {
+                pageControls = document.createElement('div');
+                pageControls.id = 'page-controls';
+                pageControls.className = 'page-controls';
+                pageControls.style.display = currentReadingMode === 'paginated' ? 'flex' : 'none';
+                pageControls.innerHTML = `
+                    <button type="button" id="prev-page-btn" class="page-btn" title="Pagina anterior">
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <span id="page-counter">1 / 1</span>
+                    <button type="button" id="next-page-btn" class="page-btn" title="Pagina siguiente">
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                `;
+                container.parentElement.insertBefore(pageControls, container);
+            }
+        }
+
+        // Event listeners
+        const toggleBtn = document.getElementById('reading-mode-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', toggleReadingMode);
+        }
+
+        const prevBtn = document.getElementById('prev-page-btn');
+        const nextBtn = document.getElementById('next-page-btn');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', prevPage);
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', nextPage);
+        }
+
+        // Atajos de teclado
+        document.addEventListener('keydown', function(e) {
+            if (currentReadingMode !== 'paginated') return;
+
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                prevPage();
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                nextPage();
+            }
+        });
+
+        updateReadingModeUI();
+    }
+
+    // Exponer funciones globales para los controles
+    window.GrandielChapter = {
+        toggleReadingMode,
+        nextPage,
+        prevPage,
+        setReadingMode
+    };
 })();
