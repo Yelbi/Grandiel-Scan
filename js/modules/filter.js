@@ -8,7 +8,7 @@
 
 import { CONFIG, EVENTS, getState, updateState } from '../config.js';
 import { FiltersStorage } from './storage.js';
-import { Search } from './search.js';
+// Search module available if needed for future integration
 
 const { FILTERS, PAGINATION } = CONFIG;
 

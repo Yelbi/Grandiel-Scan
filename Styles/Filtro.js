@@ -1,77 +1,105 @@
+/**
+ * Filtro.js - Sistema de filtrado por categoria
+ * Grandiel Scan
+ *
+ * Corregido: Null checks, const/let, mejor estructura
+ */
+
 document.addEventListener("DOMContentLoaded", function() {
+    'use strict';
 
-// AGREGANDO CLASE ACTIVE AL PRIMER ENLACE ====================
-document.querySelector('.category_list .category_item[category="all"]').classList.add('ct_item-active');
+    // Agregar clase active al primer enlace (con null check)
+    const allCategoryItem = document.querySelector('.category_list .category_item[category="all"]');
+    if (allCategoryItem) {
+        allCategoryItem.classList.add('ct_item-active');
+    }
 
-// FILTRANDO PRODUCTOS  ============================================
-var categoryItems = document.querySelectorAll('.category_item');
+    // Filtrando productos
+    const categoryItems = document.querySelectorAll('.category_item');
+    if (categoryItems.length === 0) return;
+
     categoryItems.forEach(function(item) {
-    item.addEventListener('click', function() {
-	var tipomanga = this.getAttribute('tipo');	
-	var catProduct = this.getAttribute('category');
-	var catProduct2 = this.getAttribute('category2');
-    var catProduct3 = this.getAttribute('category3');
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
 
-	console.log(catProduct + catProduct2 + catProduct3);
+            const tipomanga = this.getAttribute('tipo');
+            const catProduct = this.getAttribute('category');
+            const catProduct2 = this.getAttribute('category2');
+            const catProduct3 = this.getAttribute('category3');
 
-	// AGREGANDO CLASE ACTIVE AL ENLACE SELECCIONADO
-	categoryItems.forEach(function(item) {
-	    item.classList.remove('ct_item-active');
-	});
-	this.classList.add('ct_item-active');
+            // Agregar clase active al enlace seleccionado
+            categoryItems.forEach(function(categoryItem) {
+                categoryItem.classList.remove('ct_item-active');
+            });
+            this.classList.add('ct_item-active');
 
-	// OCULTANDO PRODUCTOS =========================
-	var productItems = document.querySelectorAll('.product-item');
-	productItems.forEach(function(item) {
-	    item.style.transform = 'scale(0)';
-	});
+            // Ocultar productos
+            const productItems = document.querySelectorAll('.product-item');
+            productItems.forEach(function(productItem) {
+                productItem.style.transform = 'scale(0)';
+            });
 
-	function hideProduct() {
-	productItems.forEach(function(item) {
-		item.style.display = 'none';
-	});
-}
-	setTimeout(hideProduct, 400);
+            function hideProduct() {
+                productItems.forEach(function(productItem) {
+                    productItem.style.display = 'none';
+                });
+            }
+            setTimeout(hideProduct, 400);
 
-	// MOSTRANDO PRODUCTOS =========================
-	function showProduct() {
-	var filtertipo = document.querySelectorAll('.product-item[tipo="' + tipomanga + '"]');
-	var filteredItems = document.querySelectorAll('.product-item[category="' + catProduct + '"]');
-	var filteredItems2 = document.querySelectorAll('.product-item[category2="' + catProduct2 + '"]');
-	var filteredItems3 = document.querySelectorAll('.product-item[category3="' + catProduct3 + '"]');
-	filtertipo.forEach(function(item) {
-		item.style.display = 'block';
-		item.style.transform = 'scale(1)';
-	});
-	filteredItems.forEach(function(item) {
-		item.style.display = 'block';
-		item.style.transform = 'scale(1)';
-	});
-	filteredItems2.forEach(function(item) {
-		item.style.display = 'block';
-		item.style.transform = 'scale(1)';
-	});
-	filteredItems3.forEach(function(item) {
-		item.style.display = 'block';
-		item.style.transform = 'scale(1)';
-	});
-}
-	setTimeout(showProduct, 400);
+            // Mostrar productos filtrados
+            function showProduct() {
+                // Filtro por tipo
+                if (tipomanga) {
+                    const filtertipo = document.querySelectorAll('.product-item[tipo="' + tipomanga + '"]');
+                    filtertipo.forEach(function(productItem) {
+                        productItem.style.display = 'block';
+                        productItem.style.transform = 'scale(1)';
+                    });
+                }
+
+                // Filtro por categoria principal
+                if (catProduct && catProduct !== 'all') {
+                    const filteredItems = document.querySelectorAll('.product-item[category="' + catProduct + '"]');
+                    filteredItems.forEach(function(productItem) {
+                        productItem.style.display = 'block';
+                        productItem.style.transform = 'scale(1)';
+                    });
+                }
+
+                // Filtro por categoria2
+                if (catProduct2) {
+                    const filteredItems2 = document.querySelectorAll('.product-item[category2="' + catProduct2 + '"]');
+                    filteredItems2.forEach(function(productItem) {
+                        productItem.style.display = 'block';
+                        productItem.style.transform = 'scale(1)';
+                    });
+                }
+
+                // Filtro por categoria3
+                if (catProduct3) {
+                    const filteredItems3 = document.querySelectorAll('.product-item[category3="' + catProduct3 + '"]');
+                    filteredItems3.forEach(function(productItem) {
+                        productItem.style.display = 'block';
+                        productItem.style.transform = 'scale(1)';
+                    });
+                }
+            }
+            setTimeout(showProduct, 400);
+        });
     });
-});
 
-// MOSTRANDO TODOS LOS PRODUCTOS =======================
-var allItems = document.querySelector('.category_item[category="all"]');
-allItems.addEventListener('click', function() {
-function showAll() {
-	var productItems = document.querySelectorAll('.product-item');
-	productItems.forEach(function(item) {
-	    item.style.display = 'block';
-	    item.style.transform = 'scale(1)';
-	});
-}
-setTimeout(showAll, 400);
+    // Mostrar todos los productos
+    const allItems = document.querySelector('.category_item[category="all"]');
+    if (allItems) {
+        allItems.addEventListener('click', function() {
+            function showAll() {
+                const productItems = document.querySelectorAll('.product-item');
+                productItems.forEach(function(productItem) {
+                    productItem.style.display = 'block';
+                    productItem.style.transform = 'scale(1)';
+                });
+            }
+            setTimeout(showAll, 400);
+        });
+    }
 });
-});
-
-//--------------------------------------------------------------------------------------------------//

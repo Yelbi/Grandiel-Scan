@@ -5,341 +5,272 @@
       "title": "+99 Palo de Madera",
       "slug": "+99 palo de madera",
       "image": "/img/logo.gif",
-      "description": "Lee +99 Palo de Madera en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un cazador de bajo nivel obtiene un simple palo de madera como arma, pero descubre que tiene la habilidad de mejorarlo infinitamente. Lo que parece ser el arma mas debil se convierte en su mayor fortaleza.",
+      "genres": ["Accion", "Fantasia", "Aventura", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "artes-marciales-globales",
       "title": "Artes Marciales Globales",
       "slug": "artes marciales globales",
-      "image": "/img/logo.gif",
-      "description": "Lee Artes Marciales Globales en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/Artes Marciales globales.jpg",
+      "description": "En un mundo donde las artes marciales dominan, un joven prodigio busca convertirse en el artista marcial mas fuerte. Su viaje lo llevara a enfrentar enemigos poderosos y descubrir secretos ancestrales.",
+      "genres": ["Accion", "Artes Marciales", "Fantasia", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "blue-lock",
       "title": "Blue Lock",
       "slug": "Blue Lock",
-      "image": "/img/logo.gif",
-      "description": "Lee Blue Lock en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "image": "/img/Blue Lock.jpg",
+      "description": "Japon busca crear al delantero mas egoista del mundo para ganar la Copa del Mundo. 300 jovenes promesas son encerrados en Blue Lock, donde solo el mas despiadado sobrevivira para convertirse en el mejor striker del planeta.",
+      "genres": ["Deportes", "Drama", "Psicologico", "Accion"],
+      "type": "Manga",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "boku-no-namae-wa-shounen-a",
       "title": "Boku no Namae wa Shounen A",
       "slug": "Boku no Namae wa Shounen A",
-      "image": "/img/logo.gif",
-      "description": "Lee Boku no Namae wa Shounen A en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "image": "/img/Boku no Namae wa Shounen A.jpg",
+      "description": "La historia sigue a un joven que debe enfrentar las consecuencias de eventos traumaticos en su pasado mientras lucha por encontrar su lugar en la sociedad japonesa.",
+      "genres": ["Drama", "Psicologico", "Seinen", "Thriller"],
+      "type": "Manga",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "chainsaw-man",
       "title": "Chainsaw Man",
       "slug": "Chainsaw Man",
-      "image": "/img/logo.gif",
-      "description": "Lee Chainsaw Man en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "image": "/img/Chainsaw Man.jpg",
+      "description": "Denji es un joven que vive en la pobreza extrema cazando demonios para pagar las deudas de su padre. Tras fusionarse con su demonio mascota Pochita, se convierte en Chainsaw Man, un hibrido humano-demonio que trabaja para la Seguridad Publica.",
+      "genres": ["Accion", "Sobrenatural", "Gore", "Seinen", "Comedia Oscura"],
+      "type": "Manga",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "como-pelear",
       "title": "Como Pelear",
       "slug": "Como pelear",
       "image": "/img/logo.gif",
-      "description": "Lee Como Pelear en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un estudiante comun decide aprender a pelear despues de ser constantemente intimidado. Su viaje lo lleva a descubrir el mundo de las peleas callejeras y las artes marciales.",
+      "genres": ["Accion", "Artes Marciales", "Drama", "Escolar"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "cronicas-del-demonio-celestial",
-      "title": "Crónicas del Demonio Celestial",
-      "slug": "Crónicas del Demonio Celestial",
-      "image": "/img/logo.gif",
-      "description": "Lee Crónicas del Demonio Celestial en español en Grandiel Scan.",
-      "genres": [],
+      "title": "Cronicas del Demonio Celestial",
+      "slug": "Cronicas del Demonio Celestial",
+      "image": "/img/Cronicas del Demonio Celestial.jpg",
+      "description": "Un guerrero legendario reencarna en el cuerpo de un joven debil y despreciado. Con su experiencia de miles de batallas, comenzara su ascenso en el mundo de las artes marciales una vez mas.",
+      "genres": ["Accion", "Artes Marciales", "Fantasia", "Reencarnacion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "cultivator-against-hero-society",
       "title": "Cultivator Against Hero Society",
       "slug": "cultivator against hero society",
-      "image": "/img/logo.gif",
-      "description": "Lee Cultivator Against Hero Society en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "image": "/img/cultivator against hero society.jpg",
+      "description": "Un cultivador inmortal del mundo antiguo despierta en la era moderna de los superheroes. Usando sus tecnicas de cultivo ancestrales, debe adaptarse a este nuevo mundo lleno de heroes y villanos.",
+      "genres": ["Accion", "Fantasia", "Cultivo", "Superheroes"],
+      "type": "Manhua",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "de-un-simple-soldado-a-monarca",
       "title": "De un Simple Soldado a Monarca",
       "slug": "de un simple soldado a monarca",
       "image": "/img/logo.gif",
-      "description": "Lee De un Simple Soldado a Monarca en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un soldado ordinario recibe una segunda oportunidad despues de morir en batalla. Con el conocimiento del futuro, comenzara su ascenso desde las filas mas bajas hasta convertirse en el gobernante supremo.",
+      "genres": ["Accion", "Fantasia", "Regresion", "Militar"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "dead-life",
       "title": "Dead life",
       "slug": "dead life",
       "image": "/img/logo.gif",
-      "description": "Lee Dead life en español en Grandiel Scan.",
-      "genres": [],
+      "description": "En un mundo post-apocaliptico invadido por zombies, un grupo de supervivientes lucha por mantenerse con vida mientras buscan un lugar seguro.",
+      "genres": ["Accion", "Horror", "Supervivencia", "Post-Apocaliptico"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "dice-el-cubo-que-lo-cambia-todo",
       "title": "Dice El Cubo que lo Cambia Todo",
       "slug": "Dice El Cubo que lo Cambia Todo",
-      "image": "/img/logo.gif",
-      "description": "Lee Dice El Cubo que lo Cambia Todo en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/Dice El Cubo que lo Cambia Todo.jpg",
+      "description": "Dongtae es un estudiante perdedor que descubre DICE, un juego misterioso que permite a los jugadores cambiar su vida tirando dados. Pero cada mejora tiene un precio, y el juego es mas peligroso de lo que parece.",
+      "genres": ["Accion", "Drama", "Sobrenatural", "Psicologico", "Escolar"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "dorei-yuugi",
       "title": "Dorei Yuugi",
       "slug": "Dorei Yuugi",
-      "image": "/img/logo.gif",
-      "description": "Lee Dorei Yuugi en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "image": "/img/Dorei Yuugi.jpg",
+      "description": "Un juego mortal de supervivencia donde los participantes deben competir para ganar puntos y evitar convertirse en esclavos. La traicion y la estrategia son las unicas formas de sobrevivir.",
+      "genres": ["Thriller", "Psicologico", "Drama", "Juego de Muerte"],
+      "type": "Manga",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "druida-de-la-estacion-de-seul",
       "title": "Druida de la Estacion de Seul",
       "slug": "druida de la estacion de seul",
-      "image": "/img/logo.gif",
-      "description": "Lee Druida de la Estacion de Seul en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/druida de la estacion de seul.jpg",
+      "description": "Un hombre comun despierta con poderes druidicos en medio del apocalipsis. Usando su conexion con la naturaleza, debe proteger la estacion de Seul de las hordas de monstruos.",
+      "genres": ["Accion", "Fantasia", "Apocaliptico", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "dungeon-reset",
       "title": "Dungeon Reset",
       "slug": "dungeon reset",
-      "image": "/img/logo.gif",
-      "description": "Lee Dungeon Reset en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/Dungeon Reset.jpg",
+      "description": "Cuando una mazmorra se reinicia, todos los jugadores mueren... excepto Jung Dawoon, que por un error del sistema queda atrapado en la mazmorra reiniciada. Ahora debe usar su ingenio para sobrevivir y aprovechar los recursos infinitos.",
+      "genres": ["Accion", "Fantasia", "Comedia", "Sistema", "Supervivencia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-boxeador",
       "title": "El Boxeador",
       "slug": "El Boxeador",
-      "image": "/img/logo.gif",
-      "description": "Lee El Boxeador en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/El Boxeador.jpg",
+      "description": "Yu es un joven prodigio del boxeo con reflejos sobrehumanos pero sin pasion por vivir. Su entrenador ve en el al boxeador perfecto, pero el precio del talento puede ser demasiado alto.",
+      "genres": ["Deportes", "Drama", "Psicologico", "Accion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-chico-del-diablo",
       "title": "El Chico del Diablo",
       "slug": "El Chico del Diablo",
-      "image": "/img/logo.gif",
-      "description": "Lee El Chico del Diablo en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/El Chico del Diablo.jpg",
+      "description": "Un joven con poderes demoniacos debe aprender a controlar sus habilidades mientras enfrenta a cazadores y otros seres sobrenaturales que buscan eliminarlo.",
+      "genres": ["Accion", "Sobrenatural", "Fantasia", "Drama"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-comerciante-del-tiempo",
       "title": "El Comerciante del Tiempo",
       "slug": "el comerciante del tiempo",
-      "image": "/img/logo.gif",
-      "description": "Lee El Comerciante del Tiempo en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/El comerciante del tiempo.jpg",
+      "description": "Un comerciante recibe la habilidad de viajar en el tiempo para hacer negocios. Usando su conocimiento del futuro, construira un imperio comercial mientras navega por las complejidades de alterar la historia.",
+      "genres": ["Fantasia", "Drama", "Negocios", "Viaje en el Tiempo"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-demonio-celestial-instructor",
       "title": "El Demonio Celestial Instructor",
       "slug": "el demonio celestial instructor",
-      "image": "/img/logo.gif",
-      "description": "Lee El Demonio Celestial Instructor en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/El Demonio Celestial Instructor.jpg",
+      "description": "El Demonio Celestial, tras alcanzar la cima del mundo marcial, decide convertirse en instructor. Ahora debe entrenar a la nueva generacion mientras enfrenta amenazas de su pasado.",
+      "genres": ["Accion", "Artes Marciales", "Fantasia", "Comedia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-hijo-menor-del-maestro-de-la-espada",
       "title": "El Hijo Menor del Maestro de la Espada",
       "slug": "el hijo menor del maestro de la espada",
-      "image": "/img/logo.gif",
-      "description": "Lee El Hijo Menor del Maestro de la Espada en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/El hijo menor del maestro de la espada.jpg",
+      "description": "El hijo menor de una familia de espadachines legendarios es considerado un fracaso sin talento. Pero cuando despierta recuerdos de su vida pasada como el espadachin mas fuerte, todo cambia.",
+      "genres": ["Accion", "Fantasia", "Artes Marciales", "Reencarnacion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-hijo-menor-del-renombrado-clan-magico",
       "title": "El Hijo Menor del Renombrado Clan Magico",
       "slug": "el hijo menor del renombrado clan magico",
       "image": "/img/logo.gif",
-      "description": "Lee El Hijo Menor del Renombrado Clan Magico en español en Grandiel Scan.",
-      "genres": [],
+      "description": "En un mundo donde la magia lo es todo, el hijo menor de un prestigioso clan magico nace sin talento. Pero un encuentro misterioso le otorga poderes que cambiaran su destino.",
+      "genres": ["Accion", "Fantasia", "Magia", "Drama"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-heroe-ha-regresado",
-      "title": "El Héroe ha Regresado",
-      "slug": "El Héroe ha Regresado",
-      "image": "/img/logo.gif",
-      "description": "Lee El Héroe ha Regresado en español en Grandiel Scan.",
-      "genres": [],
+      "title": "El Heroe ha Regresado",
+      "slug": "El Heroe ha Regresado",
+      "image": "/img/El Heroe ha Regresado.jpg",
+      "description": "Despues de derrotar al rey demonio, el heroe regresa a su mundo solo para descubrir que ha pasado mucho tiempo y todo ha cambiado. Ahora debe adaptarse a la vida moderna mientras protege la Tierra de nuevas amenazas.",
+      "genres": ["Accion", "Fantasia", "Comedia", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2
-      ]
+      "chapters": [1, 2]
     },
     {
       "id": "el-jugador-que-no-puede-subir-de-nivel",
       "title": "El Jugador que no Puede Subir de Nivel",
       "slug": "el jugador que no puede subir de nivel",
       "image": "/img/logo.gif",
-      "description": "Lee El Jugador que no Puede Subir de Nivel en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Kim Gi-Gyu es un jugador atrapado en el nivel 1 durante anos. Cuando finalmente descubre como subir de nivel, se da cuenta de que su sistema es completamente diferente al de los demas.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "el-maestro-debil",
-      "title": "El Maestro Débil",
+      "title": "El Maestro Debil",
       "slug": "el maestro debil",
       "image": "/img/logo.gif",
-      "description": "Lee El Maestro Débil en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un maestro aparentemente debil esconde un poder inmenso. Mientras entrena a sus discipulos, debe mantener su verdadera fuerza en secreto para protegerlos de enemigos poderosos.",
+      "genres": ["Accion", "Artes Marciales", "Comedia", "Fantasia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "el-mejor-ingeniero-del-mundo",
       "title": "El Mejor Ingeniero del Mundo",
       "slug": "El Mejor Ingeniero del Mundo",
       "image": "/img/logo.gif",
-      "description": "Lee El Mejor Ingeniero del Mundo en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un ingeniero reencarna en un mundo de fantasia donde puede usar sus conocimientos tecnologicos modernos. Combinando ciencia y magia, revolucionara este nuevo mundo.",
+      "genres": ["Fantasia", "Ciencia Ficcion", "Reencarnacion", "Construccion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "el-mundo-despues-del-fin",
-      "title": "El Mundo Después Del Fin",
-      "slug": "El Mundo Después del Fin",
-      "image": "/img/El Mundo Después del Fin.jpg",
-      "description": "Lee El Mundo Después Del Fin en español en Grandiel Scan.",
-      "genres": [],
+      "title": "El Mundo Despues Del Fin",
+      "slug": "El Mundo Despues del Fin",
+      "image": "/img/El Mundo Despues del Fin.jpg",
+      "description": "Kim Dokja es el unico lector de una novela web que predice el apocalipsis. Cuando la historia se hace realidad, usa su conocimiento para sobrevivir y cambiar el destino del mundo.",
+      "genres": ["Accion", "Fantasia", "Apocaliptico", "Sistema", "Psicologico"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -348,48 +279,42 @@
       "id": "el-regreso-del-demonio-loco",
       "title": "El Regreso del Demonio Loco",
       "slug": "el regreso del demonio loco",
-      "image": "/img/logo.gif",
-      "description": "Después de ser despreciado y poner su vida en peligro, un huérfano del Culto Demoníaco, Cheon Yeo-Woon, recibe una visita inesperada de su descendiente del futuro, quien inserta una nano máquina en el cuerpo de Cheon Yeo-Woon, que cambia drásticamente. La vida de Cheon Yeo-Woon después de su activación. La historia del viaje de Cheon Yeo-Woon de pasar por alto el Culto Demoníaco y convertirse en el mejor artista marcial acaba de comenzar.",
-      "genres": [],
+      "image": "/img/El Regreso Del Demonio Loco.jpg",
+      "description": "Despues de ser despreciado y poner su vida en peligro, un huerfano del Culto Demonico, Cheon Yeo-Woon, recibe una visita inesperada de su descendiente del futuro, quien inserta una nano maquina en el cuerpo de Cheon Yeo-Woon, que cambia drasticamente. La vida de Cheon Yeo-Woon despues de su activacion. La historia del viaje de Cheon Yeo-Woon de pasar por alto el Culto Demonico y convertirse en el mejor artista marcial acaba de comenzar.",
+      "genres": ["Accion", "Artes Marciales", "Fantasia", "Regresion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "el-regreso-del-heroe-de-clase-desastre",
-      "title": "El Regreso del Héroe de Clase Desastre",
-      "slug": "El regreso del héroe de clase Desastre",
+      "title": "El Regreso del Heroe de Clase Desastre",
+      "slug": "El regreso del heroe de clase Desastre",
       "image": "/img/logo.gif",
-      "description": "Lee El Regreso del Héroe de Clase Desastre en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un heroe de clase desastre, considerado el mas debil, regresa despues de anos de entrenamiento en una dimension diferente. Ahora posee un poder que nadie puede imaginar.",
+      "genres": ["Accion", "Fantasia", "Regresion", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "espada-de-la-inquisicion-celestial",
-      "title": "Espada de la Inquisición Celestial",
-      "slug": "Espada de la inquisición celestial",
+      "title": "Espada de la Inquisicion Celestial",
+      "slug": "Espada de la inquisicion celestial",
       "image": "/img/logo.gif",
-      "description": "Lee Espada de la Inquisición Celestial en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un inquisidor celestial con poderes divinos caza demonios y herejes en un mundo lleno de corrupcion. Su espada sagrada es la ultima linea de defensa contra el mal.",
+      "genres": ["Accion", "Fantasia", "Sobrenatural", "Drama"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "estandar-de-la-reencarnacion",
       "title": "Estandar De La Reencarnacion",
       "slug": "Estandar de la Reencarnacion",
       "image": "/img/Estandar de la Reencarnacion.jpg",
-      "description": "Lee Estandar De La Reencarnacion en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Tras morir sin gloria, un guerrero reencarna como el hijo ilegitimo de una noble familia. Con sus memorias intactas y un sistema unico, comenzara su camino hacia la grandeza.",
+      "genres": ["Accion", "Fantasia", "Reencarnacion", "Artes Marciales"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -399,21 +324,19 @@
       "title": "Existencia",
       "slug": "Existencia",
       "image": "/img/logo.gif",
-      "description": "Lee Existencia en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Una historia profunda que explora los limites de la existencia humana en un mundo donde la realidad y la fantasia se entrelazan de formas inesperadas.",
+      "genres": ["Drama", "Psicologico", "Fantasia", "Seinen"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "heroe-suicida-de-clase-sss",
       "title": "Heroe Suicida De Clase Sss",
       "slug": "Heroe Suicida de Clase SSS",
-      "image": "/img/Heroe Suicida de Clase SSS.jpg",
-      "description": "Lee Heroe Suicida De Clase Sss en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/logo.gif",
+      "description": "Un heroe con el rango mas alto tiene una peculiaridad: sus habilidades mas poderosas requieren que sacrifique su propia vida. Pero siempre encuentra la manera de regresar.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -422,36 +345,32 @@
       "id": "jugador-a-partir-de-hoy",
       "title": "Jugador a Partir de Hoy",
       "slug": "jugador a partir de hoy",
-      "image": "/img/logo.gif",
-      "description": "Lee Jugador a Partir de Hoy en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/Jugador a Partir de Hoy.jpg",
+      "description": "Un dia ordinario, un joven despierta con la habilidad de ver el mundo como un videojuego. Con estadisticas, misiones y niveles, comenzara su aventura para convertirse en el jugador mas fuerte.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "jugador-que-regreso-10000-anos-despues",
-      "title": "Jugador que Regresó 10.000 Años Después",
-      "slug": "jugador que regreso 10.000 años despues",
+      "title": "Jugador que Regreso 10.000 Anos Despues",
+      "slug": "jugador que regreso 10.000 anos despues",
       "image": "/img/logo.gif",
-      "description": "Lee Jugador que Regresó 10.000 Años Después en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Despues de sobrevivir 10.000 anos en el infierno, un jugador regresa a la Tierra con poderes demoniacos inimaginables. Ahora debe encontrar su lugar en un mundo que ha cambiado drasticamente.",
+      "genres": ["Accion", "Fantasia", "Regresion", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "juujika-no-rokunin",
       "title": "Juujika No Rokunin",
       "slug": "Juujika no Rokunin",
       "image": "/img/Juujika no Rokunin.jpg",
-      "description": "Lee Juujika No Rokunin en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "Uruma Shun fue brutalmente intimidado durante su infancia, lo que llevo a la muerte de su familia. Anos despues, regresa con un solo objetivo: vengarse de los seis responsables de su sufrimiento.",
+      "genres": ["Drama", "Psicologico", "Thriller", "Venganza", "Gore"],
+      "type": "Manga",
       "status": "En Emision",
       "chapters": []
     },
@@ -460,9 +379,9 @@
       "title": "Kaiju No.8",
       "slug": "Kaiju No.8",
       "image": "/img/Kaiju No.8.jpg",
-      "description": "Lee Kaiju No.8 en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "Kafka Hibino siempre sono con unirse a las Fuerzas de Defensa para combatir kaijus. A los 32 anos, cuando creia que su sueno habia muerto, un misterioso kaiju lo transforma, convirtiendolo en el Kaiju No.8.",
+      "genres": ["Accion", "Ciencia Ficcion", "Seinen", "Monstruos"],
+      "type": "Manga",
       "status": "En Emision",
       "chapters": []
     },
@@ -471,8 +390,8 @@
       "title": "La Magia De Un Retornado Debe Ser Especial",
       "slug": "La Magia de un Retornado Debe Ser Especial",
       "image": "/img/La Magia de un Retornado Debe Ser Especial.jpg",
-      "description": "Lee La Magia De Un Retornado Debe Ser Especial en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Despues de regresar de un mundo de fantasia, un joven descubre que la magia que aprendio funciona en la Tierra. Con habilidades unicas, debe proteger su mundo de amenazas interdimensionales.",
+      "genres": ["Accion", "Fantasia", "Magia", "Escolar"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -481,9 +400,9 @@
       "id": "la-torre-tutorial-del-jugador-avanzado",
       "title": "La Torre Tutorial Del Jugador Avanzado",
       "slug": "La Torre Tutorial del Jugador Avanzado",
-      "image": "/img/La Torre Tutorial del Jugador Avanzado.jpg",
-      "description": "Lee La Torre Tutorial Del Jugador Avanzado en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/logo.gif",
+      "description": "Un jugador que completo la torre tutorial miles de veces recibe una oportunidad especial: conquistar la torre como un jugador avanzado con todos sus conocimientos intactos.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Torre"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -493,54 +412,41 @@
       "title": "La Vida Despues De La Muerte",
       "slug": "La Vida Despues de la Muerte",
       "image": "/img/La Vida Despues de la Muerte.jpg",
-      "description": "Lee La Vida Despues De La Muerte en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Tras morir, un hombre descubre que la muerte no es el final. En el mas alla, debe enfrentar juicios y desafios mientras busca una segunda oportunidad de vida.",
+      "genres": ["Drama", "Fantasia", "Sobrenatural", "Psicologico"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
     },
     {
       "id": "maldita-reencarnacion",
-      "title": "Maldita Reencarnación",
+      "title": "Maldita Reencarnacion",
       "slug": "maldita reencarnacion",
       "image": "/img/logo.gif",
-      "description": "Lee Maldita Reencarnación en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un heroe legendario muere y reencarna en el cuerpo del villano mas odiado del continente. Ahora debe usar su conocimiento y habilidades para sobrevivir mientras todos quieren matarlo.",
+      "genres": ["Accion", "Fantasia", "Reencarnacion", "Comedia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10
-      ]
+      "chapters": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     },
     {
       "id": "mashle",
       "title": "Mashle",
       "slug": "Mashle",
       "image": "/img/logo.gif",
-      "description": "En un mundo donde la magia lo es todo, Mash Burnedead nació sin poderes mágicos. Para sobrevivir en una sociedad que elimina a los que no tienen magia, Mash ha pasado su vida oculto, entrenando su cuerpo hasta límites sobrehumanos. Cuando su secreto es descubierto, Mash debe inscribirse en la prestigiosa academia mágica Easton y convertirse en un Divino Visionario para proteger su vida pacífica... ¡usando solo sus músculos!",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "En un mundo donde la magia lo es todo, Mash Burnedead nacio sin poderes magicos. Para sobrevivir en una sociedad que elimina a los que no tienen magia, Mash ha pasado su vida oculto, entrenando su cuerpo hasta limites sobrehumanos. Cuando su secreto es descubierto, Mash debe inscribirse en la prestigiosa academia magica Easton y convertirse en un Divino Visionario para proteger su vida pacifica... usando solo sus musculos!",
+      "genres": ["Accion", "Comedia", "Fantasia", "Escolar", "Parodia"],
+      "type": "Manga",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "mi-hija-es-el-jefe-final",
       "title": "Mi Hija Es El Jefe Final",
       "slug": "Mi Hija es el Jefe Final",
-      "image": "/img/Mi Hija es el Jefe Final.jpg",
-      "description": "Lee Mi Hija Es El Jefe Final en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/logo.gif",
+      "description": "Un padre descubre que su adorable hija esta destinada a convertirse en la villana final que destruira el mundo. Ahora debe criarla con amor para cambiar su destino.",
+      "genres": ["Fantasia", "Comedia", "Familia", "Drama"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -550,255 +456,207 @@
       "title": "Mi Vida Escolar Pretendiendo ser una Persona Inutil",
       "slug": "mi vida escolar pretendiendo ser una persona inutil",
       "image": "/img/logo.gif",
-      "description": "Lee Mi Vida Escolar Pretendiendo ser una Persona Inutil en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un estudiante con poderes ocultos decide vivir una vida escolar tranquila fingiendo ser completamente ordinario. Pero los problemas parecen encontrarlo sin importar cuanto intente evitarlos.",
+      "genres": ["Comedia", "Escolar", "Accion", "Fantasia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "murim-login",
       "title": "Murim Login",
       "slug": "Murim Login",
       "image": "/img/logo.gif",
-      "description": "Jin Tae-Kyung es un cazador de bajo rango que lucha por sobrevivir en un mundo donde los monstruos amenazan a la humanidad. Un día, obtiene acceso a un misterioso juego de realidad virtual llamado Murim, ambientado en el mundo de las artes marciales chinas. Lo que parece un simple juego resulta ser mucho más: las habilidades que aprende en Murim se transfieren al mundo real, dándole el poder para cambiar su destino y proteger a quienes ama.",
-      "genres": [],
+      "description": "Jin Tae-Kyung es un cazador de bajo rango que lucha por sobrevivir en un mundo donde los monstruos amenazan a la humanidad. Un dia, obtiene acceso a un misterioso juego de realidad virtual llamado Murim, ambientado en el mundo de las artes marciales chinas. Lo que parece un simple juego resulta ser mucho mas: las habilidades que aprende en Murim se transfieren al mundo real, dandole el poder para cambiar su destino y proteger a quienes ama.",
+      "genres": ["Accion", "Artes Marciales", "Fantasia", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "nano-machine",
       "title": "Nano Machine",
       "slug": "Nano machine",
-      "image": "/img/logo.gif",
-      "description": "Después de ser despreciado y poner su vida en peligro, un huérfano del Culto Demoníaco, Cheon Yeo-Woon, recibe una visita inesperada de su descendiente del futuro, quien inserta una nano máquina en el cuerpo de Cheon Yeo-Woon, que cambia drásticamente. La vida de Cheon Yeo-Woon después de su activación. La historia del viaje de Cheon Yeo-Woon de pasar por alto el Culto Demoníaco y convertirse en el mejor artista marcial acaba de comenzar.",
-      "genres": [],
+      "image": "/img/Nano machine.jpg",
+      "description": "Despues de ser despreciado y poner su vida en peligro, un huerfano del Culto Demonico, Cheon Yeo-Woon, recibe una visita inesperada de su descendiente del futuro, quien inserta una nano maquina en el cuerpo de Cheon Yeo-Woon, que cambia drasticamente. La vida de Cheon Yeo-Woon despues de su activacion. La historia del viaje de Cheon Yeo-Woon de pasar por alto el Culto Demonico y convertirse en el mejor artista marcial acaba de comenzar.",
+      "genres": ["Accion", "Artes Marciales", "Ciencia Ficcion", "Fantasia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13
-      ]
+      "chapters": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
     },
     {
       "id": "nicromante-en-solitario",
       "title": "Nicromante en Solitario",
       "slug": "Nicromante en Solitario",
-      "image": "/img/logo.gif",
-      "description": "En un mundo donde los cazadores luchan contra monstruos de mazmorras, un hombre solitario posee un poder oscuro y temido: la nigromancia. Con la capacidad de invocar y controlar a los muertos, este nigromante se abre camino a través de desafíos imposibles, construyendo un ejército de criaturas no-muertas cada vez más poderoso. Despreciado por muchos y temido por todos, su camino hacia la cima será tan oscuro como su magia.",
-      "genres": [],
+      "image": "/img/Nicromante en Solitario.jpg",
+      "description": "En un mundo donde los cazadores luchan contra monstruos de mazmorras, un hombre solitario posee un poder oscuro y temido: la nigromancia. Con la capacidad de invocar y controlar a los muertos, este nigromante se abre camino a traves de desafios imposibles, construyendo un ejercito de criaturas no-muertas cada vez mas poderoso. Despreciado por muchos y temido por todos, su camino hacia la cima sera tan oscuro como su magia.",
+      "genres": ["Accion", "Fantasia", "Oscuro", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "novato-solo-a-nivel-maximo",
-      "title": "Novato Solo a Nivel Máximo",
-      "slug": "Novato Solo a Nivel Máximo",
-      "image": "/img/logo.gif",
-      "description": "Lee Novato Solo a Nivel Máximo en español en Grandiel Scan.",
-      "genres": [],
+      "title": "Novato Solo a Nivel Maximo",
+      "slug": "Novato Solo a Nivel Maximo",
+      "image": "/img/Novato Solo a Nivel Maximo.jpg",
+      "description": "Un jugador veterano regresa en el tiempo al momento en que comenzo el juego. Con todo su conocimiento del futuro, completara el contenido solo mientras se presenta como un simple novato.",
+      "genres": ["Accion", "Fantasia", "Regresion", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "nueva-vida-del-jugador",
       "title": "Nueva Vida del Jugador",
       "slug": "Nueva Vida del Jugador",
       "image": "/img/logo.gif",
-      "description": "Después de ser despreciado y poner su vida en peligro, un huérfano del Culto Demoníaco, Cheon Yeo-Woon, recibe una visita inesperada de su descendiente del futuro, quien inserta una nano máquina en el cuerpo de Cheon Yeo-Woon, que cambia drásticamente. La vida de Cheon Yeo-Woon después de su activación. La historia del viaje de Cheon Yeo-Woon de pasar por alto el Culto Demoníaco y convertirse en el mejor artista marcial acaba de comenzar.",
-      "genres": [],
+      "description": "Un jugador profesional muere y reencarna en un mundo de fantasia con un sistema de juego. Usando su experiencia como gamer, dominara este nuevo mundo.",
+      "genres": ["Accion", "Fantasia", "Reencarnacion", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "overgeared",
       "title": "Overgeared",
       "slug": "Overgeared",
       "image": "/img/logo.gif",
-      "description": "Shin Youngwoo, conocido en el juego como Grid, es un jugador desafortunado del popular VRMMORPG Satisfy. Después de años de mala suerte, finalmente obtiene una clase legendaria: Pagma's Descendant, un herrero capaz de crear equipamiento divino. Lo que comenzó como una forma de pagar sus deudas se convierte en un viaje épico donde Grid pasa de ser un don nadie a convertirse en una leyenda que cambiará el mundo del juego para siempre.",
-      "genres": [],
+      "description": "Shin Youngwoo, conocido en el juego como Grid, es un jugador desafortunado del popular VRMMORPG Satisfy. Despues de anos de mala suerte, finalmente obtiene una clase legendaria: Pagma's Descendant, un herrero capaz de crear equipamiento divino. Lo que comenzo como una forma de pagar sus deudas se convierte en un viaje epico donde Grid pasa de ser un don nadie a convertirse en una leyenda que cambiara el mundo del juego para siempre.",
+      "genres": ["Accion", "Fantasia", "VRMMO", "Artesania"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "pick-me-up-gacha-infinito",
       "title": "Pick me up, Gacha Infinito",
       "slug": "pick me up, gacha infinito",
       "image": "/img/logo.gif",
-      "description": "Lee Pick me up, Gacha Infinito en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un hombre reencarna como personaje de un juego gacha y debe guiar a su jugador hacia la victoria mientras lidia con las excentricidades del sistema gacha.",
+      "genres": ["Accion", "Fantasia", "Comedia", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "player",
       "title": "Player",
       "slug": "Player",
-      "image": "/img/logo.gif",
-      "description": "Lee Player en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/Player.jpg",
+      "description": "En un mundo donde las personas pueden convertirse en jugadores con habilidades especiales, un joven debe navegar por un sistema complejo de niveles y habilidades para sobrevivir.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "reencarne-en-un-pez",
       "title": "Reencarne en un Pez",
       "slug": "Reencarne en un Pez",
       "image": "/img/logo.gif",
-      "description": "Después de morir, nuestro protagonista despierta en un mundo completamente nuevo... ¡como un pequeño pez! En un océano lleno de depredadores mortales y criaturas monstruosas, debe usar su ingenio y un sistema de evolución para sobrevivir. Cada batalla ganada, cada presa consumida, le acerca más a convertirse en el depredador supremo de los mares. Una historia única de supervivencia y evolución bajo las olas.",
-      "genres": [],
+      "description": "Despues de morir, nuestro protagonista despierta en un mundo completamente nuevo... como un pequeno pez! En un oceano lleno de depredadores mortales y criaturas monstruosas, debe usar su ingenio y un sistema de evolucion para sobrevivir. Cada batalla ganada, cada presa consumida, le acerca mas a convertirse en el depredador supremo de los mares. Una historia unica de supervivencia y evolucion bajo las olas.",
+      "genres": ["Accion", "Fantasia", "Reencarnacion", "Evolucion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "regreso-de-la-secta-del-monte-hua",
       "title": "Regreso de la Secta del Monte Hua",
       "slug": "Regreso de la Secta del Monte Hua",
       "image": "/img/logo.gif",
-      "description": "Chung Myung, el legendario Maestro de la Espada del Ciruelo, sacrificó su vida derrotando al Señor Demonio hace 100 años. Pero cuando despierta en el cuerpo de un joven mendigo, descubre que su amada Secta del Monte Hua ha caído en la ruina. Con sus recuerdos y habilidades intactas, Chung Myung se une a la decaída secta como discípulo, determinado a restaurar su antigua gloria y criar a una nueva generación de espadachines dignos del nombre Monte Hua.",
-      "genres": [],
+      "description": "Chung Myung, el legendario Maestro de la Espada del Ciruelo, sacrifico su vida derrotando al Senor Demonio hace 100 anos. Pero cuando despierta en el cuerpo de un joven mendigo, descubre que su amada Secta del Monte Hua ha caido en la ruina. Con sus recuerdos y habilidades intactas, Chung Myung se une a la decaida secta como discipulo, determinado a restaurar su antigua gloria y criar a una nueva generacion de espadachines dignos del nombre Monte Hua.",
+      "genres": ["Accion", "Artes Marciales", "Comedia", "Reencarnacion"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "segunda-vida-para-ser-un-ranker",
       "title": "Segunda Vida para ser un Ranker",
       "slug": "Segunda Vida para ser un Ranker",
       "image": "/img/logo.gif",
-      "description": "Yeon-woo vivió una vida ordinaria hasta que recibió un reloj que pertenecía a su hermano gemelo desaparecido. El reloj contenía un diario que revelaba la verdad: su hermano había sido traicionado y asesinado dentro de la Torre del Obelisco. Con la información del diario y una determinación ardiente, Yeon-woo entra a la Torre para vengar a su hermano y reclamar todo lo que le fue arrebatado, superando a aquellos que lo traicionaron.",
-      "genres": [],
+      "description": "Yeon-woo vivio una vida ordinaria hasta que recibio un reloj que pertenecia a su hermano gemelo desaparecido. El reloj contenia un diario que revelaba la verdad: su hermano habia sido traicionado y asesinado dentro de la Torre del Obelisco. Con la informacion del diario y una determinacion ardiente, Yeon-woo entra a la Torre para vengar a su hermano y reclamar todo lo que le fue arrebatado, superando a aquellos que lo traicionaron.",
+      "genres": ["Accion", "Fantasia", "Venganza", "Torre"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "shmatsu-no-valkyrie",
-      "title": "Shūmatsu no Valkyrie",
-      "slug": "Shūmatsu no Valkyrie",
+      "title": "Shumatsu no Valkyrie",
+      "slug": "Shumatsu no Valkyrie",
       "image": "/img/logo.gif",
-      "description": "Cada 1000 años, los dioses de todas las mitologías se reúnen para decidir el destino de la humanidad. Esta vez, han decidido la extinción de los humanos. Pero una valquiria propone una alternativa: el Ragnarök, un torneo donde 13 de los humanos más fuertes de la historia se enfrentarán a 13 dioses. Thor, Zeus, Poseidón contra Lü Bu, Adam, Sasaki Kojiro. ¿Podrá la humanidad sobrevivir?",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "Cada 1000 anos, los dioses de todas las mitologias se reunen para decidir el destino de la humanidad. Esta vez, han decidido la extincion de los humanos. Pero una valquiria propone una alternativa: el Ragnarok, un torneo donde 13 de los humanos mas fuertes de la historia se enfrentaran a 13 dioses. Thor, Zeus, Poseidon contra Lu Bu, Adam, Sasaki Kojiro. Podra la humanidad sobrevivir?",
+      "genres": ["Accion", "Fantasia", "Mitologia", "Torneo"],
+      "type": "Manga",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "solo-leveling",
       "title": "Solo Leveling",
       "slug": "Solo Leveling",
-      "image": "/img/logo.gif",
-      "description": "En un mundo donde cazadores con poderes sobrenaturales deben combatir monstruos mortales para proteger a la humanidad, Sung Jin-Woo es conocido como \"el cazador más débil de toda la humanidad\". Un día, después de sobrevivir milagrosamente a una mazmorra de doble calabozo, Jin-Woo despierta un poder único: un sistema de misiones que solo él puede ver, que le permite subir de nivel infinitamente. Desde ese momento, comienza su increíble transformación del más débil al más fuerte cazador.",
-      "genres": [],
+      "image": "/img/Solo Leveling.jpg",
+      "description": "En un mundo donde cazadores con poderes sobrenaturales deben combatir monstruos mortales para proteger a la humanidad, Sung Jin-Woo es conocido como el cazador mas debil de toda la humanidad. Un dia, despues de sobrevivir milagrosamente a una mazmorra de doble calabozo, Jin-Woo despierta un poder unico: un sistema de misiones que solo el puede ver, que le permite subir de nivel infinitamente. Desde ese momento, comienza su increible transformacion del mas debil al mas fuerte cazador.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
-      "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "status": "Completado",
+      "chapters": [1]
     },
     {
       "id": "soul-cartel",
       "title": "Soul Cartel",
       "slug": "Soul Cartel",
-      "image": "/img/logo.gif",
-      "description": "Lee Soul Cartel en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/Soul Cartel.jpg",
+      "description": "Shi-Woon es un joven exorcista que hereda el poder de su familia para combatir demonios y espiritus malignos. Junto a su compnero demoniaco, debe enfrentar amenazas sobrenaturales mientras desentrna los secretos de su linaje.",
+      "genres": ["Accion", "Sobrenatural", "Fantasia", "Drama"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "subidas-de-nivel-ilimitadas-en-murim",
       "title": "Subidas de Nivel Ilimitadas en Murim",
       "slug": "Subidas de Nivel Ilimitadas en Murim",
-      "image": "/img/logo.gif",
-      "description": "Dan Gun-Ho era solo un esclavo en el mundo de Murim, el peligroso reino de las artes marciales. Pero cuando despierta un sistema que le permite subir de nivel sin límites, su destino cambia por completo. Cada batalla, cada entrenamiento, le hace más fuerte. Sin un techo de poder que lo detenga, Dan Gun-Ho comenzará su ascenso desde el fondo hasta convertirse en una leyenda de las artes marciales que el mundo de Murim jamás olvidará.",
-      "genres": [],
+      "image": "/img/Subidas de Nivel Ilimitadas en Murim.jpg",
+      "description": "Dan Gun-Ho era solo un esclavo en el mundo de Murim, el peligroso reino de las artes marciales. Pero cuando despierta un sistema que le permite subir de nivel sin limites, su destino cambia por completo. Cada batalla, cada entrenamiento, le hace mas fuerte. Sin un techo de poder que lo detenga, Dan Gun-Ho comenzara su ascenso desde el fondo hasta convertirse en una leyenda de las artes marciales que el mundo de Murim jamas olvidara.",
+      "genres": ["Accion", "Artes Marciales", "Sistema", "Fantasia"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "supremacia-de-las-misiones",
-      "title": "Supremacía de las Misiones",
+      "title": "Supremacia de las Misiones",
       "slug": "supremacia de las misiones",
       "image": "/img/logo.gif",
-      "description": "Lee Supremacía de las Misiones en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un sistema de misiones aparece en el mundo, otorgando poderes a quienes las completan. El protagonista descubre que puede ver misiones que nadie mas puede ver, dandole una ventaja unica.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "tales-of-demons-and-gods",
       "title": "Tales of Demons and Gods",
       "slug": "Tales of Demons and Gods",
-      "image": "/img/logo.gif",
-      "description": "Nie Li, el más poderoso Espiritualista Demoniaco, murió en batalla contra el Rey Sabio. Pero en lugar de encontrar la muerte definitiva, despertó como un estudiante de 13 años. Con todo el conocimiento de su vida pasada, Nie Li está determinado a proteger a la ciudad que amaba de la destrucción, salvar a sus seres queridos y derrotar al Rey Sabio antes de que se vuelva invencible. Esta vez, cambiará el destino del mundo.",
-      "genres": [],
-      "type": "Manhwa",
+      "image": "/img/Tales of Demons and Gods.jpg",
+      "description": "Nie Li, el mas poderoso Espiritualista Demoniaco, murio en batalla contra el Rey Sabio. Pero en lugar de encontrar la muerte definitiva, desperto como un estudiante de 13 anos. Con todo el conocimiento de su vida pasada, Nie Li esta determinado a proteger a la ciudad que amaba de la destruccion, salvar a sus seres queridos y derrotar al Rey Sabio antes de que se vuelva invencible. Esta vez, cambiara el destino del mundo.",
+      "genres": ["Accion", "Fantasia", "Cultivo", "Regresion"],
+      "type": "Manhua",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "tensei-shitara-dai-nana-oji-dattanode-kimama-ni-majutsu-o-kiwamemasu",
       "title": "Tensei Shitara Dai Nana Oji Dattanode, Kimama Ni Majutsu O Kiwamemasu",
       "slug": "Tensei Shitara Dai Nana Oji Dattanode, Kimama ni Majutsu o Kiwamemasu",
       "image": "/img/Tensei Shitara Dai Nana Oji Dattanode, Kimama ni Majutsu o Kiwamemasu.jpg",
-      "description": "Lee Tensei Shitara Dai Nana Oji Dattanode, Kimama Ni Majutsu O Kiwamemasu en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "Un mago obsesionado con la magia reencarna como el septimo principe de un reino. Con su conocimiento magico intacto y un cuerpo joven lleno de potencial, decidira dedicar esta nueva vida a perfeccionar la magia sin restricciones.",
+      "genres": ["Fantasia", "Magia", "Reencarnacion", "Comedia"],
+      "type": "Manga",
       "status": "En Emision",
       "chapters": []
     },
@@ -807,9 +665,9 @@
       "title": "Tensei Shitara Slime Datta Ken",
       "slug": "Tensei Shitara Slime Datta Ken",
       "image": "/img/Tensei Shitara Slime Datta Ken.jpg",
-      "description": "Lee Tensei Shitara Slime Datta Ken en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "Satoru Mikami era un empleado de oficina comun hasta que fue apunalado y murio. Al despertar, descubre que ha reencarnado como un slime en un mundo de fantasia. Con habilidades unicas como Depredador y Gran Sabio, este pequeno slime llamado Rimuru Tempest construira una nacion donde todas las razas puedan coexistir en paz.",
+      "genres": ["Fantasia", "Aventura", "Comedia", "Reencarnacion"],
+      "type": "Manga",
       "status": "En Emision",
       "chapters": []
     },
@@ -817,36 +675,32 @@
       "id": "the-live",
       "title": "The Live",
       "slug": "The Live",
-      "image": "/img/logo.gif",
-      "description": "Cuando el mundo fue invadido por monstruos y la humanidad enfrentó su extinción, Yun-Jae fue uno de los últimos supervivientes. Después de perder todo lo que amaba, recibe una oportunidad única: regresar en el tiempo al momento en que todo comenzó. Armado con el conocimiento del futuro y determinado a proteger a su familia, Yun-Jae debe sobrevivir a misiones mortales transmitidas en vivo mientras cambia el destino de la humanidad.",
-      "genres": [],
+      "image": "/img/The Live.jpg",
+      "description": "Cuando el mundo fue invadido por monstruos y la humanidad enfrento su extincion, Yun-Jae fue uno de los ultimos supervivientes. Despues de perder todo lo que amaba, recibe una oportunidad unica: regresar en el tiempo al momento en que todo comenzo. Armado con el conocimiento del futuro y determinado a proteger a su familia, Yun-Jae debe sobrevivir a misiones mortales transmitidas en vivo mientras cambia el destino de la humanidad.",
+      "genres": ["Accion", "Fantasia", "Regresion", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "tokyo-ghoul",
       "title": "Tokyo Ghoul",
       "slug": "Tokyo Ghoul",
-      "image": "/img/logo.gif",
-      "description": "En Tokio, misteriosas criaturas llamadas ghouls viven entre los humanos, alimentándose de su carne para sobrevivir. Ken Kaneki, un estudiante universitario tímido, sobrevive a un encuentro casi fatal con una ghoul, pero despierta descubriendo que ahora es mitad ghoul. Atrapado entre dos mundos, Kaneki debe aprender a vivir con su nueva naturaleza mientras lucha por mantener su humanidad en un mundo brutal y despiadado.",
-      "genres": [],
-      "type": "Manhwa",
-      "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "image": "/img/Tokyo Ghoul.jpg",
+      "description": "En Tokio, misteriosas criaturas llamadas ghouls viven entre los humanos, alimentandose de su carne para sobrevivir. Ken Kaneki, un estudiante universitario timido, sobrevive a un encuentro casi fatal con una ghoul, pero despierta descubriendo que ahora es mitad ghoul. Atrapado entre dos mundos, Kaneki debe aprender a vivir con su nueva naturaleza mientras lucha por mantener su humanidad en un mundo brutal y despiadado.",
+      "genres": ["Accion", "Drama", "Horror", "Psicologico", "Seinen"],
+      "type": "Manga",
+      "status": "Completado",
+      "chapters": [1]
     },
     {
       "id": "tomodachi-game",
       "title": "Tomodachi Game",
       "slug": "Tomodachi Game",
       "image": "/img/Tomodachi Game.jpg",
-      "description": "Lee Tomodachi Game en español en Grandiel Scan.",
-      "genres": [],
-      "type": "Manhwa",
+      "description": "Yuuichi Katagiri valora la amistad por encima de todo. Pero cuando el y sus amigos son secuestrados y forzados a participar en el Tomodachi Game, un juego psicologico donde la traicion es recompensada, descubrira que la verdadera naturaleza de las personas sale a la luz cuando hay dinero de por medio.",
+      "genres": ["Drama", "Psicologico", "Thriller", "Juego de Muerte"],
+      "type": "Manga",
       "status": "En Emision",
       "chapters": []
     },
@@ -854,46 +708,42 @@
       "id": "torre-de-dios",
       "title": "Torre de Dios",
       "slug": "Torre de Dios",
-      "image": "/img/logo.gif",
-      "description": "La Torre ofrece todo lo que desees: poder, riqueza, gloria. Todo lo que tienes que hacer es escalarla. Bam, un niño que ha vivido toda su vida en la oscuridad, entra a la Torre persiguiendo a Rachel, la única persona que le dio luz en su vida. Pero la Torre está llena de peligros, pruebas mortales y otros escaladores dispuestos a todo por alcanzar la cima. ¿Podrá Bam sobrevivir y encontrar lo que busca?",
-      "genres": [],
+      "image": "/img/Torre de Dios.jpg",
+      "description": "La Torre ofrece todo lo que desees: poder, riqueza, gloria. Todo lo que tienes que hacer es escalarla. Bam, un nino que ha vivido toda su vida en la oscuridad, entra a la Torre persiguiendo a Rachel, la unica persona que le dio luz en su vida. Pero la Torre esta llena de peligros, pruebas mortales y otros escaladores dispuestos a todo por alcanzar la cima. Podra Bam sobrevivir y encontrar lo que busca?",
+      "genres": ["Accion", "Fantasia", "Aventura", "Misterio"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "tu-talento-ahora-es-mio",
       "title": "Tu Talento Ahora Es Mio",
       "slug": "Tu talento ahora es mio",
       "image": "/img/Tu talento ahora es mio.jpg",
-      "description": "Lee Tu Talento Ahora Es Mio en español en Grandiel Scan.",
-      "genres": [],
+      "description": "Un joven con la habilidad de robar talentos de otros comienza su camino hacia el poder. Cada encuentro es una oportunidad para hacerse mas fuerte robando las habilidades de sus enemigos.",
+      "genres": ["Accion", "Fantasia", "Sistema", "Aventura"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
     },
     {
       "id": "una-verdad-incomoda",
-      "title": "Una Verdad Incómoda",
-      "slug": "Una Verdad Incómoda",
-      "image": "/img/logo.gif",
-      "description": "Lee Una Verdad Incómoda en español en Grandiel Scan.",
-      "genres": [],
+      "title": "Una Verdad Incomoda",
+      "slug": "Una Verdad Incomoda",
+      "image": "/img/Una Verdad Incomoda.jpg",
+      "description": "Un thriller psicologico que sigue a un protagonista que debe enfrentar verdades ocultas sobre su pasado mientras navega por una red de mentiras y enganos.",
+      "genres": ["Drama", "Psicologico", "Thriller", "Misterio"],
       "type": "Manhwa",
       "status": "En Emision",
-      "chapters": [
-        1
-      ]
+      "chapters": [1]
     },
     {
       "id": "worlds-apocalipse-online",
       "title": "World's Apocalipse Online",
       "slug": "world's apocalipse online",
-      "image": "/img/logo.gif",
-      "description": "Lee World's Apocalipse Online en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/World's apocalipse online.jpg",
+      "description": "Un apocalipsis de estilo juego cae sobre el mundo. El protagonista, armado con conocimiento del futuro, debe sobrevivir y conquistar este nuevo sistema que ha transformado la realidad en un juego mortal.",
+      "genres": ["Accion", "Fantasia", "Apocaliptico", "Sistema"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []
@@ -902,9 +752,9 @@
       "id": "zomgan",
       "title": "Zomgan",
       "slug": "ZomGan",
-      "image": "/img/ZomGan.jpg",
-      "description": "Lee Zomgan en español en Grandiel Scan.",
-      "genres": [],
+      "image": "/img/zomgan.jpg",
+      "description": "En un mundo invadido por zombies, un grupo de supervivientes debe luchar no solo contra los muertos vivientes, sino tambien contra otros humanos dispuestos a todo por sobrevivir.",
+      "genres": ["Accion", "Horror", "Supervivencia", "Drama"],
       "type": "Manhwa",
       "status": "En Emision",
       "chapters": []

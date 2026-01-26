@@ -64,6 +64,8 @@
     <title>Catálogo de Mangas y Manhwas - Grandiel Scan</title>
 </head>
 <body class="fondo">
+    <!-- Skip to main content - Accessibility -->
+    <a href="#main-content" class="skip-to-main">Saltar al contenido principal</a>
 
     <nav class="alpha" role="navigation" aria-label="Navegación principal">
         <div class="logo">
@@ -86,7 +88,7 @@
     </nav>
     <hr class="br">
     <br>
-    <main class="curva" role="main">
+    <main id="main-content" class="curva" role="main">
     <br>
 
     <h1>Mangas</h1>
@@ -95,7 +97,9 @@
     <nav class="gene">
         <div class="gene__header">
             <div class="sortable">
-                <a href="#"><img id="cambiarIcono" width="30" height="30" src="/iconos/A-Z.png" onclick="cambiarI()" loading="lazy"></a>
+                <button type="button" id="cambiarIcono-btn" aria-label="Cambiar orden alfabetico" style="background: none; border: none; cursor: pointer; padding: 8px;">
+                    <img id="cambiarIcono" width="30" height="30" src="/iconos/A-Z.png" alt="Orden A-Z" loading="lazy">
+                </button>
             </div>
             <label class="gene__btn" for="gene-cb">
                 <i class="fas fa-filter"></i> Filtrar por Genero

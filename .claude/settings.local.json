@@ -8,7 +8,11 @@
       "Bash(Sort-Object)",
       "Bash(dir:*)",
       "Bash(du:*)",
-      "Bash(node -c \"c:\\\\Users\\\\bgran\\\\OneDrive\\\\Escritorio\\\\Grandiel-Scan-main\\\\vite.config.js\")"
+      "Bash(node -c \"c:\\\\Users\\\\bgran\\\\OneDrive\\\\Escritorio\\\\Grandiel-Scan-main\\\\vite.config.js\")",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(gh pr list:*)"
     ]
   }
 }

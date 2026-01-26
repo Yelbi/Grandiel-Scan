@@ -8,6 +8,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
@@ -24,6 +26,11 @@
   color: white;
 }
 
+.btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .btn i {
   font-size: var(--font-size-sm);
 }
@@ -35,7 +42,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 40px;
+  min-height: 44px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
@@ -48,7 +55,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
+  min-height: 44px;
+  padding: var(--spacing-sm);
   color: var(--color-text);
   font-size: var(--font-size-sm);
 }
@@ -64,13 +72,19 @@
   color: var(--color-primary);
 }
 
+.cap a:focus-visible,
+.custom-cap a:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -3px;
+}
+
 /* ===== BOTÓN NEO (SIMPLIFICADO) ===== */
 .neo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 40px;
+  min-height: 44px;
   background: transparent;
   border: 1px solid var(--color-primary);
   border-radius: var(--border-radius-sm);
@@ -85,6 +99,11 @@
 .neo:hover {
   background: var(--color-primary);
   color: white;
+}
+
+.neo:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Ocultar elementos de animación antiguos */
@@ -309,8 +328,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--border-radius-full);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
@@ -323,34 +342,85 @@
   border-color: var(--color-primary);
 }
 
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .theme-toggle i {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--color-text);
 }
 
 /* ===== ACCESIBILIDAD ===== */
 .skip-to-main {
-  position: absolute;
-  top: -100%;
+  position: fixed;
+  top: -100px;
   left: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-height: 44px;
+  min-width: 44px;
   background: var(--color-primary);
   color: white;
-  border-radius: var(--border-radius-sm);
-  z-index: 9999;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  border-radius: var(--border-radius-md);
+  z-index: 99999;
+  text-decoration: none;
   transition: top var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.skip-to-main:focus {
+.skip-to-main:focus,
+.skip-to-main:focus-visible {
   top: var(--spacing-md);
+  outline: 3px solid white;
+  outline-offset: 2px;
 }
 
-/* Foco visible */
+/* Foco visible mejorado */
 a:focus-visible,
 button:focus-visible,
-[role="button"]:focus-visible {
-  outline: 2px solid var(--color-primary);
+[role="button"]:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Touch target mínimo 44x44px */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Estado de carga accesible */
+.loading-state {
+  position: relative;
+}
+
+.loading-state::after {
+  content: "Cargando...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--color-text-muted);
+}
+
+/* Visualmente oculto pero accesible para lectores de pantalla */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -439,8 +509,8 @@ mark.search-highlight {
   position: absolute;
   top: var(--spacing-sm);
   right: var(--spacing-sm);
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--border-radius-full);
   background: rgba(0, 0, 0, 0.6);
   border: none;
@@ -451,6 +521,12 @@ mark.search-highlight {
   transition: all var(--transition-fast);
   opacity: 0;
   z-index: 10;
+}
+
+.favorite-btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  opacity: 1;
 }
 
 .manga-card:hover .favorite-btn,
@@ -494,8 +570,8 @@ mark.search-highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0 var(--spacing-sm);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
@@ -509,6 +585,11 @@ mark.search-highlight {
 .pagination-btn:hover:not(:disabled) {
   background: var(--color-bg-tertiary);
   border-color: var(--color-primary);
+}
+
+.pagination-btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .pagination-btn.active {
@@ -658,6 +739,8 @@ mark.search-highlight {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  min-height: 44px;
+  min-width: 44px;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
@@ -670,6 +753,11 @@ mark.search-highlight {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
+}
+
+.chapter-nav-btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .chapter-nav-btn.chapter-nav-disabled {
@@ -714,7 +802,8 @@ mark.search-highlight {
 }
 
 .filter-tag {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-sm);
@@ -722,10 +811,18 @@ mark.search-highlight {
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filter-tag:hover {
   border-color: var(--color-primary);
+}
+
+.filter-tag:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .filter-tag.active {
@@ -761,9 +858,10 @@ mark.search-highlight {
 
 /* Responsive nuevos componentes */
 @media (max-width: 768px) {
+  /* Mantener touch targets mínimos en móvil */
   .pagination-btn {
-    min-width: 36px;
-    height: 36px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .chapter-navigation {
@@ -774,11 +872,18 @@ mark.search-highlight {
     display: none;
   }
 
+  .chapter-nav-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .continue-list {
     flex-direction: column;
   }
 
   .favorite-btn {
     opacity: 1;
+    width: 44px;
+    height: 44px;
   }
 }

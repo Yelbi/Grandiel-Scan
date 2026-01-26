@@ -8,6 +8,12 @@
     <meta name="keywords" content="manhwa nuevo, manga reciente, últimos mangas, nuevas series, Grandiel Scan">
     <meta name="author" content="Grandiel Scan">
 
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#ff0000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Grandiel Scan">
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://grandielscan.com/Nuevos.html">
@@ -22,6 +28,10 @@
     <meta property="twitter:description" content="Descubre los manhwas y mangas más recientes añadidos a Grandiel Scan.">
     <meta property="twitter:image" content="/img/logo.gif">
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icons/icon-192x192.png">
+
     <link rel="stylesheet" href="/Styles/Style.css">
     <link rel="shortcut icon" href="/img/logo.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,6 +45,9 @@
     <title>Mangas Nuevos - Grandiel Scan</title>
 </head>
 <body class="fondo">
+    <!-- Skip to main content - Accessibility -->
+    <a href="#main-content" class="skip-to-main">Saltar al contenido principal</a>
+
     <nav class="alpha" role="navigation" aria-label="Navegación principal">
         <div class="logo">
             <a href="/index.html" aria-label="Ir a inicio"><img src="/img/logo.gif" alt="Grandiel Scan Logo" ></a>
@@ -55,7 +68,7 @@
         <div id="cover-ctn-search"></div>
     </nav>
     <hr class="br">
-    <main class="curva" role="main">
+    <main id="main-content" class="curva" role="main">
         <br>
         <h1>Mangas Nuevos</h1>
         <br>
@@ -208,5 +221,9 @@
     <script src="/Styles/busqueda.js"></script>
     <script src="/Styles/Stylejava.js"></script>
     <script src="/Styles/theme-toggle.js"></script>
+
+    <!-- Modulos ES6 -->
+    <script type="module" src="/js/main.js"></script>
+    <script type="module" src="/js/pwa.js"></script>
 </body>
 </html>

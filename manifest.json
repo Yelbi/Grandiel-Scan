@@ -1,7 +1,7 @@
 {
-    "name": "Grandiel Scan - Manhwas en Español",
+    "name": "Grandiel Scan - Manhwas en Espanol",
     "short_name": "Grandiel Scan",
-    "description": "Lee los mejores manhwas y mangas en español gratis. Actualizaciones diarias de tus series favoritas.",
+    "description": "Lee los mejores manhwas y mangas en espanol gratis. Actualizaciones diarias de tus series favoritas.",
     "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#000000",
@@ -60,43 +60,24 @@
             "purpose": "maskable any"
         }
     ],
-    "screenshots": [
-        {
-            "src": "/img/screenshots/home.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Página de inicio de Grandiel Scan"
-        },
-        {
-            "src": "/img/screenshots/manga-list.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Catálogo de mangas"
-        }
-    ],
     "shortcuts": [
         {
-            "name": "Catálogo de Mangas",
+            "name": "Catalogo de Mangas",
             "short_name": "Mangas",
             "description": "Ver todos los mangas disponibles",
-            "url": "/Mangas.html",
-            "icons": [{ "src": "/img/icons/manga-icon.png", "sizes": "96x96" }]
+            "url": "/Mangas.html"
         },
         {
             "name": "Actualizaciones",
             "short_name": "Updates",
-            "description": "Ver las últimas actualizaciones",
-            "url": "/Actualizaciones.html",
-            "icons": [{ "src": "/img/icons/update-icon.png", "sizes": "96x96" }]
+            "description": "Ver las ultimas actualizaciones",
+            "url": "/Actualizaciones.html"
         },
         {
-            "name": "Nuevos Títulos",
+            "name": "Nuevos Titulos",
             "short_name": "Nuevos",
             "description": "Descubrir nuevos mangas",
-            "url": "/Nuevos.html",
-            "icons": [{ "src": "/img/icons/new-icon.png", "sizes": "96x96" }]
+            "url": "/Nuevos.html"
         }
     ],
     "related_applications": [],

@@ -24,6 +24,14 @@
     <meta property="twitter:description" id="twitter-description" content="">
     <meta property="twitter:image" id="twitter-image" content="">
 
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#ff0000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Grandiel Scan">
+    <link rel="apple-touch-icon" href="/img/icons/icon-192x192.png">
+    <link rel="manifest" href="/manifest.json">
+
     <link rel="stylesheet" href="/Styles/Style.css">
     <link rel="shortcut icon" href="/img/logo.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,6 +43,9 @@
     <title id="page-title">Cargando... - Grandiel Scan</title>
 </head>
 <body class="fondo">
+    <!-- Skip to main content - Accessibility -->
+    <a href="#main-content" class="skip-to-main">Saltar al contenido principal</a>
+
     <nav role="navigation" aria-label="Navegacion principal">
         <div class="logo">
             <a href="/index.html" aria-label="Ir a inicio"><img src="/img/logo.gif" alt="Grandiel Scan Logo" width="120"></a>
@@ -47,7 +58,7 @@
         <div class="barra" action="/resultado-busqueda" method="GET">
             <input type="text" name="q" placeholder="Buscar" aria-label="Buscador">
             <div class="btn" role="button" tabindex="0" aria-label="Buscar">
-                <i class="fa fa-search" aria-hidden="true"></i>
+                <i class="fas fa-search" aria-hidden="true"></i>
             </div>
         </div>
     </nav>
@@ -57,7 +68,7 @@
     <div id="progress-bar"></div>
 
     <!-- Breadcrumbs -->
-    <nav aria-label="Migas de pan" class="breadcrumbs">
+    <nav id="main-content" aria-label="Migas de pan" class="breadcrumbs">
         <ol itemscope itemtype="https://schema.org/BreadcrumbList">
             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                 <a itemprop="item" href="/index.html">
@@ -113,8 +124,13 @@
         <div><p>Contactos:</p></div>
     </footer>
 
+    <!-- Scripts legacy para renderizado -->
     <script src="/Styles/chapter-renderer.js"></script>
     <script src="/Styles/nav.js"></script>
     <script src="/Styles/theme-toggle.js"></script>
+
+    <!-- Modulos ES6 -->
+    <script type="module" src="/js/main.js"></script>
+    <script type="module" src="/js/pwa.js"></script>
 </body>
 </html>

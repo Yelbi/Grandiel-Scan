@@ -215,25 +215,53 @@
     }
 
     function showError(message) {
-        document.getElementById('page-title').textContent = 'Error - Grandiel Scan';
-        document.getElementById('current-chapter').textContent = 'Error';
-        document.getElementById('chapter-images').innerHTML = `
-            <div style="text-align: center; padding: 50px;">
-                <p style="color: #ff6b6b; font-size: 18px;">${message}</p>
-                <p style="margin-top: 20px;">
-                    <a href="/Mangas.html" style="color: #4dabf7; text-decoration: underline;">Volver al catalogo</a>
-                </p>
-            </div>
-        `;
+        const pageTitle = document.getElementById('page-title');
+        const currentChapter = document.getElementById('current-chapter');
+        const chapterImages = document.getElementById('chapter-images');
+        const breadcrumbs = document.querySelector('.breadcrumbs');
+        const sig = document.querySelector('.sig');
+        const chapterSelector = document.getElementById('chapter-selector');
 
-        // Ocultar elementos de navegacion
-        document.querySelector('.breadcrumbs').style.display = 'none';
-        document.querySelector('.sig').style.display = 'none';
-        document.getElementById('chapter-selector').parentElement.style.display = 'none';
+        if (pageTitle) pageTitle.textContent = 'Error - Grandiel Scan';
+        if (currentChapter) currentChapter.textContent = 'Error';
+        if (chapterImages) {
+            chapterImages.innerHTML = `
+                <div style="text-align: center; padding: 50px;">
+                    <p style="color: #ff6b6b; font-size: 18px;">${message}</p>
+                    <p style="margin-top: 20px;">
+                        <a href="/Mangas.html" style="color: #4dabf7; text-decoration: underline;">Volver al catalogo</a>
+                    </p>
+                </div>
+            `;
+        }
+
+        // Ocultar elementos de navegacion con null checks
+        if (breadcrumbs) breadcrumbs.style.display = 'none';
+        if (sig) sig.style.display = 'none';
+        if (chapterSelector && chapterSelector.parentElement) {
+            chapterSelector.parentElement.style.display = 'none';
+        }
+    }
+
+    // Verificar disponibilidad de localStorage
+    function isLocalStorageAvailable() {
+        try {
+            const test = '__storage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (e) {
+            return false;
+        }
     }
 
     // Guardar progreso de lectura en localStorage
     function saveReadingProgress() {
+        if (!isLocalStorageAvailable()) {
+            console.warn('localStorage no disponible');
+            return;
+        }
+
         try {
             const progress = JSON.parse(localStorage.getItem('readingProgress') || '{}');
             progress[mangaId] = {
@@ -242,7 +270,7 @@
             };
             localStorage.setItem('readingProgress', JSON.stringify(progress));
         } catch (e) {
-            console.warn('No se pudo guardar el progreso de lectura');
+            console.warn('No se pudo guardar el progreso de lectura:', e.message);
         }
     }
 

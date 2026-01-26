@@ -133,16 +133,25 @@
     }
 
     function showError(message) {
-        document.getElementById('page-title').textContent = 'Error - Grandiel Scan';
-        document.getElementById('manga-title').textContent = 'Error';
-        document.getElementById('manga-description').textContent = message;
-        document.getElementById('manga-cover').style.display = 'none';
-        document.getElementById('manga-info').style.display = 'none';
-        document.getElementById('chapters-container').innerHTML = `
-            <p style="color: #ff6b6b; text-align: center;">${message}</p>
-            <p style="text-align: center; margin-top: 20px;">
-                <a href="/Mangas.html" style="color: #4dabf7;">Volver al catalogo</a>
-            </p>
-        `;
+        const pageTitle = document.getElementById('page-title');
+        const mangaTitle = document.getElementById('manga-title');
+        const mangaDescription = document.getElementById('manga-description');
+        const mangaCover = document.getElementById('manga-cover');
+        const mangaInfo = document.getElementById('manga-info');
+        const chaptersContainer = document.getElementById('chapters-container');
+
+        if (pageTitle) pageTitle.textContent = 'Error - Grandiel Scan';
+        if (mangaTitle) mangaTitle.textContent = 'Error';
+        if (mangaDescription) mangaDescription.textContent = message;
+        if (mangaCover) mangaCover.style.display = 'none';
+        if (mangaInfo) mangaInfo.style.display = 'none';
+        if (chaptersContainer) {
+            chaptersContainer.innerHTML = `
+                <p style="color: #ff6b6b; text-align: center;">${message}</p>
+                <p style="text-align: center; margin-top: 20px;">
+                    <a href="/Mangas.html" style="color: #4dabf7;">Volver al catalogo</a>
+                </p>
+            `;
+        }
     }
 })();
