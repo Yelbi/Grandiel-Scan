@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import MangaCard from '@/components/manga/MangaCard';
-import { getAllMangas } from '@/lib/data';
 import ContinueReading from '@/components/manga/ContinueReading';
+import HeroSection from '@/components/home/HeroSection';
+import { getAllMangas } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Grandiel Scan - Manhwas en Español | Inicio',
@@ -10,73 +11,89 @@ export const metadata: Metadata = {
     'Lee manhwas en español gratis. Descubre los mejores mangas y manhwas actualizados: Nano Machine, Maldita Reencarnación, Dungeon Reset y más.',
 };
 
-const FEATURED_IDS = [
+const MOST_VIEWED_IDS = [
+  'solo-leveling',
+  'nano-machine',
   'maldita-reencarnacion',
   'dungeon-reset',
-  'existencia',
-  'nano-machine',
   'como-pelear',
-  'solo-leveling',
+  'existencia',
 ];
 
 export default async function HomePage() {
   const mangas = await getAllMangas();
+
   const recent = [...mangas]
     .sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated))
     .slice(0, 12);
-  const featured = mangas.filter((m) => FEATURED_IDS.includes(m.id)).slice(0, 6);
+
+  const mostViewed = mangas
+    .filter((m) => MOST_VIEWED_IDS.includes(m.id))
+    .sort((a, b) => MOST_VIEWED_IDS.indexOf(a.id) - MOST_VIEWED_IDS.indexOf(b.id));
+
+  const heroCovers = mangas.filter((m) => m.image).slice(0, 5);
 
   return (
     <>
-      {/* Hero */}
-      <section className="hero" aria-label="Bienvenida a Grandiel Scan">
-        <div className="hero__bg-glow" />
-        <div className="hero__content">
-          <p className="hero__eyebrow">Grandiel Scan</p>
-          <h1 className="hero__title">
-            Lee los mejores <span className="hero__accent">manhwas</span> en español
-          </h1>
-          <p className="hero__subtitle">
-            Catálogo actualizado con los títulos más populares. Gratis, en español, sin registros.
-          </p>
-          <div className="hero__actions">
-            <Link href="/mangas" className="hero__btn-primary">
-              Explorar Catálogo
-            </Link>
-            <Link href="/actualizaciones" className="hero__btn-secondary">
-              Ver Novedades
-            </Link>
-          </div>
+      {/* ===== HERO ===== */}
+      <HeroSection heroCovers={heroCovers} />
+
+      {/* ===== STATS BAR ===== */}
+      <div className="stats-bar" aria-label="Estadísticas del sitio">
+        <div className="stats-bar__item">
+          <strong className="stats-bar__value">{mangas.length}+</strong>
+          <span className="stats-bar__label">Manhwas</span>
         </div>
-      </section>
+        <div className="stats-bar__divider" aria-hidden="true" />
+        <div className="stats-bar__item">
+          <strong className="stats-bar__value">100%</strong>
+          <span className="stats-bar__label">Gratis</span>
+        </div>
+        <div className="stats-bar__divider" aria-hidden="true" />
+        <div className="stats-bar__item">
+          <strong className="stats-bar__value">ES</strong>
+          <span className="stats-bar__label">En Español</span>
+        </div>
+        <div className="stats-bar__divider" aria-hidden="true" />
+        <div className="stats-bar__item">
+          <strong className="stats-bar__value">
+            <i className="fas fa-user-circle" aria-hidden="true" />
+          </strong>
+          <span className="stats-bar__label">Cuenta Gratis</span>
+        </div>
+      </div>
 
       <div className="curva">
         {/* Continuar leyendo (client-side) */}
         <ContinueReading mangas={mangas} />
 
-        {/* Recomendados */}
-        {featured.length > 0 && (
-          <section className="index-section" aria-label="Manhwas recomendados">
-            <h2 className="section-title">Recomendados</h2>
-            <div className="manga-grid">
-              {featured.map((manga) => (
+        {/* ===== MÁS VISTOS ===== */}
+        {mostViewed.length > 0 && (
+          <section className="index-section" aria-label="Mangas más vistos">
+            <h2 className="section-title">
+              <i className="fas fa-fire" aria-hidden="true" /> Más Vistos
+            </h2>
+            <div className="mami">
+              {mostViewed.map((manga) => (
                 <MangaCard key={manga.id} manga={manga} />
               ))}
             </div>
           </section>
         )}
 
-        {/* Recientes */}
+        {/* ===== RECIENTES ===== */}
         <section className="index-section" aria-label="Actualizaciones recientes">
-          <h2 className="section-title">Actualizaciones Recientes</h2>
-          <div className="manga-grid">
+          <h2 className="section-title">
+            <i className="fas fa-clock" aria-hidden="true" /> Actualizaciones Recientes
+          </h2>
+          <div className="mami">
             {recent.map((manga) => (
               <MangaCard key={manga.id} manga={manga} />
             ))}
           </div>
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <Link href="/mangas" className="btn">
-              Ver todos los mangas
+              Ver galería completa
             </Link>
           </div>
         </section>

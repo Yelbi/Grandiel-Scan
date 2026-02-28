@@ -24,22 +24,24 @@ export default function ContinueReading({ mangas }: ContinueReadingProps) {
   return (
     <section className="continue-reading-container index-section" aria-label="Continuar leyendo">
       <h2 className="section-title">Continuar Leyendo</h2>
-      <div className="manga-grid">
+      <div className="mami">
         {items.map(({ entry, manga }) => (
-          <div key={entry.mangaId} className="manga-card">
+          <div key={entry.mangaId} className="manga-card product-item">
             <Link href={`/chapter/${entry.mangaId}/${entry.chapter}`}>
-              <Image
-                src={manga!.image}
-                alt={manga!.title}
-                width={200}
-                height={280}
-                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                loading="lazy"
-                unoptimized={manga!.image.startsWith('/img/')}
-              />
-              <div className="manga-card-info">
-                <h3 className="manga-card-title">{manga!.title}</h3>
-                <p className="manga-card-chapters">Cap. {entry.chapter}</p>
+              <div className="manga-card-inner">
+                <Image
+                  src={manga!.image}
+                  alt={manga!.title}
+                  width={200}
+                  height={280}
+                  style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                  loading="lazy"
+                  unoptimized={manga!.image.startsWith('/img/')}
+                />
+              </div>
+              <h3 className="manga-card__title">{manga!.title}</h3>
+              <div className="manga-meta">
+                <span className="manga-chapters">Cap. {entry.chapter}</span>
               </div>
             </Link>
           </div>

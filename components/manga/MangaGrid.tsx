@@ -8,10 +8,11 @@ import { CONFIG } from '@/lib/config';
 interface MangaGridProps {
   mangas: Manga[];
   genres?: string[];
+  initialGenres?: string[];
 }
 
-export default function MangaGrid({ mangas, genres = [] }: MangaGridProps) {
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: MangaGridProps) {
+  const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
   const [selectedType, setSelectedType] = useState<string>('');
   const [sort, setSort] = useState<SortOrder>('title-asc');
   const [page, setPage] = useState(1);
@@ -64,12 +65,12 @@ export default function MangaGrid({ mangas, genres = [] }: MangaGridProps) {
       {/* Filter bar */}
       <div className="filter-bar">
         <button
-          className="filter-bar-toggle btn"
+          className={`filter-toggle-btn${filterOpen ? ' is-open' : ''}`}
           onClick={() => setFilterOpen((o) => !o)}
         >
           <i className="fas fa-filter" /> Filtros
           {(selectedGenres.length > 0 || selectedType) && (
-            <span className="filter-badge">
+            <span className="filter-active-count">
               {selectedGenres.length + (selectedType ? 1 : 0)}
             </span>
           )}
@@ -151,13 +152,13 @@ export default function MangaGrid({ mangas, genres = [] }: MangaGridProps) {
       </div>
 
       {/* Results count */}
-      <p className="filter-results-count">
+      <p className="results-counter">
         {filtered.length} manga{filtered.length !== 1 ? 's' : ''} encontrado
         {filtered.length !== 1 ? 's' : ''}
       </p>
 
       {/* Grid */}
-      <div className="manga-grid">
+      <div className="mami">
         {paginated.map((manga) => (
           <MangaCard key={manga.id} manga={manga} />
         ))}

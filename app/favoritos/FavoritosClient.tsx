@@ -10,8 +10,8 @@ export default function FavoritosClient({ mangas }: { mangas: Manga[] }) {
   const favoriteMangas = mangas.filter((m) => favorites.includes(m.id));
 
   return (
-    <div className="page-container">
-      <h1 className="page-title">
+    <div className="curva">
+      <h1>
         <i className="fas fa-heart" /> Mis Favoritos
       </h1>
 
@@ -23,10 +23,10 @@ export default function FavoritosClient({ mangas }: { mangas: Manga[] }) {
         </div>
       ) : (
         <>
-          <p className="filter-results-count">
+          <p className="results-counter">
             {favoriteMangas.length} manga{favoriteMangas.length !== 1 ? 's' : ''} en favoritos
           </p>
-          <div className="manga-grid">
+          <div className="mami">
             {favoriteMangas.map((manga) => (
               <MangaCard key={manga.id} manga={manga} />
             ))}

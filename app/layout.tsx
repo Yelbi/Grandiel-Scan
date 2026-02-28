@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import { FavoritesProvider } from '@/components/providers/FavoritesProvider';
 import { HistoryProvider } from '@/components/providers/HistoryProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { UserProfileProvider } from '@/components/providers/UserProfileProvider';
 
 export const metadata: Metadata = {
   title: {
@@ -68,6 +69,7 @@ export default function RootLayout({
       </head>
       <body className="fondo">
         <ThemeProvider>
+          <UserProfileProvider>
           <FavoritesProvider>
             <HistoryProvider>
               <a href="#main-content" className="skip-to-main">
@@ -77,6 +79,7 @@ export default function RootLayout({
               <main id="main-content">{children}</main>
             </HistoryProvider>
           </FavoritesProvider>
+          </UserProfileProvider>
         </ThemeProvider>
       </body>
     </html>

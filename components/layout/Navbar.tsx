@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import SearchBar from '@/components/ui/SearchBar';
+import NavLinks from '@/components/layout/NavLinks';
+import NavScrollObserver from '@/components/layout/NavScrollObserver';
+import UserDropdown from '@/components/user/UserDropdown';
 import { getAllMangas } from '@/lib/data';
 
 export default async function Navbar() {
@@ -8,6 +11,8 @@ export default async function Navbar() {
 
   return (
     <nav className="alpha" role="navigation" aria-label="Navegación principal">
+      <NavScrollObserver />
+
       <div className="logo">
         <Link href="/" aria-label="Ir a inicio">
           <Image
@@ -21,25 +26,12 @@ export default async function Navbar() {
         </Link>
       </div>
 
-      <ul className="list">
-        <li>
-          <Link href="/mangas">
-            <span>Mangas</span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/actualizaciones">
-            <span>Actualizaciones</span>
-          </Link>
-        </li>
-        <li>
-          <Link href="/nuevos">
-            <span>Nuevos</span>
-          </Link>
-        </li>
-      </ul>
+      <NavLinks />
 
-      <SearchBar mangas={mangas} />
+      <div className="nav-right">
+        <SearchBar mangas={mangas} />
+        <UserDropdown />
+      </div>
     </nav>
   );
 }

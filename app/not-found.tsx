@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function NotFound() {
   return (
     <div
-      className="page-container"
+      className="curva"
       style={{ textAlign: 'center', padding: '4rem 2rem' }}
     >
       <h1 style={{ fontSize: '6rem', color: 'var(--color-primary)', margin: 0 }}>

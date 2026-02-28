@@ -27,9 +27,9 @@ export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
   }));
 
   return (
-    <div className="page-container">
+    <div className="curva">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 className="page-title">
+        <h1>
           <i className="fas fa-history" /> Historial de Lectura
         </h1>
         {history.length > 0 && (
@@ -52,17 +52,19 @@ export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
       ) : (
         <ul className="history-list">
           {items.map(({ entry, manga }) => (
-            <li key={`${entry.mangaId}-${entry.chapter}`} className="history-item">
+            <li key={`${entry.mangaId}-${entry.chapter}`} className="history-entry">
               {manga && (
-                <Image
-                  src={manga.image}
-                  alt={manga.title}
-                  width={60}
-                  height={80}
-                  style={{ objectFit: 'cover' }}
-                  loading="lazy"
-                  unoptimized={manga.image.startsWith('/img/')}
-                />
+                <div className="history-cover">
+                  <Image
+                    src={manga.image}
+                    alt={manga.title}
+                    width={60}
+                    height={80}
+                    style={{ objectFit: 'cover' }}
+                    loading="lazy"
+                    unoptimized={manga.image.startsWith('/img/')}
+                  />
+                </div>
               )}
               <div className="history-info">
                 <Link href={`/manga/${entry.mangaId}`}>

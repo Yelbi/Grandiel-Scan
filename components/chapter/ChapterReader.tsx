@@ -26,7 +26,6 @@ export default function ChapterReader({
   const [currentPage, setCurrentPage] = useState(0);
   const pages = chapter.pages.map((p) => resolvePageUrl(chapter, p));
 
-  // Guardar en historial al entrar al capítulo
   useEffect(() => {
     addEntry({
       mangaId: manga.id,
@@ -36,7 +35,6 @@ export default function ChapterReader({
     });
   }, [manga.id, manga.title, chapter.chapter, addEntry]);
 
-  // Leer modo guardado
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.READING_MODE);
@@ -51,7 +49,6 @@ export default function ChapterReader({
     } catch {}
   }, []);
 
-  // Navegación por teclado
   useEffect(() => {
     if (mode !== 'paginated') return;
     const handler = (e: KeyboardEvent) => {
@@ -65,57 +62,91 @@ export default function ChapterReader({
     return () => window.removeEventListener('keydown', handler);
   }, [mode, pages.length]);
 
+  const progress = pages.length > 1 ? (currentPage / (pages.length - 1)) * 100 : 100;
+
   return (
-    <div className="chapter-reader">
-      {/* Breadcrumbs */}
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link href="/">Inicio</Link>
-        <span> / </span>
-        <Link href={`/manga/${manga.id}`}>{manga.title}</Link>
-        <span> / </span>
-        <span aria-current="page">Capítulo {chapter.chapter}</span>
-      </nav>
+    <div className="reader-wrapper">
+      {/* Sticky topbar */}
+      <div className="reader-topbar">
+        <Link href={`/manga/${manga.id}`} className="reader-topbar__back">
+          <i className="fas fa-arrow-left" aria-hidden="true" />
+          <span className="reader-topbar__back-label">{manga.title}</span>
+        </Link>
 
-      {/* Reader controls */}
-      <div className="reader-controls">
-        <h1 className="reader-title">
-          {manga.title} — Cap. {chapter.chapter}
-        </h1>
+        <span className="reader-topbar__chapter">Cap. {chapter.chapter}</span>
 
-        <div className="reader-mode-toggle">
+        <div className="reader-topbar__controls">
           <button
-            className={`btn ${mode === 'paginated' ? 'active' : ''}`}
+            className={`reader-mode-btn${mode === 'paginated' ? ' active' : ''}`}
             onClick={() => saveMode('paginated')}
+            title="Modo paginado"
+            aria-pressed={mode === 'paginated'}
           >
-            <i className="fas fa-file" /> Paginado
+            <i className="fas fa-file" aria-hidden="true" />
           </button>
           <button
-            className={`btn ${mode === 'continuous' ? 'active' : ''}`}
+            className={`reader-mode-btn${mode === 'continuous' ? ' active' : ''}`}
             onClick={() => saveMode('continuous')}
+            title="Modo continuo"
+            aria-pressed={mode === 'continuous'}
           >
-            <i className="fas fa-scroll" /> Continuo
+            <i className="fas fa-scroll" aria-hidden="true" />
           </button>
+
+          <div className="reader-topbar__divider" aria-hidden="true" />
+
+          {prevCap !== null ? (
+            <Link
+              href={`/chapter/${manga.id}/${prevCap}`}
+              className="reader-topbar__nav"
+              title={`Cap. ${prevCap}`}
+            >
+              <i className="fas fa-chevron-left" aria-hidden="true" />
+            </Link>
+          ) : (
+            <span className="reader-topbar__nav reader-topbar__nav--disabled" aria-disabled="true">
+              <i className="fas fa-chevron-left" aria-hidden="true" />
+            </span>
+          )}
+
+          {nextCap !== null ? (
+            <Link
+              href={`/chapter/${manga.id}/${nextCap}`}
+              className="reader-topbar__nav"
+              title={`Cap. ${nextCap}`}
+            >
+              <i className="fas fa-chevron-right" aria-hidden="true" />
+            </Link>
+          ) : (
+            <span className="reader-topbar__nav reader-topbar__nav--disabled" aria-disabled="true">
+              <i className="fas fa-chevron-right" aria-hidden="true" />
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Chapter navigation (top) */}
-      <ChapterNav manga={manga} prevCap={prevCap} nextCap={nextCap} />
+      {/* Progress bar (paginated only) */}
+      {mode === 'paginated' && (
+        <div
+          className="reader-progress-bar"
+          role="progressbar"
+          aria-label="Progreso de lectura"
+          aria-valuenow={currentPage + 1}
+          aria-valuemax={pages.length}
+        >
+          <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
+        </div>
+      )}
 
-      {/* Images */}
-      <div
-        id="chapter-images"
-        className={`chapter-images mode-${mode}`}
-      >
+      {/* Content */}
+      <div className="reader-content">
         {mode === 'paginated' ? (
           <>
-            <div className="page-counter">
-              Página {currentPage + 1} / {pages.length}
-            </div>
-            <div className="paginated-page">
+            <div className="dede">
               <Image
                 key={pages[currentPage]}
                 src={pages[currentPage]}
-                alt={`Página ${currentPage + 1}`}
+                alt={`Página ${currentPage + 1} de ${pages.length}`}
                 width={800}
                 height={1200}
                 style={{ maxWidth: '100%', height: 'auto' }}
@@ -123,77 +154,67 @@ export default function ChapterReader({
                 unoptimized
               />
             </div>
-            <div className="page-nav-buttons">
+
+            <div className="reader-page-nav">
               <button
-                className="chapter-nav-btn"
+                className={`reader-page-btn${currentPage === 0 ? ' reader-page-btn--disabled' : ''}`}
                 disabled={currentPage === 0}
                 onClick={() => setCurrentPage((p) => p - 1)}
                 aria-label="Página anterior"
               >
-                <i className="fas fa-chevron-left" />
+                <i className="fas fa-chevron-left" aria-hidden="true" />
               </button>
+              <span className="reader-page-indicator">{currentPage + 1} / {pages.length}</span>
               <button
-                className="chapter-nav-btn"
+                className={`reader-page-btn${currentPage === pages.length - 1 ? ' reader-page-btn--disabled' : ''}`}
                 disabled={currentPage === pages.length - 1}
                 onClick={() => setCurrentPage((p) => p + 1)}
                 aria-label="Página siguiente"
               >
-                <i className="fas fa-chevron-right" />
+                <i className="fas fa-chevron-right" aria-hidden="true" />
               </button>
             </div>
           </>
         ) : (
-          pages.map((src, i) => (
-            <Image
-              key={src}
-              src={src}
-              alt={`Página ${i + 1}`}
-              width={800}
-              height={1200}
-              style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
-              loading={i < 3 ? 'eager' : 'lazy'}
-              unoptimized
-            />
-          ))
+          <div className="dede">
+            {pages.map((src, i) => (
+              <Image
+                key={src}
+                src={src}
+                alt={`Página ${i + 1}`}
+                width={800}
+                height={1200}
+                style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                loading={i < 3 ? 'eager' : 'lazy'}
+                unoptimized
+              />
+            ))}
+          </div>
         )}
+
+        {/* Bottom chapter navigation */}
+        <div className="reader-chapter-nav">
+          {prevCap !== null ? (
+            <Link href={`/chapter/${manga.id}/${prevCap}`} className="reader-chapter-btn">
+              <i className="fas fa-chevron-left" aria-hidden="true" /> Cap. {prevCap}
+            </Link>
+          ) : (
+            <span className="reader-chapter-btn reader-chapter-btn--disabled">Primer capítulo</span>
+          )}
+
+          <Link href={`/manga/${manga.id}`} className="reader-chapter-btn reader-chapter-btn--home">
+            <i className="fas fa-list" aria-hidden="true" /> Ver capítulos
+          </Link>
+
+          {nextCap !== null ? (
+            <Link href={`/chapter/${manga.id}/${nextCap}`} className="reader-chapter-btn reader-chapter-btn--next">
+              Cap. {nextCap} <i className="fas fa-chevron-right" aria-hidden="true" />
+            </Link>
+          ) : (
+            <span className="reader-chapter-btn reader-chapter-btn--disabled">Último capítulo</span>
+          )}
+        </div>
       </div>
-
-      {/* Chapter navigation (bottom) */}
-      <ChapterNav manga={manga} prevCap={prevCap} nextCap={nextCap} />
-    </div>
-  );
-}
-
-function ChapterNav({
-  manga,
-  prevCap,
-  nextCap,
-}: {
-  manga: Manga;
-  prevCap: number | null;
-  nextCap: number | null;
-}) {
-  return (
-    <div className="chapter-navigation">
-      {prevCap !== null ? (
-        <Link href={`/chapter/${manga.id}/${prevCap}`} className="chapter-nav-btn btn">
-          <i className="fas fa-chevron-left" /> Cap. {prevCap}
-        </Link>
-      ) : (
-        <span className="chapter-nav-btn btn disabled">Primer capítulo</span>
-      )}
-
-      <Link href={`/manga/${manga.id}`} className="chapter-nav-btn btn">
-        <i className="fas fa-home" /> Inicio manga
-      </Link>
-
-      {nextCap !== null ? (
-        <Link href={`/chapter/${manga.id}/${nextCap}`} className="chapter-nav-btn btn">
-          Cap. {nextCap} <i className="fas fa-chevron-right" />
-        </Link>
-      ) : (
-        <span className="chapter-nav-btn btn disabled">Último capítulo</span>
-      )}
     </div>
   );
 }
