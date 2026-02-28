@@ -6,7 +6,7 @@
  * mejoras de rendimiento para la PWA.
  */
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.1.26';
 const CACHE_NAME = `grandiel-scan-${CACHE_VERSION}`;
 const OFFLINE_PAGE = '/offline.html';
 
@@ -51,6 +51,8 @@ const STATIC_ASSETS = [
     '/js/modules/download.js',
     '/js/pages/favorites.js',
     '/js/pages/history.js',
+    '/js/pages/actualizaciones.js',
+    '/js/pages/nuevos.js',
     // Datos y recursos
     '/data/mangas.json',
     '/img/logo.gif',
@@ -71,24 +73,24 @@ const EXTERNAL_ASSETS = [
 
 // Patrones de URLs para diferentes estrategias de caché
 const CACHE_STRATEGIES = {
-    // Cache First: Para assets estáticos
+    // Cache First: Para assets estáticos (fuentes e imágenes que no cambian)
     cacheFirst: [
-        /\.css$/,
-        /\.js$/,
         /\.woff2?$/,
         /\.ttf$/,
         /\.eot$/,
         /\/img\/.*\.(png|jpg|jpeg|gif|webp|svg)$/i
     ],
-    // Network First: Para datos dinámicos
+    // Network First: Para datos dinámicos y páginas HTML (siempre la versión más reciente)
     networkFirst: [
         /\/data\/.*\.json$/,
-        /\/api\//
-    ],
-    // Stale While Revalidate: Para páginas HTML
-    staleWhileRevalidate: [
+        /\/api\//,
         /\.html$/,
         /\/$/
+    ],
+    // Stale While Revalidate: Para CSS y JS (rápido con actualización en background)
+    staleWhileRevalidate: [
+        /\.css$/,
+        /\.js$/
     ]
 };
 
@@ -230,7 +232,7 @@ async function getOfflineFallback(request) {
     // Para imágenes, devolver placeholder
     if (request.destination === 'image') {
         return new Response(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#1B2631" width="200" height="200"/><text fill="#666" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14">Sin conexión</text></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#1a1a1a" width="200" height="200"/><text fill="#666" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="14">Sin conexión</text></svg>',
             { headers: { 'Content-Type': 'image/svg+xml' } }
         );
     }
