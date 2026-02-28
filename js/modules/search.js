@@ -125,6 +125,21 @@ const getSimilarity = (str1, str2) => {
 };
 
 /**
+ * Escapa caracteres especiales HTML para prevenir XSS
+ * @param {string} str
+ * @returns {string}
+ */
+const escapeHTML = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+/**
  * Resalta el texto de búsqueda en un string
  * @param {string} text - Texto original
  * @param {string} query - Texto a resaltar
@@ -418,7 +433,7 @@ class SearchUI {
         if (results.length === 0) {
             this.resultsContainer.innerHTML = `
                 <li class="search-no-results">
-                    <span>No se encontraron resultados para "${query}"</span>
+                    <span>No se encontraron resultados para "${escapeHTML(query)}"</span>
                 </li>
             `;
             this.showResults();

@@ -295,20 +295,21 @@ class GrandielApp {
         // Barra de progreso de lectura
         this.setupReadingProgress();
 
-        // Inicializar sistema de comentarios para este capítulo
-        setTimeout(() => {
-            initComments(mangaId, chapter);
-        }, 500);
-
-        // Inicializar lector mejorado
-        setTimeout(() => {
+        // Inicializar módulos cuando el renderer termine de cargar el capítulo.
+        // Fallback con setTimeout por si el renderer falla antes de disparar el evento.
+        let modulesInitialized = false;
+        let fallbackTimer = null;
+        const initChapterModules = () => {
+            if (modulesInitialized) return;
+            modulesInitialized = true;
+            clearTimeout(fallbackTimer);
             initEnhancedReader();
-        }, 300);
-
-        // Inicializar sistema de descarga
-        setTimeout(() => {
             initDownloader();
-        }, 400);
+            initComments(mangaId, chapter);
+        };
+
+        window.addEventListener('grandiel:chapter-rendered', initChapterModules, { once: true });
+        fallbackTimer = setTimeout(initChapterModules, 5000); // fallback si el renderer falla
     }
 
     /**

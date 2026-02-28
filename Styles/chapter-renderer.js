@@ -58,7 +58,11 @@
             );
 
             if (!chapterData) {
-                showError(`Capitulo ${chapterNum} no encontrado para ${mangaData.title}`);
+                showError(
+                    `El capítulo ${chapterNum} de <strong>${mangaData.title}</strong> aún no está disponible.` +
+                    `<br><a href="/manga.html?id=${mangaId}" style="color:#4dabf7;text-decoration:underline;">` +
+                    `Ver todos los capítulos disponibles</a>`
+                );
                 return;
             }
 
@@ -113,6 +117,11 @@
 
         // Actualizar texto del capitulo actual
         document.getElementById('current-chapter').textContent = `${manga.title} - Cap ${chapterNum}`;
+
+        // Notificar a main.js que el renderer terminó
+        window.dispatchEvent(new CustomEvent('grandiel:chapter-rendered', {
+            detail: { mangaId: manga.id, chapter: chapterNum }
+        }));
     }
 
     function setupNavigation(manga) {
@@ -205,8 +214,9 @@
         }
 
         // Guardar paginas para uso en modos de lectura
+        const base = chapter.baseUrl.endsWith('/') ? chapter.baseUrl : chapter.baseUrl + '/';
         chapterPages = pages.map((page, index) => ({
-            url: chapter.baseUrl + page,
+            url: base + page,
             index: index
         }));
 
@@ -230,9 +240,9 @@
         if (chapterImages) {
             chapterImages.innerHTML = `
                 <div style="text-align: center; padding: 50px;">
-                    <p style="color: #ff6b6b; font-size: 18px;">${message}</p>
+                    <p style="color: #ff6b6b; font-size: 18px; line-height: 1.6;">${message}</p>
                     <p style="margin-top: 20px;">
-                        <a href="/Mangas.html" style="color: #4dabf7; text-decoration: underline;">Volver al catalogo</a>
+                        <a href="/Mangas.html" style="color: #4dabf7; text-decoration: underline;">Volver al catálogo</a>
                     </p>
                 </div>
             `;
@@ -258,7 +268,7 @@
         }
     }
 
-    // Guardar progreso de lectura en localStorage
+    // Guardar progreso de lectura en localStorage (usa grandiel-history igual que HistoryStorage)
     function saveReadingProgress() {
         if (!isLocalStorageAvailable()) {
             console.warn('localStorage no disponible');
@@ -266,12 +276,19 @@
         }
 
         try {
-            const progress = JSON.parse(localStorage.getItem('readingProgress') || '{}');
-            progress[mangaId] = {
+            const history = JSON.parse(localStorage.getItem('grandiel-history') || '[]');
+            const existingIndex = history.findIndex(h => h.mangaId === mangaId);
+            const newEntry = {
+                mangaId: mangaId,
                 chapter: chapterNum,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                title: document.title || ''
             };
-            localStorage.setItem('readingProgress', JSON.stringify(progress));
+            if (existingIndex > -1) {
+                history.splice(existingIndex, 1);
+            }
+            history.unshift(newEntry);
+            localStorage.setItem('grandiel-history', JSON.stringify(history.slice(0, 100)));
         } catch (e) {
             console.warn('No se pudo guardar el progreso de lectura:', e.message);
         }

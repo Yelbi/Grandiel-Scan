@@ -1,0 +1,27 @@
+# Next.js
+.next/
+out/
+
+# Dependencias
+node_modules/
+
+# Caché y logs
+.cache/
+*.log
+npm-debug.log*
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

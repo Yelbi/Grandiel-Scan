@@ -34,6 +34,9 @@ class NavigationManager {
 
         try {
             const response = await fetch(MANGAS_JSON);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: no se pudo cargar ${MANGAS_JSON}`);
+            }
             const data = await response.json();
             this.mangas = data.mangas || [];
             this.isLoaded = true;

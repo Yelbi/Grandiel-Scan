@@ -3,10 +3,9 @@
  * Uso: manga.html?id=nano-machine
  */
 
-(function() {
+(function () {
     'use strict';
 
-    // Obtener el ID del manga desde la URL
     const urlParams = new URLSearchParams(window.location.search);
     const mangaId = urlParams.get('id');
 
@@ -15,15 +14,12 @@
         return;
     }
 
-    // Cargar los datos del manga
     loadMangaData();
 
     async function loadMangaData() {
         try {
             const response = await fetch('/data/mangas.json');
-            if (!response.ok) {
-                throw new Error('Error al cargar los datos');
-            }
+            if (!response.ok) throw new Error('Error al cargar los datos');
 
             const data = await response.json();
             const manga = data.mangas.find(m => m.id === mangaId);
@@ -43,10 +39,10 @@
     function renderManga(manga) {
         const baseUrl = 'https://grandielscan.com';
 
-        // Actualizar titulo de la pagina
+        // Titulo de la pagina
         document.getElementById('page-title').textContent = `${manga.title} - Grandiel Scan | Leer Online`;
 
-        // Actualizar meta tags
+        // Meta tags
         const description = `Lee ${manga.title} en espanol en Grandiel Scan. ${manga.description.substring(0, 150)}...`;
         document.getElementById('meta-description').content = description;
         document.getElementById('meta-keywords').content = `${manga.title}, ${manga.title} espanol, manhwa ${manga.title}, leer ${manga.title}`;
@@ -63,24 +59,70 @@
         document.getElementById('twitter-description').content = description;
         document.getElementById('twitter-image').content = manga.image;
 
-        // Contenido principal
+        // Portada
         const coverImg = document.getElementById('manga-cover');
         coverImg.src = manga.image;
         coverImg.alt = `Portada de ${manga.title}`;
 
+        // Titulo
         document.getElementById('manga-title').textContent = manga.title;
+
+        // Boton de favorito
+        renderFavoriteButton(manga);
+
+        // Descripcion
         document.getElementById('manga-description').textContent = manga.description;
 
-        // Info adicional
-        document.getElementById('manga-type').textContent = manga.type || 'Manhwa';
-        document.getElementById('manga-status').textContent = manga.status || 'En Emision';
-        document.getElementById('manga-genres').textContent = (manga.genres || []).join(', ');
+        // Info (tipo, estado, generos)
+        renderInfo(manga);
 
-        // Generar lista de capitulos
+        // Capitulos
         renderChapters(manga);
 
-        // Actualizar Schema.org markup
-        updateSchema(manga);
+        // Schema.org
+        updateSchema(manga, baseUrl);
+    }
+
+    function renderFavoriteButton(manga) {
+        const container = document.getElementById('manga-favorite-container');
+        if (!container) return;
+
+        const isFav = isFavorite(manga.id);
+
+        container.innerHTML = `
+            <button class="manga-fav-btn ${isFav ? 'manga-fav-btn--active' : ''}"
+                    data-favorite-toggle
+                    data-manga-id="${manga.id}"
+                    aria-label="${isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}"
+                    aria-pressed="${isFav}">
+                <i class="fas fa-heart" aria-hidden="true"></i>
+                <span class="manga-fav-btn__label">${isFav ? 'En favoritos' : 'Favorito'}</span>
+            </button>
+        `;
+
+        const btn = container.querySelector('.manga-fav-btn');
+        btn.addEventListener('click', function () {
+            toggleFavorite(manga.id, this);
+        });
+    }
+
+    function renderInfo(manga) {
+        const infoEl = document.getElementById('manga-info');
+        if (!infoEl) return;
+
+        const type = manga.type || 'Manhwa';
+        const status = manga.status || 'En Emision';
+        const genres = manga.genres || [];
+
+        infoEl.innerHTML = `
+            <div class="manga-badges">
+                <span class="manga-badge manga-badge--type">${type}</span>
+                <span class="manga-badge manga-badge--status ${status === 'Completado' ? 'manga-badge--done' : 'manga-badge--ongoing'}">${status}</span>
+            </div>
+            <div class="manga-genres" aria-label="Generos">
+                ${genres.map(g => `<span class="manga-genre-tag">${g}</span>`).join('')}
+            </div>
+        `;
     }
 
     function renderChapters(manga) {
@@ -88,37 +130,52 @@
         const chapters = manga.chapters || [];
 
         if (chapters.length === 0) {
-            container.innerHTML = '<p style="color: #888; text-align: center;">No hay capitulos disponibles</p>';
+            container.innerHTML = '<p class="no-chapters">No hay capitulos disponibles</p>';
             return;
         }
 
-        // Ordenar capitulos
-        const sortedChapters = [...chapters].sort((a, b) => a - b);
+        // Ordenar descendente (mas reciente primero)
+        const sorted = [...chapters].sort((a, b) => b - a);
 
-        // Dividir en grupos de 10 para mejor organizacion visual
-        const chunkSize = 10;
-        let html = '';
+        // Detectar ultimo capitulo leido (usa grandiel-history igual que HistoryStorage)
+        let lastRead = null;
+        try {
+            const history = JSON.parse(localStorage.getItem('grandiel-history') || '[]');
+            const entry = history.find(h => h.mangaId === manga.id);
+            if (entry) {
+                lastRead = entry.chapter;
+            }
+        } catch (e) { /* ignorar */ }
 
-        for (let i = 0; i < sortedChapters.length; i += chunkSize) {
-            const chunk = sortedChapters.slice(i, i + chunkSize);
-            html += '<div>';
-            chunk.forEach(chapterNum => {
-                html += `<a href="/chapter.html?manga=${manga.id}&cap=${chapterNum}">
-                    <span class="chapter-title">Capitulo ${chapterNum}</span>
-                </a>`;
-            });
-            html += '</div>';
-        }
+        const chaptersHTML = sorted.map(chapterNum => {
+            const isLastRead = lastRead === chapterNum;
+            return `
+                <div class="cap${isLastRead ? ' cap--last-read' : ''}">
+                    <a href="/chapter.html?manga=${manga.id}&cap=${chapterNum}">
+                        <span class="chapter-title">Capitulo ${chapterNum}</span>
+                        ${isLastRead ? '<span class="chapter-badge">Ultimo leido</span>' : ''}
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            `;
+        }).join('');
 
-        container.innerHTML = html;
+        container.innerHTML = `
+            <div class="chapters-header">
+                <span class="chapters-count">${chapters.length} ${chapters.length === 1 ? 'capitulo' : 'capitulos'}</span>
+            </div>
+            <div class="chapters-list">
+                ${chaptersHTML}
+            </div>
+        `;
     }
 
-    function updateSchema(manga) {
+    function updateSchema(manga, baseUrl) {
         const schema = {
             "@context": "https://schema.org",
             "@type": "ComicSeries",
             "name": manga.title,
-            "url": `https://grandielscan.com/manga.html?id=${manga.id}`,
+            "url": `${baseUrl}/manga.html?id=${manga.id}`,
             "description": manga.description,
             "image": manga.image,
             "genre": manga.genres || [],
@@ -129,8 +186,59 @@
             "inLanguage": "es"
         };
 
-        document.getElementById('schema-markup').textContent = JSON.stringify(schema, null, 2);
+        const schemaEl = document.getElementById('schema-markup');
+        if (schemaEl) {
+            schemaEl.textContent = JSON.stringify(schema, null, 2);
+        }
     }
+
+    // ===== FAVORITOS =====
+
+    function getFavorites() {
+        try {
+            return JSON.parse(localStorage.getItem('grandiel-favorites') || '[]');
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveFavorites(favs) {
+        try {
+            localStorage.setItem('grandiel-favorites', JSON.stringify(favs));
+        } catch (e) { /* ignorar */ }
+    }
+
+    function isFavorite(id) {
+        return getFavorites().includes(id);
+    }
+
+    function toggleFavorite(mangaId, btn) {
+        const favs = getFavorites();
+        const idx = favs.indexOf(mangaId);
+        const adding = idx === -1;
+
+        if (adding) {
+            favs.unshift(mangaId);
+        } else {
+            favs.splice(idx, 1);
+        }
+
+        saveFavorites(favs);
+
+        // Actualizar UI del boton
+        btn.classList.toggle('manga-fav-btn--active', adding);
+        btn.setAttribute('aria-label', adding ? 'Quitar de favoritos' : 'Agregar a favoritos');
+        btn.setAttribute('aria-pressed', adding);
+        const label = btn.querySelector('.manga-fav-btn__label');
+        if (label) label.textContent = adding ? 'En favoritos' : 'Favorito';
+
+        // Disparar evento para sincronizar con el sistema de favoritos de main.js
+        window.dispatchEvent(new CustomEvent('grandiel:favorite-toggle', {
+            detail: { mangaId, action: adding ? 'add' : 'remove' }
+        }));
+    }
+
+    // ===== ERROR =====
 
     function showError(message) {
         const pageTitle = document.getElementById('page-title');

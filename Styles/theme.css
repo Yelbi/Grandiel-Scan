@@ -1,92 +1,9 @@
 /**
- * theme.css - Sistema de Temas Simplificado
- * Grandiel Scan - Diseño Minimalista
+ * theme.css - Tema Oscuro (único)
+ * Grandiel Scan
  */
 
 /* ===== TRANSICIONES SUAVES ===== */
 html {
   transition: background-color var(--transition-base), color var(--transition-base);
-}
-
-/* ===== AJUSTES TEMA CLARO ===== */
-[data-theme="light"] .fondo {
-  background-color: var(--color-bg);
-}
-
-[data-theme="light"] nav {
-  box-shadow: var(--shadow-sm);
-}
-
-[data-theme="light"] .slider::before {
-  background: linear-gradient(to right, var(--color-bg), transparent);
-}
-
-[data-theme="light"] .slider::after {
-  background: linear-gradient(to left, var(--color-bg), transparent);
-}
-
-/* ===== BOTÓN TOGGLE DE TEMA ===== */
-.theme-toggle-wrapper {
-  position: fixed;
-  bottom: var(--spacing-lg);
-  right: var(--spacing-lg);
-  z-index: 1000;
-}
-
-.theme-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--border-radius-full);
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: var(--shadow-sm);
-}
-
-.theme-toggle-btn:hover {
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-primary);
-}
-
-.theme-toggle-btn i {
-  font-size: var(--font-size-base);
-  color: var(--color-text);
-}
-
-/* Mostrar icono correcto */
-[data-theme="dark"] .theme-toggle-btn .fa-sun {
-  display: block;
-}
-
-[data-theme="dark"] .theme-toggle-btn .fa-moon {
-  display: none;
-}
-
-[data-theme="light"] .theme-toggle-btn .fa-sun {
-  display: none;
-}
-
-[data-theme="light"] .theme-toggle-btn .fa-moon {
-  display: block;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .theme-toggle-wrapper {
-    bottom: var(--spacing-md);
-    right: var(--spacing-md);
-  }
-
-  .theme-toggle-btn {
-    width: 40px;
-    height: 40px;
-  }
-
-  .theme-toggle-btn i {
-    font-size: var(--font-size-sm);
-  }
 }

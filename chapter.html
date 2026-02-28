@@ -39,7 +39,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Coming+Soon&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@200&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
-    <script defer src="/Styles/Stylejava.js"></script>
     <title id="page-title">Cargando... - Grandiel Scan</title>
 </head>
 <body class="fondo">
@@ -55,7 +54,7 @@
             <li><a href="/Actualizaciones.html"><span>Actualizaciones</span></a></li>
             <li><a href="/Nuevos.html"><span>Nuevos</span></a></li>
         </ul>
-        <div class="barra" action="/resultado-busqueda" method="GET">
+        <div class="barra">
             <input type="text" name="q" placeholder="Buscar" aria-label="Buscador">
             <div class="btn" role="button" tabindex="0" aria-label="Buscar">
                 <i class="fas fa-search" aria-hidden="true"></i>
@@ -68,7 +67,7 @@
     <div id="progress-bar"></div>
 
     <!-- Breadcrumbs -->
-    <nav id="main-content" aria-label="Migas de pan" class="breadcrumbs">
+    <nav aria-label="Migas de pan" class="breadcrumbs">
         <ol itemscope itemtype="https://schema.org/BreadcrumbList">
             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                 <a itemprop="item" href="/index.html">
@@ -124,9 +123,6 @@
 
     <!-- Scripts legacy para renderizado -->
     <script src="/Styles/chapter-renderer.js"></script>
-    <script src="/Styles/nav.js"></script>
-    <script src="/Styles/theme-toggle.js"></script>
-
     <!-- Modulos ES6 -->
     <script type="module" src="/js/main.js"></script>
     <script type="module" src="/js/pwa.js"></script>

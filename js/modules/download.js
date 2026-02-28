@@ -263,6 +263,10 @@ class ChapterDownloader {
                     canvas.height = img.height;
 
                     const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Canvas 2D no disponible'));
+                        return;
+                    }
                     ctx.drawImage(img, 0, 0);
 
                     canvas.toBlob((blob) => {

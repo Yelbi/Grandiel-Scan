@@ -76,17 +76,16 @@
         <!-- Titulo del manga -->
         <h1 id="manga-title">Cargando...</h1>
 
+        <!-- Boton de favorito -->
+        <div id="manga-favorite-container"></div>
+
         <!-- Descripcion -->
         <div class="parrafo">
             <p id="manga-description">Cargando descripcion...</p>
         </div>
 
-        <!-- Info adicional -->
-        <div id="manga-info" class="manga-info">
-            <span id="manga-type" class="manga-info-item"></span>
-            <span id="manga-status" class="manga-info-item"></span>
-            <span id="manga-genres" class="manga-info-item"></span>
-        </div>
+        <!-- Info adicional (tipo, estado, generos) -->
+        <div id="manga-info" class="manga-info"></div>
 
         <!-- Lista de capitulos -->
         <section class="capitulos" aria-label="Lista de capitulos">
@@ -120,10 +119,6 @@
 
     <!-- Scripts legacy para renderizado -->
     <script src="/Styles/manga-renderer.js"></script>
-    <script src="/Styles/nav.js"></script>
-    <script src="/Styles/busqueda.js"></script>
-    <script src="/Styles/theme-toggle.js"></script>
-
     <!-- Modulos ES6 -->
     <script type="module" src="/js/main.js"></script>
     <script type="module" src="/js/pwa.js"></script>

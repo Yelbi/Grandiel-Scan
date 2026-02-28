@@ -193,7 +193,7 @@ class Notifications {
     renderNotification(notification) {
         return `
             <div class="notification-item" data-manga-id="${notification.mangaId}">
-                <img src="${notification.image}" alt="${notification.title}" class="notification-image">
+                <img src="${notification.image}" alt="${notification.title}" class="notification-image" onerror="this.src='/img/logo.jpg'">
                 <div class="notification-content">
                     <h4 class="notification-title">${notification.title}</h4>
                     <p class="notification-text">
