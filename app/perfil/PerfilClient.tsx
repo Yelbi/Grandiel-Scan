@@ -212,6 +212,8 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   }
 
   /* ─────────────────── LOGGED-IN VIEW ─────────────────── */
+  if (!profile) return null;
+
   return (
     <div className="curva">
 
