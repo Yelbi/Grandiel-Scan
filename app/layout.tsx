@@ -5,6 +5,7 @@ import { FavoritesProvider } from '@/components/providers/FavoritesProvider';
 import { HistoryProvider } from '@/components/providers/HistoryProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { UserProfileProvider } from '@/components/providers/UserProfileProvider';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: {
@@ -77,6 +78,7 @@ export default function RootLayout({
               </a>
               <Navbar />
               <main id="main-content">{children}</main>
+              <SpeedInsights />
             </HistoryProvider>
           </FavoritesProvider>
           </UserProfileProvider>
