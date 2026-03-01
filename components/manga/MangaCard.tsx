@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import type { Manga } from '@/lib/types';
 
@@ -18,12 +18,20 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
   const fav = isFavorite(manga.id);
   const [isNew, setIsNew] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (!manga.dateAdded) return;
     const age = Date.now() - new Date(manga.dateAdded).getTime();
     setIsNew(age < DAYS_NEW * 24 * 60 * 60 * 1000);
   }, [manga.dateAdded]);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) {
+      setImgError(true);
+    }
+  }, []);
 
   return (
     <div
@@ -55,6 +63,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
             </div>
           ) : (
             <Image
+              ref={imgRef}
               src={manga.image}
               alt={manga.title}
               width={200}

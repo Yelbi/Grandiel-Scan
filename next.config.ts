@@ -15,14 +15,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    // Evita que módulos de providers sean evaluados antes de sus dependencias
-    config.optimization = {
-      ...config.optimization,
-      moduleIds: 'named',
-    };
-    return config;
-  },
 };
 
 export default nextConfig;

@@ -279,10 +279,6 @@ label:has(+ textarea:required)::after {
   pointer-events: none;
 }
 
-/* Elementos ocultos pero accesibles */
-[aria-hidden="true"] {
-  display: none !important;
-}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

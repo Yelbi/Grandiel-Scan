@@ -644,6 +644,35 @@
   pointer-events: none;
 }
 
+/* ===== CHAPTER SELECTOR ===== */
+.reader-chapter-select {
+  height: 34px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-sm, 4px);
+  color: var(--color-text, #fff);
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  max-width: 120px;
+}
+
+.reader-chapter-select:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.reader-chapter-select:focus {
+  border-color: var(--color-primary, #ff0000);
+}
+
+.reader-chapter-select option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .reader-topbar {

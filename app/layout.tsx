@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
-import { Providers } from '@/components/providers/Providers';
+import Providers from '@/components/providers/Providers';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://grandielscan.com'),
   title: {
     default: 'Grandiel Scan - Manhwas en Español',
     template: '%s | Grandiel Scan',
