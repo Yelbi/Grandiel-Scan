@@ -480,17 +480,18 @@
   width: 34px;
   height: 34px;
   border-radius: var(--border-radius-sm, 4px);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--color-text-secondary, #b0b0b0);
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.15s ease;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .reader-mode-btn:hover {
   color: var(--color-text, #fff);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .reader-mode-btn.active {
@@ -516,15 +517,18 @@
   color: var(--color-text-secondary, #b0b0b0);
   font-size: 0.85rem;
   transition: all 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .reader-topbar__nav:hover {
   color: var(--color-text, #fff);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .reader-topbar__nav--disabled {
-  opacity: 0.25;
+  opacity: 0.35;
   cursor: default;
   pointer-events: none;
 }

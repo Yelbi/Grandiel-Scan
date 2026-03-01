@@ -22,14 +22,18 @@ function generatePages(count: number, ext: string): string[] {
 }
 
 function parseManualPages(raw: string): string[] {
-  return raw
-    .split(/[\n,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return raw.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
 }
 
-type Tab   = 'manga' | 'chapter';
+type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter';
 type Alert = { type: 'ok' | 'err'; msg: string } | null;
+
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'manga',        label: 'Añadir Manga',     icon: 'fas fa-book'        },
+  { id: 'chapter',      label: 'Añadir Capítulo',  icon: 'fas fa-plus-circle' },
+  { id: 'edit-manga',   label: 'Editar Manga',     icon: 'fas fa-pen'         },
+  { id: 'edit-chapter', label: 'Editar Capítulo',  icon: 'fas fa-edit'        },
+];
 
 /* ─── component ────────────────────────────────────── */
 export default function AdminClient({ initialMangas }: { initialMangas: Manga[] }) {
@@ -38,16 +42,16 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [alert, setAlert]   = useState<Alert>(null);
   const [loading, setLoading] = useState(false);
 
-  /* ── Manga form state ── */
-  const [mTitle,   setMTitle]   = useState('');
-  const [mImage,   setMImage]   = useState('');
-  const [mDesc,    setMDesc]    = useState('');
-  const [mGenres,  setMGenres]  = useState('');
-  const [mType,    setMType]    = useState<Manga['type']>('Manhwa');
-  const [mStatus,  setMStatus]  = useState<Manga['status']>('En Emision');
-  const [mDate,    setMDate]    = useState(new Date().toISOString().split('T')[0]);
+  /* ── Add Manga state ── */
+  const [mTitle,  setMTitle]  = useState('');
+  const [mImage,  setMImage]  = useState('');
+  const [mDesc,   setMDesc]   = useState('');
+  const [mGenres, setMGenres] = useState('');
+  const [mType,   setMType]   = useState<Manga['type']>('Manhwa');
+  const [mStatus, setMStatus] = useState<Manga['status']>('En Emision');
+  const [mDate,   setMDate]   = useState(new Date().toISOString().split('T')[0]);
 
-  /* ── Chapter form state ── */
+  /* ── Add Chapter state ── */
   const [cMangaId,    setCMangaId]    = useState('');
   const [cNum,        setCNum]        = useState('');
   const [cBaseUrl,    setCBaseUrl]    = useState('');
@@ -58,35 +62,24 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [probing,     setProbing]     = useState(false);
   const [probeResult, setProbeResult] = useState<{ pattern: string; count: number } | null>(null);
 
-  /* ─── probe pages ─────────────────────────── */
-  async function probePages() {
-    if (!cBaseUrl.trim()) {
-      notify('err', 'Ingresa la Base URL primero.');
-      return;
-    }
-    setProbing(true);
-    setProbeResult(null);
-    try {
-      const res = await fetch('/api/admin/probe-chapter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp' }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        notify('err', json.error ?? 'No se detectaron páginas.');
-      } else {
-        setCMode('manual');
-        setCManual((json.pages as string[]).join('\n'));
-        setProbeResult({ pattern: json.pattern, count: json.count });
-        notify('ok', `✓ Detectadas ${json.count} páginas (patrón: ${json.pattern})`);
-      }
-    } catch {
-      notify('err', 'Error de red al probar la URL.');
-    } finally {
-      setProbing(false);
-    }
-  }
+  /* ── Edit Manga state ── */
+  const [emId,     setEmId]     = useState('');
+  const [emTitle,  setEmTitle]  = useState('');
+  const [emImage,  setEmImage]  = useState('');
+  const [emDesc,   setEmDesc]   = useState('');
+  const [emGenres, setEmGenres] = useState('');
+  const [emType,   setEmType]   = useState<Manga['type']>('Manhwa');
+  const [emStatus, setEmStatus] = useState<Manga['status']>('En Emision');
+  const [emDate,   setEmDate]   = useState('');
+
+  /* ── Edit Chapter state ── */
+  const [ecMangaId,    setEcMangaId]    = useState('');
+  const [ecChapterNum, setEcChapterNum] = useState('');
+  const [ecBaseUrl,    setEcBaseUrl]    = useState('');
+  const [ecManual,     setEcManual]     = useState('');
+  const [ecLoading,    setEcLoading]    = useState(false);
+  const [ecProbing,    setEcProbing]    = useState(false);
+  const [ecProbeResult,setEcProbeResult]= useState<{ pattern: string; count: number } | null>(null);
 
   /* ─── helpers ─────────────────────────────── */
   function notify(type: 'ok' | 'err', msg: string) {
@@ -94,40 +87,95 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     setTimeout(() => setAlert(null), 5000);
   }
 
-  /* ─── SUBMIT: manga ───────────────────────── */
+  /* ─── probe (add chapter) ─────────────────── */
+  async function probePages() {
+    if (!cBaseUrl.trim()) { notify('err', 'Ingresa la Base URL primero.'); return; }
+    setProbing(true); setProbeResult(null);
+    try {
+      const res  = await fetch('/api/admin/probe-chapter', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp' }),
+      });
+      const json = await res.json();
+      if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
+      else {
+        setCMode('manual');
+        setCManual((json.pages as string[]).join('\n'));
+        setProbeResult({ pattern: json.pattern, count: json.count });
+        notify('ok', `✓ Detectadas ${json.count} páginas (patrón: ${json.pattern})`);
+      }
+    } catch { notify('err', 'Error de red al probar la URL.'); }
+    finally { setProbing(false); }
+  }
+
+  /* ─── probe (edit chapter) ────────────────── */
+  async function ecProbePages() {
+    if (!ecBaseUrl.trim()) { notify('err', 'Ingresa la Base URL primero.'); return; }
+    setEcProbing(true); setEcProbeResult(null);
+    try {
+      const res  = await fetch('/api/admin/probe-chapter', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl: ecBaseUrl.trim(), ext: 'webp' }),
+      });
+      const json = await res.json();
+      if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
+      else {
+        setEcManual((json.pages as string[]).join('\n'));
+        setEcProbeResult({ pattern: json.pattern, count: json.count });
+        notify('ok', `✓ Detectadas ${json.count} páginas (patrón: ${json.pattern})`);
+      }
+    } catch { notify('err', 'Error de red al probar la URL.'); }
+    finally { setEcProbing(false); }
+  }
+
+  /* ─── load manga into edit form ───────────── */
+  function loadMangaForEdit(id: string) {
+    setEmId(id);
+    const m = mangas.find((x) => x.id === id);
+    if (!m) return;
+    setEmTitle(m.title);
+    setEmImage(m.image);
+    setEmDesc(m.description ?? '');
+    setEmGenres((m.genres ?? []).join(', '));
+    setEmType(m.type);
+    setEmStatus(m.status);
+    setEmDate(m.dateAdded ?? '');
+  }
+
+  /* ─── load chapter into edit form ─────────── */
+  async function loadChapterForEdit(mangaId: string, chapterNum: string) {
+    if (!mangaId || !chapterNum) return;
+    setEcLoading(true);
+    setEcBaseUrl(''); setEcManual(''); setEcProbeResult(null);
+    try {
+      const res  = await fetch(`/api/admin/chapter?mangaId=${mangaId}&chapter=${chapterNum}`);
+      const json = await res.json();
+      if (!res.ok) { notify('err', json.error ?? 'Error cargando capítulo.'); }
+      else {
+        setEcBaseUrl(json.baseUrl ?? '');
+        setEcManual((json.pages as string[]).join('\n'));
+      }
+    } catch { notify('err', 'Error de red.'); }
+    finally { setEcLoading(false); }
+  }
+
+  /* ─── SUBMIT: add manga ───────────────────── */
   async function submitManga(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-
-    const id = titleToId(mTitle);
+    e.preventDefault(); setLoading(true);
+    const id    = titleToId(mTitle);
     const today = new Date().toISOString().split('T')[0];
-
     const manga: Manga = {
-      id,
-      title: mTitle.trim(),
-      slug:  mTitle.trim().toLowerCase(),
-      image: mImage.trim(),
-      description: mDesc.trim(),
+      id, title: mTitle.trim(), slug: mTitle.trim().toLowerCase(),
+      image: mImage.trim(), description: mDesc.trim(),
       genres: mGenres.split(',').map((g) => g.trim()).filter(Boolean),
-      type:   mType,
-      status: mStatus,
-      chapters: [],
-      dateAdded: mDate || today,
-      lastUpdated: mDate || today,
-      latestChapter: 0,
+      type: mType, status: mStatus, chapters: [],
+      dateAdded: mDate || today, lastUpdated: mDate || today, latestChapter: 0,
     };
-
-    const res = await fetch('/api/admin/manga', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(manga),
-    });
+    const res  = await fetch('/api/admin/manga', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(manga) });
     const json = await res.json();
     setLoading(false);
-
-    if (!res.ok) {
-      notify('err', json.error ?? 'Error desconocido');
-    } else {
+    if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
+    else {
       notify('ok', `✓ Manga "${manga.title}" añadido (id: ${manga.id})`);
       setMangas((prev) => [...prev, manga]);
       setMTitle(''); setMImage(''); setMDesc(''); setMGenres('');
@@ -136,50 +184,123 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     }
   }
 
-  /* ─── SUBMIT: chapter ─────────────────────── */
+  /* ─── SUBMIT: add chapter ─────────────────── */
   async function submitChapter(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-
-    const pages =
-      cMode === 'auto'
-        ? generatePages(Number(cCount), cExt.trim() || 'webp')
-        : parseManualPages(cManual);
-
-    if (!pages.length) {
-      notify('err', 'La lista de páginas está vacía.');
-      setLoading(false);
-      return;
-    }
-
-    const chapter = {
-      mangaId: cMangaId,
-      chapter: Number(cNum),
-      ...(cBaseUrl.trim() ? { baseUrl: cBaseUrl.trim() } : {}),
-      pages,
-    };
-
-    const res = await fetch('/api/admin/chapter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(chapter),
-    });
+    e.preventDefault(); setLoading(true);
+    const pages = cMode === 'auto'
+      ? generatePages(Number(cCount), cExt.trim() || 'webp')
+      : parseManualPages(cManual);
+    if (!pages.length) { notify('err', 'La lista de páginas está vacía.'); setLoading(false); return; }
+    const chapter = { mangaId: cMangaId, chapter: Number(cNum), ...(cBaseUrl.trim() ? { baseUrl: cBaseUrl.trim() } : {}), pages };
+    const res  = await fetch('/api/admin/chapter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(chapter) });
     const json = await res.json();
     setLoading(false);
-
-    if (!res.ok) {
-      notify('err', json.error ?? 'Error desconocido');
-    } else {
+    if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
+    else {
       const title = mangas.find((m) => m.id === cMangaId)?.title ?? cMangaId;
       notify('ok', `✓ Capítulo ${cNum} de "${title}" añadido (${pages.length} páginas)`);
       setCNum(''); setCBaseUrl(''); setCCount(''); setCManual('');
       setProbeResult(null); setCMode('auto');
+      // sync local manga chapters list
+      setMangas((prev) => prev.map((m) =>
+        m.id === cMangaId
+          ? { ...m, chapters: [...new Set([...m.chapters, Number(cNum)])].sort((a,b)=>a-b), latestChapter: Math.max(m.latestChapter, Number(cNum)) }
+          : m,
+      ));
     }
   }
 
+  /* ─── SUBMIT: edit manga ──────────────────── */
+  async function submitEditManga(e: React.FormEvent) {
+    e.preventDefault(); setLoading(true);
+    const payload = {
+      id: emId, title: emTitle.trim(), slug: emTitle.trim().toLowerCase(),
+      image: emImage.trim(), description: emDesc.trim(),
+      genres: emGenres.split(',').map((g) => g.trim()).filter(Boolean),
+      type: emType, status: emStatus, dateAdded: emDate,
+    };
+    const res  = await fetch('/api/admin/manga', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const json = await res.json();
+    setLoading(false);
+    if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
+    else {
+      notify('ok', `✓ Manga "${emTitle}" actualizado.`);
+      setMangas((prev) => prev.map((m) => m.id === emId ? { ...m, ...json.manga } : m));
+    }
+  }
+
+  /* ─── DELETE manga ────────────────────────── */
+  async function deleteManga() {
+    if (!window.confirm(`¿Eliminar "${emTitle}" y todos sus capítulos? Esta acción no se puede deshacer.`)) return;
+    setLoading(true);
+    const res  = await fetch('/api/admin/manga', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: emId }) });
+    const json = await res.json();
+    setLoading(false);
+    if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
+    else {
+      notify('ok', `✓ Manga eliminado (${json.removedChapters} capítulos borrados).`);
+      setMangas((prev) => prev.filter((m) => m.id !== emId));
+      setEmId(''); setEmTitle(''); setEmImage(''); setEmDesc(''); setEmGenres('');
+    }
+  }
+
+  /* ─── SUBMIT: edit chapter ────────────────── */
+  async function submitEditChapter(e: React.FormEvent) {
+    e.preventDefault(); setLoading(true);
+    const pages = parseManualPages(ecManual);
+    if (!pages.length) { notify('err', 'La lista de páginas está vacía.'); setLoading(false); return; }
+    const payload = {
+      mangaId: ecMangaId, chapter: Number(ecChapterNum), pages,
+      baseUrl: ecBaseUrl.trim() || undefined,
+    };
+    const res  = await fetch('/api/admin/chapter', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const json = await res.json();
+    setLoading(false);
+    if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
+    else {
+      const title = mangas.find((m) => m.id === ecMangaId)?.title ?? ecMangaId;
+      notify('ok', `✓ Capítulo ${ecChapterNum} de "${title}" actualizado (${pages.length} páginas).`);
+    }
+  }
+
+  /* ─── DELETE chapter ──────────────────────── */
+  async function deleteChapter() {
+    if (!window.confirm(`¿Eliminar capítulo ${ecChapterNum}? Esta acción no se puede deshacer.`)) return;
+    setLoading(true);
+    const res  = await fetch('/api/admin/chapter', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mangaId: ecMangaId, chapter: Number(ecChapterNum) }) });
+    const json = await res.json();
+    setLoading(false);
+    if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
+    else {
+      const title = mangas.find((m) => m.id === ecMangaId)?.title ?? ecMangaId;
+      notify('ok', `✓ Capítulo ${ecChapterNum} de "${title}" eliminado.`);
+      setMangas((prev) => prev.map((m) =>
+        m.id === ecMangaId
+          ? { ...m, chapters: m.chapters.filter((n) => n !== Number(ecChapterNum)) }
+          : m,
+      ));
+      setEcChapterNum(''); setEcBaseUrl(''); setEcManual(''); setEcProbeResult(null);
+    }
+  }
+
+  /* ─── UI shared styles ─────────────────────── */
+  const probeBtn = (onClick: () => void, disabled: boolean, busy: boolean) => (
+    <button type="button" className="btn-primary" onClick={onClick}
+      disabled={disabled} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+      {busy ? <><i className="fas fa-spinner fa-spin" /> Probando…</> : <><i className="fas fa-search" /> Detectar</>}
+    </button>
+  );
+
+  const deleteBtn = (onClick: () => void, label: string) => (
+    <button type="button" onClick={onClick} disabled={loading}
+      style={{ padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,0,0,.4)', background: 'rgba(255,0,0,.08)', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '.875rem' }}>
+      <i className="fas fa-trash-alt" /> {label}
+    </button>
+  );
+
   /* ─── render ──────────────────────────────── */
   return (
-    <div className="curva" style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div className="curva" style={{ maxWidth: 760, margin: '0 auto' }}>
 
       {/* Header */}
       <div style={{ marginBottom: '2rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1.5rem' }}>
@@ -195,73 +316,56 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
       {/* Alert */}
       {alert && (
         <div style={{
-          padding: '12px 16px',
-          marginBottom: '1.5rem',
-          borderRadius: 8,
+          padding: '12px 16px', marginBottom: '1.5rem', borderRadius: 8,
           background: alert.type === 'ok' ? 'rgba(0,200,100,.12)' : 'rgba(255,0,0,.12)',
           border: `1px solid ${alert.type === 'ok' ? 'rgba(0,200,100,.35)' : 'rgba(255,0,0,.35)'}`,
-          color: alert.type === 'ok' ? '#00c864' : 'var(--color-primary)',
-          fontSize: '.875rem',
+          color: alert.type === 'ok' ? '#00c864' : 'var(--color-primary)', fontSize: '.875rem',
         }}>
           {alert.msg}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="novedades-tabs" style={{ marginBottom: '2rem' }}>
-        <button className={`novedades-tab${tab === 'manga' ? ' active' : ''}`} onClick={() => setTab('manga')}>
-          <i className="fas fa-book" /> Añadir Manga
-        </button>
-        <button className={`novedades-tab${tab === 'chapter' ? ' active' : ''}`} onClick={() => setTab('chapter')}>
-          <i className="fas fa-plus-circle" /> Añadir Capítulo
-        </button>
+      <div className="novedades-tabs" style={{ marginBottom: '2rem', flexWrap: 'wrap' }}>
+        {TABS.map((t) => (
+          <button key={t.id} className={`novedades-tab${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
+            <i className={t.icon} /> {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* ══ MANGA FORM ══ */}
+      {/* ══ ADD MANGA ══ */}
       {tab === 'manga' && (
         <form className="user-form" onSubmit={submitManga}>
           <div className="form-group">
             <label>Título *</label>
             <input value={mTitle} onChange={(e) => setMTitle(e.target.value)} required placeholder="Ej: Solo Leveling" />
-            {mTitle && (
-              <span className="form-hint">ID generado: <strong>{titleToId(mTitle)}</strong></span>
-            )}
+            {mTitle && <span className="form-hint">ID generado: <strong>{titleToId(mTitle)}</strong></span>}
           </div>
-
           <div className="form-group">
             <label>URL de portada *</label>
-            <input value={mImage} onChange={(e) => setMImage(e.target.value)} required
-              placeholder="https://... o /img/nombre.webp" />
+            <input value={mImage} onChange={(e) => setMImage(e.target.value)} required placeholder="https://... o /img/nombre.webp" />
           </div>
-
           <div className="form-group">
             <label>Descripción</label>
-            <textarea value={mDesc} onChange={(e) => setMDesc(e.target.value)}
-              rows={4} placeholder="Sinopsis del manga..." />
+            <textarea value={mDesc} onChange={(e) => setMDesc(e.target.value)} rows={4} placeholder="Sinopsis del manga..." />
           </div>
-
           <div className="form-group">
             <label>Géneros</label>
-            <input value={mGenres} onChange={(e) => setMGenres(e.target.value)}
-              placeholder="Accion, Fantasia, Sistema" />
+            <input value={mGenres} onChange={(e) => setMGenres(e.target.value)} placeholder="Accion, Fantasia, Sistema" />
             <span className="form-hint">Separados por coma</span>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label>Tipo</label>
               <select value={mType} onChange={(e) => setMType(e.target.value as Manga['type'])}>
-                <option>Manhwa</option>
-                <option>Manga</option>
-                <option>Manhua</option>
+                <option>Manhwa</option><option>Manga</option><option>Manhua</option>
               </select>
             </div>
             <div className="form-group">
               <label>Estado</label>
               <select value={mStatus} onChange={(e) => setMStatus(e.target.value as Manga['status'])}>
-                <option>En Emision</option>
-                <option>Finalizado</option>
-                <option>Pausado</option>
+                <option>En Emision</option><option>Finalizado</option><option>Pausado</option>
               </select>
             </div>
             <div className="form-group">
@@ -269,7 +373,6 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
               <input type="date" value={mDate} onChange={(e) => setMDate(e.target.value)} />
             </div>
           </div>
-
           <div className="form-actions" style={{ justifyContent: 'flex-start' }}>
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Guardando…' : <><i className="fas fa-save" /> Guardar Manga</>}
@@ -278,7 +381,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
         </form>
       )}
 
-      {/* ══ CHAPTER FORM ══ */}
+      {/* ══ ADD CHAPTER ══ */}
       {tab === 'chapter' && (
         <form className="user-form" onSubmit={submitChapter}>
           <div className="form-group">
@@ -290,7 +393,6 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
               ))}
             </select>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
             <div className="form-group">
               <label>Número de capítulo *</label>
@@ -299,36 +401,17 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             <div className="form-group">
               <label>Base URL</label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  value={cBaseUrl}
-                  onChange={(e) => { setCBaseUrl(e.target.value); setProbeResult(null); }}
-                  placeholder="https://dashboard.olympusbiblioteca.com/storage/comics/743/58809/"
-                  style={{ flex: 1 }}
-                />
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={probePages}
-                  disabled={probing || !cBaseUrl.trim()}
-                  title="Detectar páginas automáticamente"
-                  style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                >
-                  {probing
-                    ? <><i className="fas fa-spinner fa-spin" /> Probando…</>
-                    : <><i className="fas fa-search" /> Detectar</>}
-                </button>
+                <input value={cBaseUrl} onChange={(e) => { setCBaseUrl(e.target.value); setProbeResult(null); }}
+                  placeholder="https://dashboard.olympusbiblioteca.com/storage/comics/743/58809/" style={{ flex: 1 }} />
+                {probeBtn(probePages, probing || !cBaseUrl.trim(), probing)}
               </div>
               <span className="form-hint">
                 {probeResult
-                  ? <span style={{ color: '#00c864' }}>
-                      <i className="fas fa-check-circle" /> {probeResult.count} páginas · patrón <strong>{probeResult.pattern}</strong>
-                    </span>
-                  : 'URL base donde están las imágenes. Haz clic en Detectar para auto-rellenar las páginas.'}
+                  ? <span style={{ color: '#00c864' }}><i className="fas fa-check-circle" /> {probeResult.count} páginas · patrón <strong>{probeResult.pattern}</strong></span>
+                  : 'Haz clic en Detectar para auto-rellenar las páginas.'}
               </span>
             </div>
           </div>
-
-          {/* Pages mode */}
           <div className="form-group">
             <label>Páginas *</label>
             <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
@@ -339,7 +422,6 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                 </label>
               ))}
             </div>
-
             {cMode === 'auto' && (
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                 <div className="form-group" style={{ margin: 0 }}>
@@ -352,15 +434,10 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                 </div>
               </div>
             )}
-
             {cMode === 'manual' && (
               <textarea value={cManual} onChange={(e) => setCManual(e.target.value)}
-                required={cMode === 'manual'}
-                rows={6}
-                placeholder={'01.webp\n02.webp\n12-1.webp\n12-2.webp\n13.webp'}
-              />
+                required={cMode === 'manual'} rows={6} placeholder={'01.webp\n02.webp\n1_01.webp\n1_02.webp'} />
             )}
-
             {cMode === 'auto' && cCount && (
               <span className="form-hint">
                 Se generarán: {generatePages(Number(cCount), cExt || 'webp').slice(0, 5).join(', ')}
@@ -368,18 +445,145 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
               </span>
             )}
             {cMode === 'manual' && cManual && (
-              <span className="form-hint">
-                {parseManualPages(cManual).length} páginas detectadas
-              </span>
+              <span className="form-hint">{parseManualPages(cManual).length} páginas detectadas</span>
             )}
           </div>
-
           <div className="form-actions" style={{ justifyContent: 'flex-start' }}>
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Guardando…' : <><i className="fas fa-plus" /> Añadir Capítulo</>}
             </button>
           </div>
         </form>
+      )}
+
+      {/* ══ EDIT MANGA ══ */}
+      {tab === 'edit-manga' && (
+        <div>
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+            <label>Selecciona el manga a editar</label>
+            <select value={emId} onChange={(e) => loadMangaForEdit(e.target.value)}>
+              <option value="">— Selecciona un manga —</option>
+              {[...mangas].sort((a, b) => a.title.localeCompare(b.title)).map((m) => (
+                <option key={m.id} value={m.id}>{m.title}</option>
+              ))}
+            </select>
+          </div>
+
+          {emId && (
+            <form className="user-form" onSubmit={submitEditManga}>
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-bg-tertiary)', marginBottom: '1.5rem', fontSize: '.8rem', color: 'var(--color-text-muted)' }}>
+                ID: <strong style={{ color: 'var(--color-text-secondary)' }}>{emId}</strong> — el ID no cambia al editar.
+              </div>
+              <div className="form-group">
+                <label>Título *</label>
+                <input value={emTitle} onChange={(e) => setEmTitle(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>URL de portada *</label>
+                <input value={emImage} onChange={(e) => setEmImage(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Descripción</label>
+                <textarea value={emDesc} onChange={(e) => setEmDesc(e.target.value)} rows={4} />
+              </div>
+              <div className="form-group">
+                <label>Géneros</label>
+                <input value={emGenres} onChange={(e) => setEmGenres(e.target.value)} placeholder="Accion, Fantasia, Sistema" />
+                <span className="form-hint">Separados por coma</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label>Tipo</label>
+                  <select value={emType} onChange={(e) => setEmType(e.target.value as Manga['type'])}>
+                    <option>Manhwa</option><option>Manga</option><option>Manhua</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Estado</label>
+                  <select value={emStatus} onChange={(e) => setEmStatus(e.target.value as Manga['status'])}>
+                    <option>En Emision</option><option>Finalizado</option><option>Pausado</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Fecha de añadido</label>
+                  <input type="date" value={emDate} onChange={(e) => setEmDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="form-actions" style={{ justifyContent: 'space-between' }}>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Guardando…' : <><i className="fas fa-save" /> Guardar Cambios</>}
+                </button>
+                {deleteBtn(deleteManga, 'Eliminar Manga')}
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* ══ EDIT CHAPTER ══ */}
+      {tab === 'edit-chapter' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="form-group">
+              <label>Manga</label>
+              <select value={ecMangaId} onChange={(e) => { setEcMangaId(e.target.value); setEcChapterNum(''); setEcBaseUrl(''); setEcManual(''); setEcProbeResult(null); }}>
+                <option value="">— Selecciona un manga —</option>
+                {[...mangas].sort((a, b) => a.title.localeCompare(b.title)).map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Capítulo</label>
+              <select value={ecChapterNum}
+                onChange={(e) => { setEcChapterNum(e.target.value); loadChapterForEdit(ecMangaId, e.target.value); }}
+                disabled={!ecMangaId}>
+                <option value="">— Cap. —</option>
+                {(mangas.find((m) => m.id === ecMangaId)?.chapters ?? []).map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {ecLoading && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '.875rem' }}>
+              <i className="fas fa-spinner fa-spin" /> Cargando capítulo…
+            </p>
+          )}
+
+          {ecChapterNum && !ecLoading && (
+            <form className="user-form" onSubmit={submitEditChapter}>
+              <div className="form-group">
+                <label>Base URL</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={ecBaseUrl} onChange={(e) => { setEcBaseUrl(e.target.value); setEcProbeResult(null); }}
+                    placeholder="https://dashboard.olympusbiblioteca.com/storage/comics/743/58809/" style={{ flex: 1 }} />
+                  {probeBtn(ecProbePages, ecProbing || !ecBaseUrl.trim(), ecProbing)}
+                </div>
+                <span className="form-hint">
+                  {ecProbeResult
+                    ? <span style={{ color: '#00c864' }}><i className="fas fa-check-circle" /> {ecProbeResult.count} páginas · patrón <strong>{ecProbeResult.pattern}</strong></span>
+                    : 'Cambia la URL y pulsa Detectar para actualizar las páginas automáticamente.'}
+                </span>
+              </div>
+              <div className="form-group">
+                <label>Páginas *</label>
+                <textarea value={ecManual} onChange={(e) => setEcManual(e.target.value)}
+                  required rows={8} placeholder={'01.webp\n02.webp\n1_01.webp\n1_02.webp'} />
+                {ecManual && (
+                  <span className="form-hint">{parseManualPages(ecManual).length} páginas</span>
+                )}
+              </div>
+              <div className="form-actions" style={{ justifyContent: 'space-between' }}>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Guardando…' : <><i className="fas fa-save" /> Guardar Cambios</>}
+                </button>
+                {deleteBtn(deleteChapter, 'Eliminar Capítulo')}
+              </div>
+            </form>
+          )}
+        </div>
       )}
 
       {/* Manga list summary */}

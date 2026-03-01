@@ -17,6 +17,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
   const { isFavorite, toggle } = useFavoritesContext();
   const fav = isFavorite(manga.id);
   const [isNew, setIsNew] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     if (!manga.dateAdded) return;
@@ -35,15 +36,35 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
     >
       <Link href={`/manga/${manga.id}`}>
         <div className="manga-card-inner">
-          <Image
-            src={manga.image}
-            alt={manga.title}
-            width={200}
-            height={280}
-            style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-            loading="lazy"
-            unoptimized={manga.image.startsWith('/img/')}
-          />
+          {imgError ? (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                minHeight: '280px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--color-bg-secondary, #1a1a1a)',
+                color: 'var(--color-text-secondary, #b0b0b0)',
+                fontSize: '2rem',
+              }}
+              aria-label={manga.title}
+            >
+              <i className="fas fa-book" aria-hidden="true" />
+            </div>
+          ) : (
+            <Image
+              src={manga.image}
+              alt={manga.title}
+              width={200}
+              height={280}
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              loading="lazy"
+              unoptimized={manga.image.startsWith('/img/')}
+              onError={() => setImgError(true)}
+            />
+          )}
           <div className="manga-card-overlay">
             <span>{manga.type} · {manga.status}</span>
           </div>

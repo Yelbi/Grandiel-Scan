@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
-import { FavoritesProvider } from '@/components/providers/FavoritesProvider';
-import { HistoryProvider } from '@/components/providers/HistoryProvider';
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { UserProfileProvider } from '@/components/providers/UserProfileProvider';
+import { Providers } from '@/components/providers/Providers';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
@@ -69,20 +66,14 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/img/logo.jpg" />
       </head>
       <body className="fondo">
-        <ThemeProvider>
-          <UserProfileProvider>
-          <FavoritesProvider>
-            <HistoryProvider>
-              <a href="#main-content" className="skip-to-main">
-                Saltar al contenido principal
-              </a>
-              <Navbar />
-              <main id="main-content">{children}</main>
-              <SpeedInsights />
-            </HistoryProvider>
-          </FavoritesProvider>
-          </UserProfileProvider>
-        </ThemeProvider>
+        <Providers>
+          <a href="#main-content" className="skip-to-main">
+            Saltar al contenido principal
+          </a>
+          <Navbar />
+          <main id="main-content">{children}</main>
+          <SpeedInsights />
+        </Providers>
       </body>
     </html>
   );
