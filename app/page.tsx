@@ -31,7 +31,7 @@ export default async function HomePage() {
     .filter((m) => MOST_VIEWED_IDS.includes(m.id))
     .sort((a, b) => MOST_VIEWED_IDS.indexOf(a.id) - MOST_VIEWED_IDS.indexOf(b.id));
 
-  const heroCovers = mangas.filter((m) => m.image).slice(0, 5);
+  const heroCovers = mangas.filter((m) => m.image).slice(0, 18);
 
   return (
     <>
@@ -53,13 +53,6 @@ export default async function HomePage() {
         <div className="stats-bar__item">
           <strong className="stats-bar__value">ES</strong>
           <span className="stats-bar__label">En Español</span>
-        </div>
-        <div className="stats-bar__divider" aria-hidden="true" />
-        <div className="stats-bar__item">
-          <strong className="stats-bar__value">
-            <i className="fas fa-user-circle" aria-hidden="true" />
-          </strong>
-          <span className="stats-bar__label">Cuenta Gratis</span>
         </div>
       </div>
 

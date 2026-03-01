@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 const NAV_LINKS = [
-  { href: '/', label: 'Inicio', icon: 'fas fa-home' },
-  { href: '/mangas', label: 'Galería', icon: 'fas fa-images' },
-  { href: '/actualizaciones', label: 'Novedades', icon: 'fas fa-newspaper' },
+  { href: '/', label: 'Inicio' },
+  { href: '/mangas', label: 'Galería' },
+  { href: '/actualizaciones', label: 'Novedades' },
 ] as const;
 
 export default function NavLinks() {
@@ -39,15 +39,14 @@ export default function NavLinks() {
       )}
 
       <ul id="nav-list" className={`list${open ? ' is-open' : ''}`}>
-        {NAV_LINKS.map(({ href, label, icon }) => (
+        {NAV_LINKS.map(({ href, label }) => (
           <li key={href}>
             <Link
               href={href}
               aria-current={pathname === href ? 'page' : undefined}
               onClick={close}
             >
-              <i className={icon} aria-hidden="true" />
-              <span>{label}</span>
+              {label}
             </Link>
           </li>
         ))}

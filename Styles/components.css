@@ -1774,71 +1774,53 @@ mark.search-highlight {
 }
 
 /* ============================================================
-   HERO — PORTADAS FLOTANTES
+   HERO — PORTADAS DISPERSAS EN CAÍDA
    ============================================================ */
 
-.hero__covers {
+@keyframes floatDown {
+  from { transform: translateY(-130px); }
+  to   { transform: translateY(calc(100vh + 130px)); }
+}
+
+.hero__scatter {
   position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
 }
 
-.hero__cover {
+.hero__float {
   position: absolute;
-  overflow: hidden;
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  top: 0;
+  animation: floatDown linear infinite;
+  will-change: transform;
 }
 
-.hero__cover--1 {
-  width: 110px;
-  height: 158px;
-  top: 12%;
-  right: 10%;
-  opacity: 0.18;
-  transform: rotate(6deg);
-}
-
-.hero__cover--2 {
-  width: 90px;
-  height: 130px;
-  top: 42%;
-  right: 5%;
-  opacity: 0.13;
-  transform: rotate(-4deg);
-}
-
-.hero__cover--3 {
-  width: 100px;
-  height: 144px;
-  bottom: 10%;
-  right: 14%;
-  opacity: 0.10;
-  transform: rotate(9deg);
-}
-
-.hero__cover--4 {
-  width: 85px;
-  height: 122px;
-  top: 18%;
-  left: 6%;
-  opacity: 0.10;
-  transform: rotate(-7deg);
-}
-
-.hero__cover--5 {
+.hero__float-cover {
   width: 72px;
   height: 104px;
-  bottom: 15%;
-  left: 10%;
-  opacity: 0.08;
-  transform: rotate(5deg);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  opacity: 0.15;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-/* Ocultar en pantallas pequeñas donde el hero es más compacto */
-@media (max-width: 900px) {
-  .hero__covers {
+@media (max-width: 768px) {
+  .hero__scatter {
     display: none;
   }
 }
