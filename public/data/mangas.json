@@ -1368,11 +1368,12 @@
       "status": "En Emision",
       "chapters": [
         1,
-        2
+        2,
+        3
       ],
       "dateAdded": "2026-03-01",
       "lastUpdated": "2026-03-01",
-      "latestChapter": 2
+      "latestChapter": 3
     }
   ]
 }

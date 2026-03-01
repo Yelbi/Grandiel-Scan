@@ -58,11 +58,11 @@ async function probeSimple(
 }
 
 /* ── Patrón subparte: 01_01.webp, 01_02.webp, 02_01 … */
-async function probeSubPart(base: string, ext: string): Promise<string[]> {
+async function probeSubPart(base: string, ext: string, padPart: number): Promise<string[]> {
   const pages: string[] = [];
 
   for (let part = 1; part <= MAX_PARTS; part++) {
-    const pp = String(part).padStart(2, '0');
+    const pp = String(part).padStart(padPart, '0');
     // ¿existe la primera página de este parte?
     if (!(await exists(base + `${pp}_01.${ext}`))) break;
 
@@ -110,10 +110,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pages, pattern: 'zero-indexed', count: pages.length });
   }
 
-  // Patrón subparte: 01_01.webp
+  // Patrón subparte zero-padded: 01_01.webp
   if (await exists(base + `01_01.${ext}`)) {
-    const pages = await probeSubPart(base, ext);
-    return NextResponse.json({ pages, pattern: 'subpart', count: pages.length });
+    const pages = await probeSubPart(base, ext, 2);
+    return NextResponse.json({ pages, pattern: 'subpart-padded', count: pages.length });
+  }
+
+  // Patrón subparte sin padding: 1_01.webp
+  if (await exists(base + `1_01.${ext}`)) {
+    const pages = await probeSubPart(base, ext, 1);
+    return NextResponse.json({ pages, pattern: 'subpart-nopad', count: pages.length });
   }
 
   return NextResponse.json(
