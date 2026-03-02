@@ -39,14 +39,14 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'edit-chapter', label: 'Editar Capítulo',   icon: 'fas fa-edit'           },
 ];
 
-/* Parsea "28: 65076", "28 65076", "28,65076"… */
+/* Parsea "28: 65076", "28 65076", "28,65076", "1.1: 83734", "29.5: 66022"… */
 function parseBulkList(raw: string): Array<{ chapter: number; folderId: string }> {
   return raw
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
     .flatMap((line) => {
-      const m = line.match(/^(\d+)\s*[:\-,\s]\s*(\S+)/);
+      const m = line.match(/^(\d+(?:\.\d+)?)\s*[:\-,\s]\s*(\S+)/);
       return m ? [{ chapter: Number(m[1]), folderId: m[2] }] : [];
     });
 }
@@ -491,7 +491,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
             <div className="form-group">
               <label>Número de capítulo *</label>
-              <input type="number" min={1} value={cNum} onChange={(e) => setCNum(e.target.value)} required placeholder="1" />
+              <input type="number" min={0.1} step="any" value={cNum} onChange={(e) => setCNum(e.target.value)} required placeholder="1" />
             </div>
             <div className="form-group">
               <label>Base URL</label>
@@ -591,7 +591,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
               onChange={(e) => setBList(e.target.value)}
               disabled={bRunning}
               rows={10}
-              placeholder={'28: 65076\n29: 66022\n30: 66571\n31: 67900'}
+              placeholder={'28: 65076\n28.5: 65500\n29: 66022\n29.5: 66400\n30: 66571'}
               style={{ fontFamily: 'monospace', fontSize: '.85rem' }}
             />
             {bList && !bRunning && (

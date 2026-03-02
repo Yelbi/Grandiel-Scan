@@ -116,22 +116,24 @@ async function probeSubPart(
   return pages;
 }
 
-/* ── Patrón con prefijo: c-743-1_01.webp ────────────────
+/* ── Patrón con prefijo: c-743-1_01.webp / c-743-01_01.webp ─────────────
    El prefijo se deduce de los IDs numéricos en la URL.
-   Tolera huecos igual que probeSubPart.                ── */
+   padPart controla si la parte va sin padding (1→"1") o con 2 dígitos (2→"01").
+   Tolera huecos igual que probeSubPart.                              ── */
 async function probePrefixedSubPart(
-  base: string, ext: string, prefix: string,
+  base: string, ext: string, prefix: string, padPart: number = 1,
 ): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
 
   for (let part = 1; part <= MAX_PARTS; part++) {
-    if (!(await exists(base + `${prefix}${part}_01.${ext}`))) {
+    const pp = String(part).padStart(padPart, '0');
+    if (!(await exists(base + `${prefix}${pp}_01.${ext}`))) {
       if (++gaps >= MAX_PART_GAPS) break;
       continue;
     }
     gaps = 0;
-    const partPages = await probePagesOfPart(base, ext, `${prefix}${part}`);
+    const partPages = await probePagesOfPart(base, ext, `${prefix}${pp}`);
     pages.push(...partPages);
   }
   return pages;
@@ -217,15 +219,23 @@ export async function POST(req: NextRequest) {
   const standardChecks = [
     `01_01.${ext}`,      // subpart-padded
     `1_01.${ext}`,       // subpart-nopad
-    `1%20(1).${ext}`,    // paren-part  ← nuevo
+    `1%20(1).${ext}`,    // paren-part
     `001.${ext}`,        // simple-3digit
     `01.${ext}`,         // simple-2digit
     `0.${ext}`,          // zero-indexed
     `1.${ext}`,          // zero-indexed validator
   ];
 
-  // Chequeos de prefijos: cada uno prueba "prefix + 1_01.ext"
-  const prefixChecks = prefixes.map((p) => `${p}1_01.${ext}`);
+  // Chequeos de prefijos: para cada prefijo se prueban dos variantes de padding
+  // padPart=1 → "c-743-1_01.webp"   padPart=2 → "c-743-01_01.webp"
+  type PrefixVariant = { prefix: string; padPart: number };
+  const prefixVariants: PrefixVariant[] = prefixes.flatMap((p) => [
+    { prefix: p, padPart: 1 },
+    { prefix: p, padPart: 2 },
+  ]);
+  const prefixChecks = prefixVariants.map(({ prefix, padPart }) =>
+    `${prefix}${'1'.padStart(padPart, '0')}_01.${ext}`,
+  );
 
   const allChecks  = [...standardChecks, ...prefixChecks];
   const allResults = await Promise.all(allChecks.map((f) => exists(base + f)));
@@ -255,12 +265,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pages, pattern: 'paren-part', count: pages.length });
   }
 
-  // Prefijo dinámico: c-743-1_01.webp, 743-1_01.webp, etc.
-  for (let i = 0; i < prefixes.length; i++) {
+  // Prefijo dinámico: c-743-1_01.webp, c-743-01_01.webp, 743-1_01.webp, etc.
+  for (let i = 0; i < prefixVariants.length; i++) {
     if (prefixResults[i]) {
-      const pages = await probePrefixedSubPart(base, ext, prefixes[i]);
+      const { prefix, padPart } = prefixVariants[i];
+      const pages = await probePrefixedSubPart(base, ext, prefix, padPart);
       if (pages.length > 0) {
-        return NextResponse.json({ pages, pattern: `prefixed(${prefixes[i]})`, count: pages.length });
+        return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
       }
     }
   }
