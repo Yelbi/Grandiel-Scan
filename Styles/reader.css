@@ -425,6 +425,7 @@
   position: sticky;
   top: var(--nav-height, 70px);
   z-index: calc(var(--z-fixed, 100) - 1);
+  transition: top var(--transition-slow, 0.3s ease);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm, 8px);
@@ -754,4 +755,9 @@
     width: 36px;
     height: 36px;
   }
+}
+
+/* Cuando el navbar se oculta, el reader topbar sube al top */
+body.nav-hidden .reader-topbar {
+  top: 0;
 }

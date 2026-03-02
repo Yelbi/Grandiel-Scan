@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
   { href: '/', label: 'Inicio' },
@@ -16,6 +16,18 @@ export default function NavLinks() {
 
   const close = () => setOpen(false);
 
+  // Lock body scroll while drawer is open (prevents background scroll on mobile)
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
   return (
     <>
       <button
@@ -24,6 +36,7 @@ export default function NavLinks() {
         aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
         aria-expanded={open}
         aria-controls="nav-list"
+        suppressHydrationWarning
       >
         <span />
         <span />

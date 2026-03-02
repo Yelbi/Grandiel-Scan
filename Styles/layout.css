@@ -113,6 +113,15 @@ nav:not(.breadcrumbs) {
   display: none;
 }
 
+/* ===== AUTO-HIDE ON SCROLL ===== */
+.alpha {
+  transition: transform var(--transition-slow);
+}
+
+.alpha.nav-hidden {
+  transform: translateY(-100%);
+}
+
 /* ===== GLASSMORPHISM ON SCROLL ===== */
 .alpha.scrolled {
   background-color: rgba(26, 26, 26, 0.85);
@@ -128,9 +137,9 @@ nav:not(.breadcrumbs) {
   flex-direction: column;
   justify-content: center;
   gap: 5px;
-  width: 40px;
-  height: 40px;
-  padding: 8px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   flex-shrink: 0;
@@ -171,6 +180,8 @@ nav:not(.breadcrumbs) {
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   z-index: calc(var(--z-fixed) - 1);
+  /* iOS Safari requires cursor:pointer to fire click events on non-interactive elements */
+  cursor: pointer;
 }
 
 /* ===== BARRA DE BÚSQUEDA ===== */
@@ -629,9 +640,10 @@ nav:not(.breadcrumbs) {
     height: 40px;
   }
 
-  /* Hamburger visible en móvil */
+  /* Hamburger visible en móvil — al extremo derecho */
   .nav-hamburger {
     display: flex;
+    order: 99;
   }
 
   /* Drawer lateral */

@@ -195,6 +195,7 @@ export default function ChapterReader({
             onClick={() => saveMode('paginated')}
             title="Modo paginado"
             aria-pressed={mode === 'paginated'}
+            suppressHydrationWarning
           >
             <IcoFile />
           </button>
@@ -203,6 +204,7 @@ export default function ChapterReader({
             onClick={() => saveMode('continuous')}
             title="Modo continuo"
             aria-pressed={mode === 'continuous'}
+            suppressHydrationWarning
           >
             <IcoBars />
           </button>
@@ -215,6 +217,7 @@ export default function ChapterReader({
             value={chapter.chapter}
             onChange={(e) => router.push(`/chapter/${manga.id}/${e.target.value}`)}
             aria-label="Ir al capítulo"
+            suppressHydrationWarning
           >
             {sortedChapters.map((cap) => (
               <option key={cap} value={cap}>
@@ -347,6 +350,7 @@ export default function ChapterReader({
           onClick={() => setPanelOpen((o) => !o)}
           aria-label="Ajustes de lectura"
           aria-expanded={panelOpen}
+          suppressHydrationWarning
         >
           <IcoCog />
         </button>
