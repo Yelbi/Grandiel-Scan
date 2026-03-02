@@ -676,20 +676,82 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .reader-topbar {
-    padding: 0 var(--spacing-md, 16px);
+    padding: 0 var(--spacing-sm, 8px);
     height: 48px;
+    gap: 4px;
+    /* Safe area iOS en landscape */
+    padding-left: max(var(--spacing-sm, 8px), env(safe-area-inset-left));
+    padding-right: max(var(--spacing-sm, 8px), env(safe-area-inset-right));
   }
 
   .reader-topbar__back-label {
     display: none;
   }
 
+  /* Aumentar touch targets a 44px en móvil */
+  .reader-mode-btn,
+  .reader-topbar__nav {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Selector de capítulo más compacto */
+  .reader-chapter-select {
+    height: 36px;
+    max-width: 90px;
+    font-size: 0.8rem;
+  }
+
   .reader-content {
     padding: var(--spacing-md, 16px) var(--spacing-sm, 8px) var(--spacing-xl, 32px);
+    /* Safe area lateral en landscape */
+    padding-left: max(var(--spacing-sm, 8px), env(safe-area-inset-left));
+    padding-right: max(var(--spacing-sm, 8px), env(safe-area-inset-right));
+  }
+
+  /* Botones de página más grandes */
+  .reader-page-btn {
+    width: 52px;
+    height: 52px;
   }
 
   .reader-chapter-btn {
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    font-size: 0.8rem;
+  }
+
+  /* Safe area inferior para iPhone con home bar */
+  .reader-chapter-nav {
+    padding-bottom: max(var(--spacing-xl, 32px), env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 480px) {
+  .reader-chapter-nav {
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .reader-chapter-btn {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     font-size: 0.75rem;
+  }
+
+  /* Ocultar texto en botones de capítulo inferior en pantallas muy pequeñas */
+  .reader-chapter-btn--home span,
+  .reader-chapter-btn i ~ * {
+    display: none;
+  }
+}
+
+/* Safe area en modo landscape iOS */
+@media (max-height: 500px) and (orientation: landscape) {
+  .reader-topbar {
+    height: 40px;
+  }
+
+  .reader-mode-btn,
+  .reader-topbar__nav {
+    width: 36px;
+    height: 36px;
   }
 }

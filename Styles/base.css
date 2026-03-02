@@ -146,7 +146,14 @@ body {
   color: var(--color-text);
   background-color: var(--color-bg);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  /* Elimina el flash azul/gris al tocar en Android */
+  -webkit-tap-highlight-color: transparent;
+  /* Evita el retraso de 300ms en doble-tap */
+  touch-action: manipulation;
+  /* Evita scroll horizontal accidental */
+  overflow-x: hidden;
 }
 
 ul, ol {
@@ -186,6 +193,7 @@ select:focus:not(:focus-visible) {
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 /* ===== TIPOGRAFÍA ===== */

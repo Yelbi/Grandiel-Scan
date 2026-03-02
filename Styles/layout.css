@@ -29,6 +29,9 @@ nav:not(.breadcrumbs) {
   gap: var(--spacing-lg);
   height: var(--nav-height);
   padding: 0 var(--spacing-xl);
+  /* iOS notch / safe area */
+  padding-left: max(var(--spacing-xl), env(safe-area-inset-left));
+  padding-right: max(var(--spacing-xl), env(safe-area-inset-right));
   background-color: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
 }
@@ -635,18 +638,25 @@ nav:not(.breadcrumbs) {
   .list {
     position: fixed;
     top: 0;
-    right: -300px;
-    width: 280px;
+    right: -105vw;
+    /* Ancho adaptado: máx 280px pero no más del 85% del viewport */
+    width: min(280px, calc(100vw - 56px));
     height: 100vh;
+    height: 100dvh;
     background: var(--color-bg-secondary);
     border-left: 1px solid var(--color-border);
     flex-direction: column;
     align-items: flex-start;
-    padding: 80px var(--spacing-lg) var(--spacing-xl);
+    /* Safe area para iPhone con notch/home bar */
+    padding-top: max(80px, calc(60px + env(safe-area-inset-top)));
+    padding-bottom: max(var(--spacing-xl), env(safe-area-inset-bottom));
+    padding-left: var(--spacing-lg);
+    padding-right: max(var(--spacing-lg), env(safe-area-inset-right));
     gap: var(--spacing-xs);
     transition: right var(--transition-slow);
     z-index: var(--z-fixed);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .list.is-open {
@@ -657,6 +667,7 @@ nav:not(.breadcrumbs) {
   .list a {
     width: 100%;
     font-size: var(--font-size-base);
+    min-height: 48px;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
   }
@@ -704,8 +715,7 @@ nav:not(.breadcrumbs) {
   #box-search {
     right: auto;
     left: 0;
-    width: calc(100vw - 2 * var(--spacing-md));
-    max-width: 360px;
+    width: min(calc(100vw - 2 * var(--spacing-md)), 360px);
   }
 
   .curva {
@@ -719,6 +729,35 @@ nav:not(.breadcrumbs) {
 
   #lista {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  /* Página de manga: apilar portada + info verticalmente */
+  .manba {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+  }
+
+  .manga-cover-img {
+    max-width: 200px;
+  }
+
+  /* Navegación de capítulos: reducir gap */
+  .sig {
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+  }
+
+  /* Botones de modo lectura: wrap en pantallas pequeñas */
+  .sortable {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+
+  .sortable button {
+    min-height: 44px;
+    flex: 1;
+    min-width: calc(50% - var(--spacing-xs));
   }
 
   .footer {
@@ -741,6 +780,7 @@ nav:not(.breadcrumbs) {
 @media (max-width: 480px) {
   .mami {
     grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
   }
 
   #lista {
@@ -754,5 +794,25 @@ nav:not(.breadcrumbs) {
   .chapter-selector-select {
     width: 100%;
     max-width: 280px;
+  }
+
+  .curva {
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+
+  .sig {
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-base);
+  }
+
+  .parrafo {
+    padding: 0 var(--spacing-sm);
+  }
+}
+
+/* ===== SAFE AREA — barra home de iPhone ===== */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .footer {
+    padding-bottom: max(var(--spacing-lg), env(safe-area-inset-bottom));
   }
 }

@@ -25,15 +25,31 @@ function parseManualPages(raw: string): string[] {
   return raw.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
 }
 
-type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter';
+type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk';
 type Alert = { type: 'ok' | 'err'; msg: string } | null;
 
+type BulkStatus = 'pending' | 'probing' | 'saving' | 'done' | 'error' | 'skip';
+type BulkEntry  = { chapter: number; folderId: string; status: BulkStatus; pages: number; pattern: string; error?: string };
+
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'manga',        label: 'Añadir Manga',     icon: 'fas fa-book'        },
-  { id: 'chapter',      label: 'Añadir Capítulo',  icon: 'fas fa-plus-circle' },
-  { id: 'edit-manga',   label: 'Editar Manga',     icon: 'fas fa-pen'         },
-  { id: 'edit-chapter', label: 'Editar Capítulo',  icon: 'fas fa-edit'        },
+  { id: 'manga',        label: 'Añadir Manga',     icon: 'fas fa-book'           },
+  { id: 'chapter',      label: 'Añadir Capítulo',  icon: 'fas fa-plus-circle'    },
+  { id: 'bulk',         label: 'Carga Masiva',      icon: 'fas fa-layer-group'    },
+  { id: 'edit-manga',   label: 'Editar Manga',      icon: 'fas fa-pen'            },
+  { id: 'edit-chapter', label: 'Editar Capítulo',   icon: 'fas fa-edit'           },
 ];
+
+/* Parsea "28: 65076", "28 65076", "28,65076"… */
+function parseBulkList(raw: string): Array<{ chapter: number; folderId: string }> {
+  return raw
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      const m = line.match(/^(\d+)\s*[:\-,\s]\s*(\S+)/);
+      return m ? [{ chapter: Number(m[1]), folderId: m[2] }] : [];
+    });
+}
 
 /* ─── component ────────────────────────────────────── */
 export default function AdminClient({ initialMangas }: { initialMangas: Manga[] }) {
@@ -62,6 +78,14 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [probing,     setProbing]     = useState(false);
   const [probeResult, setProbeResult] = useState<{ pattern: string; count: number } | null>(null);
 
+  /* ── Bulk state ── */
+  const [bMangaId,   setBMangaId]   = useState('');
+  const [bComicBase, setBComicBase] = useState('');
+  const [bExt,       setBExt]       = useState('webp');
+  const [bList,      setBList]      = useState('');
+  const [bRunning,   setBRunning]   = useState(false);
+  const [bProgress,  setBProgress]  = useState<BulkEntry[]>([]);
+
   /* ── Edit Manga state ── */
   const [emId,     setEmId]     = useState('');
   const [emTitle,  setEmTitle]  = useState('');
@@ -85,6 +109,77 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   function notify(type: 'ok' | 'err', msg: string) {
     setAlert({ type, msg });
     setTimeout(() => setAlert(null), 5000);
+  }
+
+  /* ─── BULK: carga masiva ──────────────────── */
+  async function runBulk() {
+    const entries = parseBulkList(bList);
+    if (!entries.length || !bMangaId || !bComicBase.trim()) {
+      notify('err', 'Completa el manga, URL base y la lista de capítulos.');
+      return;
+    }
+    const comicBase = bComicBase.replace(/\/$/, '');
+    setBRunning(true);
+    setBProgress(entries.map((e) => ({ ...e, status: 'pending', pages: 0, pattern: '' })));
+
+    for (let i = 0; i < entries.length; i++) {
+      const { chapter, folderId } = entries[i];
+      const baseUrl = `${comicBase}/${folderId}/`;
+
+      // → probing
+      setBProgress((prev) => prev.map((e, idx) => idx === i ? { ...e, status: 'probing' } : e));
+
+      let probeJson: { pages?: string[]; pattern?: string; count?: number; error?: string };
+      try {
+        const res = await fetch('/api/admin/probe-chapter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ baseUrl, ext: bExt }),
+        });
+        probeJson = await res.json();
+        if (!res.ok || !probeJson.pages?.length) {
+          setBProgress((prev) => prev.map((e, idx) => idx === i
+            ? { ...e, status: 'error', error: probeJson.error ?? 'Sin páginas detectadas' } : e));
+          continue;
+        }
+      } catch {
+        setBProgress((prev) => prev.map((e, idx) => idx === i
+          ? { ...e, status: 'error', error: 'Error de red' } : e));
+        continue;
+      }
+
+      // → saving
+      setBProgress((prev) => prev.map((e, idx) => idx === i
+        ? { ...e, status: 'saving', pages: probeJson.count ?? 0, pattern: probeJson.pattern ?? '' } : e));
+
+      try {
+        const res = await fetch('/api/admin/chapter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mangaId: bMangaId, chapter, baseUrl, pages: probeJson.pages }),
+        });
+        const saveJson = await res.json();
+        if (!res.ok) {
+          setBProgress((prev) => prev.map((e, idx) => idx === i
+            ? { ...e, status: saveJson.error?.includes('ya existe') ? 'skip' : 'error', error: saveJson.error } : e));
+        } else {
+          setBProgress((prev) => prev.map((e, idx) => idx === i ? { ...e, status: 'done' } : e));
+          setMangas((prev) => prev.map((m) =>
+            m.id === bMangaId
+              ? { ...m, chapters: [...new Set([...m.chapters, chapter])].sort((a, b) => a - b), latestChapter: Math.max(m.latestChapter, chapter) }
+              : m,
+          ));
+        }
+      } catch {
+        setBProgress((prev) => prev.map((e, idx) => idx === i
+          ? { ...e, status: 'error', error: 'Error de red al guardar' } : e));
+      }
+    }
+
+    setBRunning(false);
+    const done  = entries.length;
+    const ok    = bProgress.filter((e) => e.status === 'done').length;
+    notify('ok', `Carga masiva terminada: ${ok}/${done} capítulos subidos.`);
   }
 
   /* ─── probe (add chapter) ─────────────────── */
@@ -454,6 +549,132 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             </button>
           </div>
         </form>
+      )}
+
+      {/* ══ BULK UPLOAD ══ */}
+      {tab === 'bulk' && (
+        <div>
+          {/* Config */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div className="form-group">
+              <label>Manga *</label>
+              <select value={bMangaId} onChange={(e) => setBMangaId(e.target.value)} disabled={bRunning}>
+                <option value="">— Selecciona un manga —</option>
+                {[...mangas].sort((a, b) => a.title.localeCompare(b.title)).map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Extensión</label>
+              <input value={bExt} onChange={(e) => setBExt(e.target.value)} placeholder="webp" disabled={bRunning} />
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <label>URL base del cómic *</label>
+            <input
+              value={bComicBase}
+              onChange={(e) => setBComicBase(e.target.value)}
+              placeholder="https://dashboard.olympusbiblioteca.com/storage/comics/743"
+              disabled={bRunning}
+            />
+            <span className="form-hint">
+              El sistema construye: <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>URL base / carpeta /</code> para cada capítulo
+            </span>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+            <label>Lista de capítulos * <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(formato: capítulo: carpeta)</span></label>
+            <textarea
+              value={bList}
+              onChange={(e) => setBList(e.target.value)}
+              disabled={bRunning}
+              rows={10}
+              placeholder={'28: 65076\n29: 66022\n30: 66571\n31: 67900'}
+              style={{ fontFamily: 'monospace', fontSize: '.85rem' }}
+            />
+            {bList && !bRunning && (
+              <span className="form-hint">{parseBulkList(bList).length} capítulos en la lista</span>
+            )}
+          </div>
+
+          {/* Action */}
+          {!bRunning && bProgress.length === 0 && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={runBulk}
+              disabled={!bMangaId || !bComicBase.trim() || !bList.trim()}
+            >
+              <i className="fas fa-layer-group" /> Detectar y Subir Todos
+            </button>
+          )}
+          {bRunning && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '.875rem', marginBottom: '1rem' }}>
+              <i className="fas fa-spinner fa-spin" /> Procesando capítulos… no cierres esta página.
+            </p>
+          )}
+          {bProgress.length > 0 && !bRunning && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => { setBProgress([]); setBList(''); }}
+              style={{ marginBottom: '1rem' }}
+            >
+              <i className="fas fa-redo" /> Nueva carga
+            </button>
+          )}
+
+          {/* Progress list */}
+          {bProgress.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: '1rem' }}>
+              {/* Summary bar */}
+              {!bRunning && (() => {
+                const done  = bProgress.filter((e) => e.status === 'done').length;
+                const skip  = bProgress.filter((e) => e.status === 'skip').length;
+                const err   = bProgress.filter((e) => e.status === 'error').length;
+                return (
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--color-bg-tertiary)', fontSize: '.8rem', color: 'var(--color-text-secondary)', marginBottom: 8 }}>
+                    <strong style={{ color: '#00c864' }}>{done} subidos</strong>
+                    {skip > 0 && <> · <strong style={{ color: '#f0a500' }}>{skip} ya existían</strong></>}
+                    {err  > 0 && <> · <strong style={{ color: 'var(--color-primary)' }}>{err} errores</strong></>}
+                    {' '}de {bProgress.length} capítulos
+                  </div>
+                );
+              })()}
+
+              {bProgress.map((e) => {
+                const icon =
+                  e.status === 'pending'  ? '⏳' :
+                  e.status === 'probing'  ? '🔍' :
+                  e.status === 'saving'   ? '💾' :
+                  e.status === 'done'     ? '✅' :
+                  e.status === 'skip'     ? '⏭️' : '❌';
+                const color =
+                  e.status === 'done'  ? '#00c864' :
+                  e.status === 'error' ? 'var(--color-primary)' :
+                  e.status === 'skip'  ? '#f0a500' :
+                  'var(--color-text-muted)';
+                return (
+                  <div key={e.chapter} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.8rem', padding: '6px 10px', borderRadius: 6, background: 'var(--color-bg-tertiary)' }}>
+                    <span style={{ fontSize: '1rem', flexShrink: 0 }}>{icon}</span>
+                    <span style={{ color: 'var(--color-text-secondary)', flexShrink: 0, minWidth: 80 }}>Cap. {e.chapter}</span>
+                    <code style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>{e.folderId}</code>
+                    <span style={{ color, marginLeft: 'auto', textAlign: 'right' }}>
+                      {e.status === 'done'    && `${e.pages} páginas · ${e.pattern}`}
+                      {e.status === 'saving'  && `Guardando ${e.pages} páginas…`}
+                      {e.status === 'probing' && 'Detectando páginas…'}
+                      {e.status === 'pending' && 'En cola'}
+                      {e.status === 'skip'    && 'Ya existía'}
+                      {e.status === 'error'   && (e.error ?? 'Error')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ══ EDIT MANGA ══ */}

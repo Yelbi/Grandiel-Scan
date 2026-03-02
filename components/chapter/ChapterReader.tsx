@@ -110,7 +110,7 @@ export default function ChapterReader({
 }: ChapterReaderProps) {
   const router = useRouter();
   const { addEntry } = useHistoryContext();
-  const [mode, setMode] = useState<ReadingMode>('paginated');
+  const [mode, setMode] = useState<ReadingMode>('continuous');
   const [currentPage, setCurrentPage] = useState(0);
   const [brightness, setBrightness] = useState(100);
   const [imgWidth, setImgWidth] = useState(100);
