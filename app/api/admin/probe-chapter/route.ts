@@ -6,6 +6,9 @@ const MAX_PAGES           = 600;
 const MAX_PARTS           = 80;
 const MAX_PER_PART        = 60;
 const MAX_PART_GAPS       = 3;   // partes vacías consecutivas toleradas
+const PAREN_MAX_SCAN      = 500; // máximo nro a probar dentro de un paréntesis
+const PAREN_TAIL_MISS     = 50;  // misses consecutivos DESPUÉS del último hit → parar
+const PAREN_INIT_MISS     = 32;  // si no hay ningún hit en los primeros N → parte no existe
 
 /* ── Si HEAD falla, usar GET para toda la sesión ── */
 let serverPrefersGet = false;
@@ -134,26 +137,50 @@ async function probePrefixedSubPart(
   return pages;
 }
 
-/* ── Patrón "N (M).webp": 1 (1).webp, 2 (1).webp … ─────
-   Almacena el filename URL-encoded ("1%20(1).webp") para que
-   baseUrl + page forme una URL válida.
-   Tolera huecos en la numeración de partes.             ── */
+/* ── Patrón "N (M).webp": 1 (1).webp, 1 (28).webp … ────
+   Los números M pueden NO ser consecutivos (e.g. 1, 28, 29…).
+   Algoritmo: barrido adaptativo que rastrea el último hit y
+   para solo cuando hay PAREN_TAIL_MISS misses seguidos al final.
+   Almacena filenames URL-encoded: "1%20(28).webp".      ── */
 async function probeParenPart(base: string, ext: string): Promise<string[]> {
   const pages: string[] = [];
-  let gaps = 0;
+  let partGaps = 0;
 
   for (let part = 1; part <= MAX_PARTS; part++) {
-    if (!(await exists(base + `${part}%20(1).${ext}`))) {
-      if (++gaps >= MAX_PART_GAPS) break;
+    const partPages: string[] = [];
+    let lastHit = -1;
+    let i       = 1;
+
+    while (i <= PAREN_MAX_SCAN) {
+      const batchSize = Math.min(BATCH_SIZE, PAREN_MAX_SCAN - i + 1);
+      const batch     = Array.from({ length: batchSize }, (_, k) =>
+        base + `${part}%20(${i + k}).${ext}`,
+      );
+      const results = await probeBatch(batch);
+
+      for (let k = 0; k < results.length; k++) {
+        if (results[k]) {
+          partPages.push(`${part}%20(${i + k}).${ext}`);
+          lastHit = i + k;
+        }
+      }
+
+      i += batchSize;
+
+      // Sin ningún hit aún y ya escaneamos demasiado → esta parte no existe
+      if (lastHit < 0 && i > PAREN_INIT_MISS) break;
+      // Con hits: parar si llevamos PAREN_TAIL_MISS posiciones vacías desde el último
+      if (lastHit >= 0 && i > lastHit + PAREN_TAIL_MISS) break;
+    }
+
+    if (partPages.length === 0) {
+      if (++partGaps >= MAX_PART_GAPS) break;
       continue;
     }
-    gaps = 0;
-
-    for (let page = 1; page <= MAX_PER_PART; page++) {
-      if (!(await exists(base + `${part}%20(${page}).${ext}`))) break;
-      pages.push(`${part}%20(${page}).${ext}`);
-    }
+    partGaps = 0;
+    pages.push(...partPages);
   }
+
   return pages;
 }
 
