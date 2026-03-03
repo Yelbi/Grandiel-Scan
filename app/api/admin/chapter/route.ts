@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const chapter: Chapter = await req.json();
 
-  if (!chapter.mangaId || !chapter.chapter || !chapter.pages?.length) {
+  if (!chapter.mangaId || chapter.chapter == null || !chapter.pages?.length) {
     return NextResponse.json({ error: 'Faltan campos obligatorios.' }, { status: 400 });
   }
 
