@@ -4,6 +4,7 @@ import MangaCard from '@/components/manga/MangaCard';
 import ContinueReading from '@/components/manga/ContinueReading';
 import HeroSection from '@/components/home/HeroSection';
 import { getAllMangas } from '@/lib/data';
+import { MOST_VIEWED_IDS } from '@/lib/config';
 
 export const metadata: Metadata = {
   title: 'Grandiel Scan - Manhwas en Español | Inicio',
@@ -11,20 +12,11 @@ export const metadata: Metadata = {
     'Lee manhwas en español gratis. Descubre los mejores mangas y manhwas actualizados: Nano Machine, Maldita Reencarnación, Dungeon Reset y más.',
 };
 
-const MOST_VIEWED_IDS = [
-  'solo-leveling',
-  'nano-machine',
-  'maldita-reencarnacion',
-  'dungeon-reset',
-  'como-pelear',
-  'existencia',
-];
-
 export default async function HomePage() {
   const mangas = await getAllMangas();
 
   const recent = [...mangas]
-    .sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated))
+    .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     .slice(0, 12);
 
   const mostViewed = mangas

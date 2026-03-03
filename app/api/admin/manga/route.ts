@@ -13,34 +13,58 @@ function guard() {
   return null;
 }
 
+function readFile(filePath: string) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch {
+    throw new Error(`No se pudo leer el archivo: ${path.basename(filePath)}`);
+  }
+}
+
+function writeFile(filePath: string, data: unknown) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch {
+    throw new Error(`No se pudo escribir el archivo: ${path.basename(filePath)}`);
+  }
+}
+
 export async function GET() {
   const block = guard();
   if (block) return block;
 
-  const data = JSON.parse(fs.readFileSync(MANGAS_FILE, 'utf-8'));
-  return NextResponse.json(data.mangas as Manga[]);
+  try {
+    const data = readFile(MANGAS_FILE);
+    return NextResponse.json(data.mangas as Manga[]);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
   const block = guard();
   if (block) return block;
 
-  const manga: Manga = await req.json();
+  try {
+    const manga: Manga = await req.json();
 
-  if (!manga.id || !manga.title) {
-    return NextResponse.json({ error: 'Faltan campos obligatorios.' }, { status: 400 });
+    if (!manga.id || !manga.title) {
+      return NextResponse.json({ error: 'Faltan campos obligatorios.' }, { status: 400 });
+    }
+
+    const data = readFile(MANGAS_FILE);
+
+    if (data.mangas.find((m: Manga) => m.id === manga.id)) {
+      return NextResponse.json({ error: `Ya existe un manga con id "${manga.id}".` }, { status: 409 });
+    }
+
+    data.mangas.push(manga);
+    writeFile(MANGAS_FILE, data);
+
+    return NextResponse.json({ ok: true, manga });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
-
-  const data = JSON.parse(fs.readFileSync(MANGAS_FILE, 'utf-8'));
-
-  if (data.mangas.find((m: Manga) => m.id === manga.id)) {
-    return NextResponse.json({ error: `Ya existe un manga con id "${manga.id}".` }, { status: 409 });
-  }
-
-  data.mangas.push(manga);
-  fs.writeFileSync(MANGAS_FILE, JSON.stringify(data, null, 2), 'utf-8');
-
-  return NextResponse.json({ ok: true, manga });
 }
 
 /* ── Editar manga (no cambia id, chapters, latestChapter) ── */
@@ -48,24 +72,28 @@ export async function PATCH(req: NextRequest) {
   const block = guard();
   if (block) return block;
 
-  const { id, ...fields } = await req.json();
-  if (!id) return NextResponse.json({ error: 'id requerido.' }, { status: 400 });
+  try {
+    const { id, ...fields } = await req.json();
+    if (!id) return NextResponse.json({ error: 'id requerido.' }, { status: 400 });
 
-  const data = JSON.parse(fs.readFileSync(MANGAS_FILE, 'utf-8'));
-  const idx = data.mangas.findIndex((m: Manga) => m.id === id);
+    const data = readFile(MANGAS_FILE);
+    const idx = data.mangas.findIndex((m: Manga) => m.id === id);
 
-  if (idx === -1) {
-    return NextResponse.json({ error: `No existe manga con id "${id}".` }, { status: 404 });
+    if (idx === -1) {
+      return NextResponse.json({ error: `No existe manga con id "${id}".` }, { status: 404 });
+    }
+
+    // Campos protegidos que no se pueden sobreescribir desde el form
+    const { chapters, latestChapter, ...safeFields } = fields;
+    void chapters; void latestChapter;
+
+    data.mangas[idx] = { ...data.mangas[idx], ...safeFields };
+    writeFile(MANGAS_FILE, data);
+
+    return NextResponse.json({ ok: true, manga: data.mangas[idx] });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
-
-  // Campos protegidos que no se pueden sobreescribir desde el form
-  const { chapters, latestChapter, ...safeFields } = fields;
-  void chapters; void latestChapter;
-
-  data.mangas[idx] = { ...data.mangas[idx], ...safeFields };
-  fs.writeFileSync(MANGAS_FILE, JSON.stringify(data, null, 2), 'utf-8');
-
-  return NextResponse.json({ ok: true, manga: data.mangas[idx] });
 }
 
 /* ── Eliminar manga + sus capítulos ── */
@@ -73,24 +101,28 @@ export async function DELETE(req: NextRequest) {
   const block = guard();
   if (block) return block;
 
-  const { id } = await req.json();
-  if (!id) return NextResponse.json({ error: 'id requerido.' }, { status: 400 });
+  try {
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: 'id requerido.' }, { status: 400 });
 
-  // Borrar de mangas.json
-  const mangasData = JSON.parse(fs.readFileSync(MANGAS_FILE, 'utf-8'));
-  const before = mangasData.mangas.length;
-  mangasData.mangas = mangasData.mangas.filter((m: Manga) => m.id !== id);
+    // Borrar de mangas.json
+    const mangasData = readFile(MANGAS_FILE);
+    const before = mangasData.mangas.length;
+    mangasData.mangas = mangasData.mangas.filter((m: Manga) => m.id !== id);
 
-  if (mangasData.mangas.length === before) {
-    return NextResponse.json({ error: `No existe manga con id "${id}".` }, { status: 404 });
+    if (mangasData.mangas.length === before) {
+      return NextResponse.json({ error: `No existe manga con id "${id}".` }, { status: 404 });
+    }
+    writeFile(MANGAS_FILE, mangasData);
+
+    // Borrar sus capítulos de chapters.json
+    const chaptersData = readFile(CHAPTERS_FILE);
+    const removed = chaptersData.chapters.filter((c: { mangaId: string }) => c.mangaId === id).length;
+    chaptersData.chapters = chaptersData.chapters.filter((c: { mangaId: string }) => c.mangaId !== id);
+    writeFile(CHAPTERS_FILE, chaptersData);
+
+    return NextResponse.json({ ok: true, removedChapters: removed });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
-  fs.writeFileSync(MANGAS_FILE, JSON.stringify(mangasData, null, 2), 'utf-8');
-
-  // Borrar sus capítulos de chapters.json
-  const chaptersData = JSON.parse(fs.readFileSync(CHAPTERS_FILE, 'utf-8'));
-  const removed = chaptersData.chapters.filter((c: { mangaId: string }) => c.mangaId === id).length;
-  chaptersData.chapters = chaptersData.chapters.filter((c: { mangaId: string }) => c.mangaId !== id);
-  fs.writeFileSync(CHAPTERS_FILE, JSON.stringify(chaptersData, null, 2), 'utf-8');
-
-  return NextResponse.json({ ok: true, removedChapters: removed });
 }
