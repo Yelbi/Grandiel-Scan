@@ -384,7 +384,6 @@ nav:not(.breadcrumbs) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
 }
 
 .dede img {
@@ -646,7 +645,9 @@ nav:not(.breadcrumbs) {
     order: 99;
   }
 
-  /* Drawer lateral */
+  /* Drawer lateral — renderizado via portal en <body>, fuera del <nav>.
+     Esto evita que backdrop-filter/transform del nav creen un containing-block
+     para position:fixed, lo que causaba espacio blanco al costado. */
   .list {
     position: fixed;
     top: 0;

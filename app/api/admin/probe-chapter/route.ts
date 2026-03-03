@@ -6,6 +6,7 @@ const MAX_PAGES           = 600;
 const MAX_PARTS           = 80;
 const MAX_PER_PART        = 60;
 const MAX_PART_GAPS       = 3;   // partes vacías consecutivas toleradas
+const MAX_CHAPTER_NUM     = 300; // máximo número de capítulo para el scan profundo
 const PAREN_MAX_SCAN      = 500; // máximo nro a probar dentro de un paréntesis
 const PAREN_TAIL_MISS     = 50;  // misses consecutivos DESPUÉS del último hit → parar
 const PAREN_INIT_MISS     = 32;  // si no hay ningún hit en los primeros N → parte no existe
@@ -186,6 +187,31 @@ async function probeParenPart(base: string, ext: string): Promise<string[]> {
   return pages;
 }
 
+/* ── Scan profundo: busca en lote qué número de parte existe ─────────────
+   Necesario cuando el número de capítulo incrustado en el nombre
+   del archivo es mayor que MAX_PART_GAPS (ej: c-743-54_01.webp).
+   Sondea en lotes hasta MAX_CHAPTER_NUM y retorna páginas del
+   primer número de parte encontrado.                               ── */
+async function probePrefixedSubPartDeep(
+  base: string, ext: string, prefix: string, padPart: number,
+): Promise<string[]> {
+  for (let i = 0; i < MAX_CHAPTER_NUM; i += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_CHAPTER_NUM - i);
+    const partNums = Array.from({ length: count }, (_, k) => i + k + 1);
+    const batch    = partNums.map((part) =>
+      base + `${prefix}${String(part).padStart(padPart, '0')}_01.${ext}`,
+    );
+    const results = await probeBatch(batch);
+    for (let k = 0; k < results.length; k++) {
+      if (results[k]) {
+        const pp = String(partNums[k]).padStart(padPart, '0');
+        return probePagesOfPart(base, ext, `${prefix}${pp}`);
+      }
+    }
+  }
+  return [];
+}
+
 /* ── Extrae prefijos candidatos de la URL base ───────────
    Ej: ".../comics/743/58812/" → ["c-743-", "c-58812-", "743-", "58812-"]
 ── */
@@ -205,7 +231,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Solo disponible en desarrollo local.' }, { status: 403 });
   }
 
-  const { baseUrl, ext = 'webp' } = await req.json();
+  const { baseUrl, ext = 'webp', chapterHint } = await req.json();
   if (!baseUrl) {
     return NextResponse.json({ error: 'baseUrl requerido.' }, { status: 400 });
   }
@@ -265,7 +291,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pages, pattern: 'paren-part', count: pages.length });
   }
 
-  // Prefijo dinámico: c-743-1_01.webp, c-743-01_01.webp, 743-1_01.webp, etc.
+  // Prefijo dinámico con chapterHint: c-743-54_01.webp cuando se conoce el número de cap.
+  // Evita el scan profundo en la carga masiva pasando el número de capítulo como pista.
+  if (chapterHint != null && !isNaN(Number(chapterHint))) {
+    const chNum = Math.floor(Number(chapterHint));
+    for (const { prefix, padPart } of prefixVariants) {
+      const pp = String(chNum).padStart(padPart, '0');
+      if (await exists(base + `${prefix}${pp}_01.${ext}`)) {
+        const pages = await probePagesOfPart(base, ext, `${prefix}${pp}`);
+        if (pages.length > 0) {
+          return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
+        }
+      }
+    }
+  }
+
+  // Prefijo dinámico quick check (part=1): c-743-1_01.webp, c-743-01_01.webp, etc.
   for (let i = 0; i < prefixVariants.length; i++) {
     if (prefixResults[i]) {
       const { prefix, padPart } = prefixVariants[i];
@@ -273,6 +314,15 @@ export async function POST(req: NextRequest) {
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
       }
+    }
+  }
+
+  // Scan profundo: busca en lote cualquier número de parte (capítulos 4+)
+  // Resuelve el caso c-743-54_01.webp cuando no se proporcionó chapterHint.
+  for (const { prefix, padPart } of prefixVariants) {
+    const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart);
+    if (pages.length > 0) {
+      return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
     }
   }
 

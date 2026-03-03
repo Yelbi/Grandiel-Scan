@@ -137,6 +137,9 @@
 html {
   font-size: 100%;
   scroll-behavior: smooth;
+  /* Evita el rubber-band/elastic scroll horizontal que puede
+     revelar elementos fuera del viewport en iOS Safari */
+  overscroll-behavior-x: none;
 }
 
 body {

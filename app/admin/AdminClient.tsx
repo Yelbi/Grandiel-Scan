@@ -134,7 +134,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
         const res = await fetch('/api/admin/probe-chapter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ baseUrl, ext: bExt }),
+          body: JSON.stringify({ baseUrl, ext: bExt, chapterHint: chapter }),
         });
         probeJson = await res.json();
         if (!res.ok || !probeJson.pages?.length) {
@@ -189,7 +189,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     try {
       const res  = await fetch('/api/admin/probe-chapter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp' }),
+        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp', chapterHint: Number(cNum) || undefined }),
       });
       const json = await res.json();
       if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
@@ -210,7 +210,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     try {
       const res  = await fetch('/api/admin/probe-chapter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl: ecBaseUrl.trim(), ext: 'webp' }),
+        body: JSON.stringify({ baseUrl: ecBaseUrl.trim(), ext: 'webp', chapterHint: Number(ecChapterNum) || undefined }),
       });
       const json = await res.json();
       if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
