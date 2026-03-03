@@ -13,13 +13,21 @@ const NAV_LINKS = [
 
 export default function NavLinks() {
   const pathname = usePathname();
-  const [open, setOpen]       = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [open, setOpen]           = useState(false);
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
 
   const close = () => setOpen(false);
 
-  // Tras hidratación, marcar como montado para activar el portal
-  useEffect(() => { setMounted(true); }, []);
+  // Portal solo en móvil: en desktop el .list vive dentro del nav (flex item).
+  // En móvil el .list se mueve a <body> para que backdrop-filter/transform
+  // del nav no creen un nuevo containing-block para position:fixed.
+  useEffect(() => {
+    const update = () =>
+      setPortalTarget(window.innerWidth <= 768 ? document.body : null);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   // Lock body scroll while drawer is open
   useEffect(() => {
@@ -27,10 +35,6 @@ export default function NavLinks() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  // El drawer y el overlay se renderizan en <body> (portal) para que
-  // nunca sean descendientes del <nav>. Esto evita que backdrop-filter
-  // y transform del nav creen un nuevo containing-block para position:fixed,
-  // lo que causaba desbordamiento horizontal (espacio blanco).
   const drawer = (
     <>
       {open && (
@@ -54,7 +58,6 @@ export default function NavLinks() {
 
   return (
     <>
-      {/* El botón permanece dentro del <nav> para su layout */}
       <button
         className={`nav-hamburger${open ? ' is-open' : ''}`}
         onClick={() => setOpen((o) => !o)}
@@ -68,8 +71,7 @@ export default function NavLinks() {
         <span />
       </button>
 
-      {/* Tras hidratación: portal a body. Antes: inline (SSR/hidratación sin mismatch) */}
-      {mounted ? createPortal(drawer, document.body) : drawer}
+      {portalTarget ? createPortal(drawer, portalTarget) : drawer}
     </>
   );
 }
