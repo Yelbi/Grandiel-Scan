@@ -20,7 +20,7 @@ export default async function HomePage() {
     .slice(0, 12);
 
   const mostViewed = mangas
-    .filter((m) => MOST_VIEWED_IDS.includes(m.id))
+    .filter((m) => (MOST_VIEWED_IDS as readonly string[]).includes(m.id))
     .sort((a, b) => MOST_VIEWED_IDS.indexOf(a.id) - MOST_VIEWED_IDS.indexOf(b.id));
 
   const heroCovers = mangas.filter((m) => m.image).slice(0, 18);
