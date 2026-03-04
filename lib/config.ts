@@ -1,3 +1,12 @@
+export const MOST_VIEWED_IDS = [
+  'solo-leveling',
+  'nano-machine',
+  'maldita-reencarnacion',
+  'dungeon-reset',
+  'como-pelear',
+  'existencia',
+] as const;
+
 export const CONFIG = {
   MANGAS_JSON: '/data/mangas.json',
   CHAPTERS_JSON: '/data/chapters.json',

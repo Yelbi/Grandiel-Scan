@@ -3,6 +3,7 @@ import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Providers from '@/components/providers/Providers';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://grandielscan.com'),
@@ -78,6 +79,7 @@ export default function RootLayout({
           <Navbar />
           <main id="main-content">{children}</main>
           <SpeedInsights />
+          <Analytics />
         </Providers>
       </body>
     </html>

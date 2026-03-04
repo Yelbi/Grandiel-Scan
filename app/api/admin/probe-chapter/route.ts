@@ -212,6 +212,155 @@ async function probePrefixedSubPartDeep(
   return [];
 }
 
+/* ── Patrón "  (N).webp": %20%20(3).webp, %20%20(4).webp …
+   Dos espacios seguidos de un número entre paréntesis.
+   El número inicial puede no ser 1 (e.g. empieza en 3).
+   Usa el mismo algoritmo adaptativo que probeParenPart.  ── */
+async function probeDoubleSpaceParen(base: string, ext: string): Promise<string[]> {
+  const pages: string[] = [];
+  let lastHit = -1;
+  let i = 1;
+  while (i <= PAREN_MAX_SCAN) {
+    const batchSize = Math.min(BATCH_SIZE, PAREN_MAX_SCAN - i + 1);
+    const batch     = Array.from({ length: batchSize }, (_, k) =>
+      base + `%20%20(${i + k}).${ext}`,
+    );
+    const results = await probeBatch(batch);
+    for (let k = 0; k < results.length; k++) {
+      if (results[k]) {
+        pages.push(`%20%20(${i + k}).${ext}`);
+        lastHit = i + k;
+      }
+    }
+    i += batchSize;
+    if (lastHit < 0 && i > PAREN_INIT_MISS) break;
+    if (lastHit >= 0 && i > lastHit + PAREN_TAIL_MISS) break;
+  }
+  return pages;
+}
+
+/* ── Patrón subpart-padded con primera página "-1": 01_01-1.webp, 01_02.webp …
+   La primera página de la primera parte lleva sufijo "-1".
+   Resto de páginas siguen el patrón normal PP_NN.webp.              ── */
+async function probeSubPartDash(base: string, ext: string): Promise<string[]> {
+  const pages: string[] = [];
+  let gaps = 0;
+
+  for (let part = 1; part <= MAX_PARTS; part++) {
+    const pp = String(part).padStart(2, '0');
+    // La primera página puede ser PP_01-1 o PP_01 (toleramos ambos)
+    const hasDash   = await exists(base + `${pp}_01-1.${ext}`);
+    const hasNormal = !hasDash && await exists(base + `${pp}_01.${ext}`);
+
+    if (!hasDash && !hasNormal) {
+      if (++gaps >= MAX_PART_GAPS) break;
+      continue;
+    }
+    gaps = 0;
+
+    // Primera página
+    pages.push(hasDash ? `${pp}_01-1.${ext}` : `${pp}_01.${ext}`);
+
+    // Páginas 02, 03 … (siempre en formato normal)
+    let page = 2;
+    while (page <= MAX_PER_PART) {
+      const batchSize = Math.min(BATCH_SIZE, MAX_PER_PART - page + 1);
+      const batch     = Array.from({ length: batchSize }, (_, k) => {
+        const pg = String(page + k).padStart(2, '0');
+        return base + `${pp}_${pg}.${ext}`;
+      });
+      const results = await probeBatch(batch);
+      let stop = false;
+      for (let k = 0; k < results.length; k++) {
+        if (!results[k]) { stop = true; break; }
+        pages.push(`${pp}_${String(page + k).padStart(2, '0')}.${ext}`);
+      }
+      if (stop) break;
+      page += batchSize;
+    }
+  }
+  return pages;
+}
+
+/* ── Patrón "prefix+N-(N+1).webp": c-231-1-2.webp, c-231-2-3.webp … ───
+   Cada filename: {prefix}{N}-{N+1}.webp, N incrementa de 1 en 1.    ── */
+async function probePrefixedPair(base: string, ext: string, prefix: string): Promise<string[]> {
+  const pages: string[] = [];
+  let n = 1;
+  while (n <= MAX_PAGES) {
+    const batch   = Array.from({ length: BATCH_SIZE }, (_, k) =>
+      base + `${prefix}${n + k}-${n + k + 1}.${ext}`,
+    );
+    const results = await probeBatch(batch);
+    let stop = false;
+    for (let k = 0; k < results.length; k++) {
+      if (!results[k]) { stop = true; break; }
+      pages.push(`${prefix}${n + k}-${n + k + 1}.${ext}`);
+    }
+    if (stop) break;
+    n += BATCH_SIZE;
+  }
+  return pages;
+}
+
+/* ── Patrón "{part}CL_{page}.webp": 1CL_01.webp, 2CL_01.webp … ────────
+   Igual que probeSubPart pero con separador "CL_" en vez de "_".      ── */
+async function probeCLSubPart(base: string, ext: string): Promise<string[]> {
+  const pages: string[] = [];
+  let gaps = 0;
+  for (let part = 1; part <= MAX_PARTS; part++) {
+    if (!(await exists(base + `${part}CL_01.${ext}`))) {
+      if (++gaps >= MAX_PART_GAPS) break;
+      continue;
+    }
+    gaps = 0;
+    // probePagesOfPart usa partPrefix + "_" + pg, así que partPrefix = "1CL"
+    const partPages = await probePagesOfPart(base, ext, `${part}CL`);
+    pages.push(...partPages);
+  }
+  return pages;
+}
+
+/* ── Patrón "{chap}_{part}_{page}.webp": 3_1_01.webp / 3_01_01.webp … ──
+   padPart=1 → "3_1_01", padPart=2 → "3_01_01".
+   Se necesita chapterHint para evitar un scan ciego.                  ── */
+async function probeChapterSubPart(
+  base: string, ext: string, chap: number, padPart: number = 1,
+): Promise<string[]> {
+  const pages: string[] = [];
+  let gaps = 0;
+  for (let part = 1; part <= MAX_PARTS; part++) {
+    const pp = String(part).padStart(padPart, '0');
+    if (!(await exists(base + `${chap}_${pp}_01.${ext}`))) {
+      if (++gaps >= MAX_PART_GAPS) break;
+      continue;
+    }
+    gaps = 0;
+    const partPages = await probePagesOfPart(base, ext, `${chap}_${pp}`);
+    pages.push(...partPages);
+  }
+  return pages;
+}
+
+/* ── Scan profundo para chapter-subpart sin chapterHint ─────────────────
+   Prueba en lotes qué número de capítulo tiene N_1_01 o N_01_01.webp.  ── */
+async function probeChapterSubPartDeep(base: string, ext: string): Promise<string[]> {
+  for (let i = 0; i < MAX_CHAPTER_NUM; i += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_CHAPTER_NUM - i);
+    const chapNums = Array.from({ length: count }, (_, k) => i + k + 1);
+    // Chequear ambas variantes en paralelo por lote
+    const [resUnpad, resPad] = await Promise.all([
+      probeBatch(chapNums.map((ch) => base + `${ch}_1_01.${ext}`)),
+      probeBatch(chapNums.map((ch) => base + `${ch}_01_01.${ext}`)),
+    ]);
+    for (let k = 0; k < chapNums.length; k++) {
+      if (resUnpad[k]) return probeChapterSubPart(base, ext, chapNums[k], 1);
+      if (resPad[k])   return probeChapterSubPart(base, ext, chapNums[k], 2);
+    }
+  }
+  return [];
+}
+
 /* ── Extrae prefijos candidatos de la URL base ───────────
    Ej: ".../comics/743/58812/" → ["c-743-", "c-58812-", "743-", "58812-"]
 ── */
@@ -244,12 +393,16 @@ export async function POST(req: NextRequest) {
 
   const standardChecks = [
     `01_01.${ext}`,      // subpart-padded
+    `01_01-1.${ext}`,    // subpart-dash (primera página con sufijo -1)
     `1_01.${ext}`,       // subpart-nopad
     `1%20(1).${ext}`,    // paren-part
+    `%20%20(1).${ext}`,  // double-space-paren starting at 1
+    `%20%20(3).${ext}`,  // double-space-paren starting at 3 (common case)
+    `1CL_01.${ext}`,     // cl-subpart
     `001.${ext}`,        // simple-3digit
     `01.${ext}`,         // simple-2digit
     `0.${ext}`,          // zero-indexed
-    `1.${ext}`,          // zero-indexed validator
+    `1.${ext}`,          // simple-1digit / zero-indexed validator
   ];
 
   // Chequeos de prefijos: para cada prefijo se prueban dos variantes de padding
@@ -263,13 +416,20 @@ export async function POST(req: NextRequest) {
     `${prefix}${'1'.padStart(padPart, '0')}_01.${ext}`,
   );
 
-  const allChecks  = [...standardChecks, ...prefixChecks];
+  // Chequeos de pares por prefijo: c-231-1-2.webp
+  const pairPrefixChecks = prefixes.map((p) => `${p}1-2.${ext}`);
+
+  const allChecks  = [...standardChecks, ...prefixChecks, ...pairPrefixChecks];
   const allResults = await Promise.all(allChecks.map((f) => exists(base + f)));
 
   const [
-    hasSubPad, hasSubNoPad, hasParen, hasSimple3, hasSimple2, hasZero, hasZero1,
-    ...prefixResults
+    hasSubPad, hasSubDash, hasSubNoPad, hasParen, hasDsP1, hasDsP3, hasCLSubPart,
+    hasSimple3, hasSimple2, hasZero, hasZero1,
+    ...rest
   ] = allResults;
+  const prefixResults     = rest.slice(0, prefixVariants.length);
+  const pairPrefixResults = rest.slice(prefixVariants.length);
+  const hasDoubleSpaceParen = hasDsP1 || hasDsP3;
 
   /* ── 2. Evaluar en orden de especificidad ── */
 
@@ -279,10 +439,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pages, pattern: 'subpart-padded', count: pages.length });
   }
 
+  // Subpart con primera página "-1": 01_01-1.webp, 01_02.webp …
+  if (hasSubDash) {
+    const pages = await probeSubPartDash(base, ext);
+    return NextResponse.json({ pages, pattern: 'subpart-dash', count: pages.length });
+  }
+
   // Subpart sin padding: 1_01.webp
   if (hasSubNoPad) {
     const pages = await probeSubPart(base, ext, 1);
     return NextResponse.json({ pages, pattern: 'subpart-nopad', count: pages.length });
+  }
+
+  // CL-subpart: 1CL_01.webp, 2CL_01.webp …
+  if (hasCLSubPart) {
+    const pages = await probeCLSubPart(base, ext);
+    return NextResponse.json({ pages, pattern: 'cl-subpart', count: pages.length });
   }
 
   // Patrón "N (M).webp": 1 (1).webp → almacenado como 1%20(1).webp
@@ -311,10 +483,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Prefijo dinámico con chapterHint: c-743-54_01.webp cuando se conoce el número de cap.
-  // Evita el scan profundo en la carga masiva pasando el número de capítulo como pista.
+  // Patrón "  (N).webp": %20%20(3).webp (dos espacios antes del paréntesis)
+  if (hasDoubleSpaceParen) {
+    const pages = await probeDoubleSpaceParen(base, ext);
+    return NextResponse.json({ pages, pattern: 'double-space-paren', count: pages.length });
+  }
+
+  // Prefijo dinámico con chapterHint: c-743-54_01.webp / 3_1_01.webp / 3_01_01.webp
   if (chapterHint != null && !isNaN(Number(chapterHint))) {
     const chNum = Math.floor(Number(chapterHint));
+
+    // Chapter-subpart: detectar variante unpadded (3_1_01) y padded (3_01_01) en paralelo
+    const [hasChUnpad, hasChPad] = await Promise.all([
+      exists(base + `${chNum}_1_01.${ext}`),
+      exists(base + `${chNum}_01_01.${ext}`),
+    ]);
+    if (hasChUnpad || hasChPad) {
+      const padPart = hasChPad && !hasChUnpad ? 2 : 1;
+      // Recoger portadas simples (1.webp, 2.webp…) que preceden al contenido del capítulo
+      const coverPages   = hasZero1 ? await probeSimple(base, ext, 1, 1) : [];
+      const contentPages = await probeChapterSubPart(base, ext, chNum, padPart);
+      const pages = [...coverPages, ...contentPages];
+      if (pages.length > 0) {
+        return NextResponse.json({ pages, pattern: `chapter-subpart(${chNum},pad=${padPart})`, count: pages.length });
+      }
+    }
+
+    // Prefixed-subpart con chapterHint: c-743-54_01.webp
     for (const { prefix, padPart } of prefixVariants) {
       const pp = String(chNum).padStart(padPart, '0');
       if (await exists(base + `${prefix}${pp}_01.${ext}`)) {
@@ -337,12 +532,32 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Patrón par prefijado: c-231-1-2.webp, c-231-2-3.webp …
+  for (let i = 0; i < prefixes.length; i++) {
+    if (pairPrefixResults[i]) {
+      const pages = await probePrefixedPair(base, ext, prefixes[i]);
+      if (pages.length > 0) {
+        return NextResponse.json({ pages, pattern: `prefixed-pair(${prefixes[i]})`, count: pages.length });
+      }
+    }
+  }
+
   // Scan profundo: busca en lote cualquier número de parte (capítulos 4+)
   // Resuelve el caso c-743-54_01.webp cuando no se proporcionó chapterHint.
   for (const { prefix, padPart } of prefixVariants) {
     const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart);
     if (pages.length > 0) {
       return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
+    }
+  }
+
+  // Scan profundo chapter-subpart sin chapterHint: N_1_01.webp / N_01_01.webp
+  {
+    const contentPages = await probeChapterSubPartDeep(base, ext);
+    if (contentPages.length > 0) {
+      const coverPages = hasZero1 ? await probeSimple(base, ext, 1, 1) : [];
+      const pages = [...coverPages, ...contentPages];
+      return NextResponse.json({ pages, pattern: 'chapter-subpart', count: pages.length });
     }
   }
 
@@ -362,6 +577,12 @@ export async function POST(req: NextRequest) {
   if (hasZero && hasZero1) {
     const pages = await probeSimple(base, ext, 0, 1);
     return NextResponse.json({ pages, pattern: 'zero-indexed', count: pages.length });
+  }
+
+  // Simple 1 dígito desde 1: 1.webp, 2.webp, 3.webp …
+  if (hasZero1) {
+    const pages = await probeSimple(base, ext, 1, 1);
+    return NextResponse.json({ pages, pattern: 'simple-1digit', count: pages.length });
   }
 
   return NextResponse.json(

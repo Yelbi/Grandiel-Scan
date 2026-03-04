@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { debounce, searchMangas } from '@/lib/search';
+import { useRouter } from 'next/navigation';
+import { searchMangas } from '@/lib/search';
 import type { Manga } from '@/lib/types';
 
 interface SearchBarProps {
@@ -11,6 +12,7 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({ mangas }: SearchBarProps) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Manga[]>([]);
   const [open, setOpen] = useState(false);
@@ -18,25 +20,31 @@ export default function SearchBar({ mangas }: SearchBarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const doSearch = debounce((q: string) => {
-    if (!q.trim()) {
-      setResults([]);
-      setOpen(false);
+  const doSearch = useCallback((q: string) => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      if (!q.trim()) {
+        setResults([]);
+        setOpen(false);
+        setSelectedIndex(-1);
+        return;
+      }
+      const found = searchMangas(mangas, q)
+        .slice(0, 8)
+        .map((r) => r.manga);
+      setResults(found);
+      setOpen(found.length > 0);
       setSelectedIndex(-1);
-      return;
-    }
-    const found = searchMangas(mangas, q)
-      .slice(0, 8)
-      .map((r) => r.manga);
-    setResults(found);
-    setOpen(found.length > 0);
-    setSelectedIndex(-1);
-  }, 300);
+    }, 300);
+  }, [mangas]);
 
   useEffect(() => {
     doSearch(query);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
   }, [query, doSearch]);
 
   // Cerrar al hacer click fuera
@@ -78,7 +86,7 @@ export default function SearchBar({ mangas }: SearchBarProps) {
     } else if (e.key === 'Enter' && selectedIndex >= 0) {
       e.preventDefault();
       const selected = results[selectedIndex];
-      window.location.href = `/manga/${selected.id}`;
+      router.push(`/manga/${selected.id}`);
       setOpen(false);
       setQuery('');
       setMobileOpen(false);

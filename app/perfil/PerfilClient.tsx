@@ -48,20 +48,28 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const regFileRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
+  const MAX_AVATAR_BYTES = 1 * 1024 * 1024; // 1 MB
+
+  const readAvatarFile = (file: File, onLoad: (dataUrl: string) => void) => {
+    if (file.size > MAX_AVATAR_BYTES) {
+      alert('La imagen no puede superar 1 MB. Elige una foto más pequeña.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => onLoad(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleRegPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setRegAvatar(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    readAvatarFile(file, setRegAvatar);
   };
 
   const handleEditPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setEditAvatar(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    readAvatarFile(file, setEditAvatar);
   };
 
   const startEdit = () => {

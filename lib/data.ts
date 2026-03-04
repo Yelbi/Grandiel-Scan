@@ -4,14 +4,19 @@ import type { Manga, Chapter, MangasData, ChaptersData } from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'data');
 
-function readJson<T>(filename: string): T {
+function readJson<T>(filename: string, fallback: T): T {
   const filePath = path.join(DATA_DIR, filename);
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw) as T;
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw) as T;
+  } catch {
+    console.error(`[data] Error leyendo ${filename}:`, filePath);
+    return fallback;
+  }
 }
 
 export async function getAllMangas(): Promise<Manga[]> {
-  const data = readJson<MangasData>('mangas.json');
+  const data = readJson<MangasData>('mangas.json', { mangas: [] });
   return data.mangas ?? [];
 }
 
@@ -21,7 +26,7 @@ export async function getMangaById(id: string): Promise<Manga | null> {
 }
 
 export async function getAllChapters(): Promise<Chapter[]> {
-  const data = readJson<ChaptersData>('chapters.json');
+  const data = readJson<ChaptersData>('chapters.json', { chapters: [] });
   return data.chapters ?? [];
 }
 

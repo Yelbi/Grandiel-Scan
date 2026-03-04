@@ -34,14 +34,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
   }, []);
 
   return (
-    <div
-      className="manga-card product-item"
-      data-id={manga.id}
-      data-category={manga.genres[0] ?? ''}
-      data-category2={manga.genres[1] ?? ''}
-      data-category3={manga.genres[2] ?? ''}
-      data-tipo={manga.type}
-    >
+    <div className="manga-card product-item">
       <Link href={`/manga/${manga.id}`}>
         <div className="manga-card-inner">
           {imgError ? (

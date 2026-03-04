@@ -14,6 +14,7 @@ interface MangaGridProps {
 export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: MangaGridProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
   const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [sort, setSort] = useState<SortOrder>('title-asc');
   const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -31,6 +32,9 @@ export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: M
     if (selectedType) {
       result = result.filter((m) => m.type === selectedType);
     }
+    if (selectedStatus) {
+      result = result.filter((m) => m.status === selectedStatus);
+    }
 
     switch (sort) {
       case 'title-asc':
@@ -40,15 +44,19 @@ export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: M
         result.sort((a, b) => b.title.localeCompare(a.title));
         break;
       case 'date-desc':
-        result.sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+        result.sort(
+          (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
+        );
         break;
       case 'date-asc':
-        result.sort((a, b) => a.lastUpdated.localeCompare(b.lastUpdated));
+        result.sort(
+          (a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(),
+        );
         break;
     }
 
     return result;
-  }, [mangas, selectedGenres, selectedType, sort]);
+  }, [mangas, selectedGenres, selectedType, selectedStatus, sort]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS);
   const paginated = filtered.slice((page - 1) * ITEMS, page * ITEMS);
@@ -69,9 +77,9 @@ export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: M
           onClick={() => setFilterOpen((o) => !o)}
         >
           <i className="fas fa-filter" /> Filtros
-          {(selectedGenres.length > 0 || selectedType) && (
+          {(selectedGenres.length > 0 || selectedType || selectedStatus) && (
             <span className="filter-active-count">
-              {selectedGenres.length + (selectedType ? 1 : 0)}
+              {selectedGenres.length + (selectedType ? 1 : 0) + (selectedStatus ? 1 : 0)}
             </span>
           )}
         </button>
@@ -112,6 +120,24 @@ export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: M
             </div>
 
             <div className="filter-section">
+              <h4>Estado</h4>
+              <div className="filter-tags">
+                {(['En Emision', 'Finalizado', 'Pausado'] as const).map((status) => (
+                  <button
+                    key={status}
+                    className={`filter-tag category_item ${selectedStatus === status ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedStatus((prev) => (prev === status ? '' : status));
+                      setPage(1);
+                    }}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-section">
               <h4>Ordenar</h4>
               <div className="filter-tags">
                 {(
@@ -141,6 +167,7 @@ export default function MangaGrid({ mangas, genres = [], initialGenres = [] }: M
               onClick={() => {
                 setSelectedGenres([]);
                 setSelectedType('');
+                setSelectedStatus('');
                 setSort('title-asc');
                 setPage(1);
               }}
