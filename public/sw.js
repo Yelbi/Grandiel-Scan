@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grandiel-v1';
+const CACHE_NAME = 'grandiel-v2';
 
 // Recursos estáticos a pre-cachear
 const STATIC_ASSETS = [
@@ -24,6 +24,32 @@ self.addEventListener('activate', (event) => {
     ),
   );
   self.clients.claim();
+});
+
+/* ── Push notifications ── */
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title ?? 'Grandiel Scan', {
+      body:  data.body ?? '',
+      icon:  data.icon ?? '/img/logo.jpg',
+      badge: '/img/logo.jpg',
+      data:  { url: data.url ?? '/' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url ?? '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url === url && 'focus' in c);
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    }),
+  );
 });
 
 self.addEventListener('fetch', (event) => {

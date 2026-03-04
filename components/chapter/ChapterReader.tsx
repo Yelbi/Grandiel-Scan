@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
+import MangaComments from '@/components/manga/MangaComments';
 import type { Chapter, Manga, ReadingMode } from '@/lib/types';
 import { resolvePageUrl } from '@/lib/utils';
 import { CONFIG } from '@/lib/config';
@@ -116,18 +117,50 @@ export default function ChapterReader({
   const [imgWidth, setImgWidth] = useState(100);
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  // Ref para tener siempre la página más reciente sin depender del closure
+  const currentPageRef = useRef(0);
 
   const pages = chapter.pages.map((p) => resolvePageUrl(chapter, p));
   const sortedChapters = [...manga.chapters].sort((a, b) => a - b);
+  const progressKey = `${manga.id}/${chapter.chapter}`;
 
+  // Restaurar página guardada y registrar en historial
   useEffect(() => {
+    let restoredPage = 0;
+    try {
+      const map = JSON.parse(
+        localStorage.getItem(CONFIG.STORAGE_KEYS.PROGRESS) ?? '{}'
+      ) as Record<string, number>;
+      const saved = map[progressKey];
+      if (Number.isInteger(saved) && saved > 0 && saved < pages.length) {
+        restoredPage = saved;
+        setCurrentPage(saved);
+        currentPageRef.current = saved;
+      }
+    } catch {}
+
     addEntry({
-      mangaId: manga.id,
-      chapter: chapter.chapter,
+      mangaId:   manga.id,
+      chapter:   chapter.chapter,
       timestamp: Date.now(),
-      title: manga.title,
+      title:     manga.title,
+      page:      restoredPage,
     });
-  }, [manga.id, manga.title, chapter.chapter, addEntry]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manga.id, manga.title, chapter.chapter]); // addEntry es estable
+
+  // Guardar página en localStorage al cambiar (sólo modo paginado)
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+    if (mode !== 'paginated') return;
+    try {
+      const map = JSON.parse(
+        localStorage.getItem(CONFIG.STORAGE_KEYS.PROGRESS) ?? '{}'
+      ) as Record<string, number>;
+      map[progressKey] = currentPage;
+      localStorage.setItem(CONFIG.STORAGE_KEYS.PROGRESS, JSON.stringify(map));
+    } catch {}
+  }, [currentPage, mode, progressKey]);
 
   useEffect(() => {
     try {
@@ -341,6 +374,9 @@ export default function ChapterReader({
             <span className="reader-chapter-btn reader-chapter-btn--disabled">Último capítulo</span>
           )}
         </div>
+
+        {/* Comments for this chapter */}
+        <MangaComments mangaId={manga.id} chapterNum={chapter.chapter} />
       </div>
 
       {/* Floating settings panel */}

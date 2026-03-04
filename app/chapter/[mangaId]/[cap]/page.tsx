@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ChapterReader from '@/components/chapter/ChapterReader';
-import { getAllChapters, getAllMangas, getChapter, getMangaById } from '@/lib/data';
+import { getAllChapters, getChapter, getMangaById } from '@/lib/data';
+
+export const revalidate = 86400; // ISR: revalidate every 24 hours (chapters rarely change)
 
 interface Props {
   params: Promise<{ mangaId: string; cap: string }>;

@@ -31,6 +31,7 @@ export interface ChaptersData {
 export interface HistoryEntry {
   mangaId: string;
   chapter: number;
+  page?: number;
   timestamp: number;
   title: string;
 }

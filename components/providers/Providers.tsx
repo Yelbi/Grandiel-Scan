@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { CONFIG } from '@/lib/config';
 import type { HistoryEntry } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 /* ─────────────────────────────────────────────────────────
    THEME
@@ -75,17 +76,19 @@ export interface UserProfile {
 interface UserProfileContextValue {
   profile: UserProfile | null;
   isLoggedIn: boolean;
-  register: (username: string, avatar: string) => void;
-  updateProfile: (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => void;
-  logout: () => void;
+  loading: boolean;
+  register: (username: string, avatar: string, email: string) => Promise<{ error?: string }>;
+  updateProfile: (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const UserProfileContext = createContext<UserProfileContextValue>({
-  profile: null,
-  isLoggedIn: false,
-  register: () => {},
-  updateProfile: () => {},
-  logout: () => {},
+  profile:       null,
+  isLoggedIn:    false,
+  loading:       true,
+  register:      async () => ({}),
+  updateProfile: async () => {},
+  logout:        async () => {},
 });
 
 export function useUserProfile() {
@@ -93,46 +96,94 @@ export function useUserProfile() {
 }
 
 function UserProfileProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  // useState con lazy initializer garantiza una sola instancia del cliente
+  const [supabase] = useState(() => createClient());
+  const [profile, setProfile]   = useState<UserProfile | null>(null);
+  const [loading, setLoading]   = useState(true);
+
+  const loadProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('users')
+      .select('id, username, avatar, created_at')
+      .eq('id', userId)
+      .single();
+
+    if (data) {
+      setProfile({
+        id:        data.id,
+        username:  data.username,
+        avatar:    data.avatar,
+        createdAt: new Date(data.created_at).getTime(),
+      });
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
-      if (stored) setProfile(JSON.parse(stored) as UserProfile);
-    } catch {}
-  }, []);
+    // Comprobar sesión activa al montar
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        loadProfile(user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
 
-  const register = useCallback((username: string, avatar: string) => {
-    const newProfile: UserProfile = {
-      id: `user_${Date.now()}`,
-      username,
-      avatar,
-      createdAt: Date.now(),
-    };
-    setProfile(newProfile);
-    try { localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(newProfile)); } catch {}
-  }, []);
+    // Escuchar cambios de sesión (login / logout / token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          await loadProfile(session.user.id);
+        } else {
+          setProfile(null);
+        }
+      },
+    );
 
-  const updateProfile = useCallback(
-    (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => {
-      setProfile((prev) => {
-        if (!prev) return prev;
-        const updated = { ...prev, ...updates };
-        try { localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated)); } catch {}
-        return updated;
+    return () => subscription.unsubscribe();
+  }, [supabase, loadProfile]);
+
+  /**
+   * Registra un usuario con email + magic link.
+   * El trigger SQL de Supabase (5.4) crea la fila en public.users automáticamente.
+   */
+  const register = useCallback(
+    async (username: string, avatar: string, email: string): Promise<{ error?: string }> => {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: crypto.randomUUID(), // contraseña aleatoria — se usa magic link
+        options: {
+          data: { username, avatar },
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        },
       });
+      if (error) return { error: error.message };
+      return {};
     },
-    [],
+    [supabase],
   );
 
-  const logout = useCallback(() => {
+  const updateProfile = useCallback(
+    async (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => {
+      if (!profile) return;
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', profile.id);
+      if (!error) {
+        setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      }
+    },
+    [profile, supabase],
+  );
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setProfile(null);
-    try { localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_PROFILE); } catch {}
-  }, []);
+  }, [supabase]);
 
   return (
     <UserProfileContext.Provider
-      value={{ profile, isLoggedIn: profile !== null, register, updateProfile, logout }}
+      value={{ profile, isLoggedIn: !!profile, loading, register, updateProfile, logout }}
     >
       {children}
     </UserProfileContext.Provider>
@@ -149,9 +200,9 @@ interface FavoritesContextValue {
 }
 
 const FavoritesContext = createContext<FavoritesContextValue>({
-  favorites: [],
+  favorites:  [],
   isFavorite: () => false,
-  toggle: () => {},
+  toggle:     () => {},
 });
 
 export function useFavoritesContext() {
@@ -159,29 +210,54 @@ export function useFavoritesContext() {
 }
 
 function FavoritesProvider({ children }: { children: ReactNode }) {
+  const [supabase] = useState(() => createClient());
+  const { profile } = useUserProfile();
   const [favorites, setFavorites] = useState<string[]>([]);
 
+  // Recarga favoritos cuando cambia el estado de auth
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.FAVORITES);
-      if (stored) setFavorites(JSON.parse(stored) as string[]);
-    } catch {}
-  }, []);
+    if (profile) {
+      supabase
+        .from('favorites')
+        .select('manga_id')
+        .eq('user_id', profile.id)
+        .then(({ data }) => {
+          setFavorites(data ? data.map((r: { manga_id: string }) => r.manga_id) : []);
+        });
+    } else {
+      try {
+        const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.FAVORITES);
+        setFavorites(stored ? (JSON.parse(stored) as string[]) : []);
+      } catch { setFavorites([]); }
+    }
+  }, [profile?.id, supabase]);
 
   const isFavorite = useCallback(
     (mangaId: string) => favorites.includes(mangaId),
     [favorites],
   );
 
+  // Actualización optimista: el estado local cambia de inmediato,
+  // la BD se actualiza en segundo plano.
   const toggle = useCallback((mangaId: string) => {
-    setFavorites((prev) => {
-      const next = prev.includes(mangaId)
-        ? prev.filter((id) => id !== mangaId)
-        : [...prev, mangaId];
+    const isFav = favorites.includes(mangaId);
+    const next = isFav
+      ? favorites.filter((id) => id !== mangaId)
+      : [...favorites, mangaId];
+
+    setFavorites(next);
+
+    if (profile) {
+      if (isFav) {
+        void supabase.from('favorites').delete()
+          .eq('user_id', profile.id).eq('manga_id', mangaId);
+      } else {
+        void supabase.from('favorites').insert({ user_id: profile.id, manga_id: mangaId });
+      }
+    } else {
       try { localStorage.setItem(CONFIG.STORAGE_KEYS.FAVORITES, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  }, []);
+    }
+  }, [favorites, profile, supabase]);
 
   return (
     <FavoritesContext.Provider value={{ favorites, isFavorite, toggle }}>
@@ -201,9 +277,9 @@ interface HistoryContextValue {
 }
 
 const HistoryContext = createContext<HistoryContextValue>({
-  history: [],
-  addEntry: () => {},
-  getLastRead: () => null,
+  history:      [],
+  addEntry:     () => {},
+  getLastRead:  () => null,
   clearHistory: () => {},
 });
 
@@ -212,23 +288,61 @@ export function useHistoryContext() {
 }
 
 function HistoryProvider({ children }: { children: ReactNode }) {
+  const [supabase] = useState(() => createClient());
+  const { profile } = useUserProfile();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
 
+  // Recarga historial cuando cambia el estado de auth
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.HISTORY);
-      if (stored) setHistory(JSON.parse(stored) as HistoryEntry[]);
-    } catch {}
-  }, []);
+    if (profile) {
+      supabase
+        .from('reading_history')
+        .select('manga_id, chapter, page, updated_at, mangas(title)')
+        .eq('user_id', profile.id)
+        .order('updated_at', { ascending: false })
+        .limit(CONFIG.PAGINATION.MAX_HISTORY_ITEMS)
+        .then(({ data }) => {
+          if (data) {
+            setHistory(data.map((r) => ({
+              mangaId:   r.manga_id as string,
+              chapter:   r.chapter as number,
+              page:      (r.page as number | null) ?? undefined,
+              timestamp: new Date(r.updated_at as string).getTime(),
+              title:     (r.mangas as { title: string } | null)?.title ?? (r.manga_id as string),
+            })));
+          }
+        });
+    } else {
+      try {
+        const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.HISTORY);
+        setHistory(stored ? (JSON.parse(stored) as HistoryEntry[]) : []);
+      } catch { setHistory([]); }
+    }
+  }, [profile?.id, supabase]);
 
   const addEntry = useCallback((entry: HistoryEntry) => {
+    // Actualización optimista del estado local
     setHistory((prev) => {
       const filtered = prev.filter((e) => e.mangaId !== entry.mangaId);
       const next = [entry, ...filtered].slice(0, CONFIG.PAGINATION.MAX_HISTORY_ITEMS);
-      try { localStorage.setItem(CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(next)); } catch {}
+      if (!profile) {
+        try { localStorage.setItem(CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(next)); } catch {}
+      }
       return next;
     });
-  }, []);
+
+    if (profile) {
+      // Upsert: borrar la entrada anterior y crear una nueva
+      void supabase.from('reading_history').delete()
+        .eq('user_id', profile.id).eq('manga_id', entry.mangaId)
+        .then(() => supabase.from('reading_history').insert({
+          user_id:  profile.id,
+          manga_id: entry.mangaId,
+          chapter:  entry.chapter,
+          page:     entry.page ?? 1,
+        }));
+    }
+  }, [profile, supabase]);
 
   const getLastRead = useCallback(
     (mangaId: string) => history.find((e) => e.mangaId === mangaId) ?? null,
@@ -237,8 +351,12 @@ function HistoryProvider({ children }: { children: ReactNode }) {
 
   const clearHistory = useCallback(() => {
     setHistory([]);
-    try { localStorage.removeItem(CONFIG.STORAGE_KEYS.HISTORY); } catch {}
-  }, []);
+    if (profile) {
+      void supabase.from('reading_history').delete().eq('user_id', profile.id);
+    } else {
+      try { localStorage.removeItem(CONFIG.STORAGE_KEYS.HISTORY); } catch {}
+    }
+  }, [profile, supabase]);
 
   return (
     <HistoryContext.Provider value={{ history, addEntry, getLastRead, clearHistory }}>

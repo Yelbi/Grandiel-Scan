@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Providers from '@/components/providers/Providers';
+import SwRegister from '@/components/SwRegister';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
 
@@ -76,6 +77,7 @@ export default function RootLayout({
           <a href="#main-content" className="skip-to-main">
             Saltar al contenido principal
           </a>
+          <SwRegister />
           <Navbar />
           <main id="main-content">{children}</main>
           <SpeedInsights />

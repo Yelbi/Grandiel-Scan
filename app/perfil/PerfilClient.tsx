@@ -7,6 +7,7 @@ import { useUserProfile } from '@/components/providers/UserProfileProvider';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import MangaCard from '@/components/manga/MangaCard';
+import PushSubscribeButton from '@/components/PushSubscribeButton';
 import type { Manga } from '@/lib/types';
 
 const AVATARS = [
@@ -31,7 +32,7 @@ function relativeDate(timestamp: number): string {
 }
 
 export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
-  const { profile, isLoggedIn, register, updateProfile, logout } = useUserProfile();
+  const { profile, isLoggedIn, loading, register, updateProfile, logout } = useUserProfile();
   const { favorites } = useFavoritesContext();
   const { history, clearHistory } = useHistoryContext();
 
@@ -42,8 +43,11 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const [editError, setEditError] = useState('');
 
   const [regUsername, setRegUsername] = useState('');
-  const [regAvatar, setRegAvatar] = useState(AVATARS[0]);
-  const [regError, setRegError] = useState('');
+  const [regEmail, setRegEmail]       = useState('');
+  const [regAvatar, setRegAvatar]     = useState(AVATARS[0]);
+  const [regError, setRegError]       = useState('');
+  const [regSuccess, setRegSuccess]   = useState(false);
+  const [regLoading, setRegLoading]   = useState(false);
 
   const regFileRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
@@ -79,25 +83,37 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     setEditing(true);
   };
 
-  const saveEdit = (e: React.FormEvent) => {
+  const saveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = editUsername.trim();
     if (trimmed.length < 3 || trimmed.length > 20) {
       setEditError('El nombre debe tener entre 3 y 20 caracteres.');
       return;
     }
-    updateProfile({ username: trimmed, avatar: editAvatar });
+    await updateProfile({ username: trimmed, avatar: editAvatar });
     setEditing(false);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = regUsername.trim();
     if (trimmed.length < 3 || trimmed.length > 20) {
       setRegError('El nombre debe tener entre 3 y 20 caracteres.');
       return;
     }
-    register(trimmed, regAvatar);
+    if (!regEmail.trim()) {
+      setRegError('El email es obligatorio.');
+      return;
+    }
+    setRegLoading(true);
+    setRegError('');
+    const result = await register(trimmed, regAvatar, regEmail.trim());
+    setRegLoading(false);
+    if (result.error) {
+      setRegError(result.error);
+    } else {
+      setRegSuccess(true);
+    }
   };
 
   const favoriteMangas = mangas.filter((m) => favorites.includes(m.id));
@@ -105,6 +121,37 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     entry,
     manga: mangas.find((m) => m.id === entry.mangaId),
   }));
+
+  /* ─────────────────── LOADING ─────────────────── */
+  if (loading) {
+    return (
+      <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+        <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', opacity: 0.5 }} aria-label="Cargando..." />
+      </div>
+    );
+  }
+
+  /* ── Email enviado ── */
+  if (regSuccess) {
+    return (
+      <div className="curva">
+        <div className="perfil-guest-layout">
+          <div className="perfil-guest-form-card" style={{ textAlign: 'center' }}>
+            <i className="fas fa-envelope-open-text" style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '1rem' }} aria-hidden="true" />
+            <h2 className="perfil-guest-form-card__title">¡Revisa tu email!</h2>
+            <p style={{ marginTop: '0.75rem', opacity: 0.8 }}>
+              Te enviamos un enlace de confirmación a{' '}
+              <strong>{regEmail}</strong>.
+              <br />Haz clic en el enlace para activar tu cuenta.
+            </p>
+            <p style={{ marginTop: '1rem', fontSize: '0.85rem', opacity: 0.55 }}>
+              ¿No lo ves? Revisa la carpeta de spam.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   /* ─────────────────── GUEST VIEW ─────────────────── */
   if (!isLoggedIn) {
@@ -156,13 +203,25 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
           <div className="perfil-guest-form-card">
             <h2 className="perfil-guest-form-card__title">Crear Cuenta</h2>
             <p className="perfil-guest-form-card__sub">
-              Sin email ni contraseña. Solo tu nombre y avatar.
+              Te enviaremos un enlace mágico a tu email. Sin contraseña.
             </p>
 
             <form className="user-form" onSubmit={handleRegister}>
               {regError && (
                 <p className="perfil-form-error">{regError}</p>
               )}
+              <div className="form-group">
+                <label htmlFor="reg-email">Email</label>
+                <input
+                  id="reg-email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
               <div className="form-group">
                 <label htmlFor="reg-username">Nombre de usuario</label>
                 <input
@@ -209,8 +268,11 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                   <input ref={regFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleRegPhoto} />
                 </div>
               </div>
-              <button type="submit" className="btn-primary user-submit-btn">
-                <i className="fas fa-user-plus" aria-hidden="true" /> Crear Cuenta
+              <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
+                {regLoading
+                  ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Enviando...</>
+                  : <><i className="fas fa-paper-plane" aria-hidden="true" /> Enviar enlace</>
+                }
               </button>
             </form>
           </div>
@@ -285,9 +347,10 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
             <button className="perfil-edit-btn" onClick={startEdit}>
               <i className="fas fa-edit" aria-hidden="true" /> Editar Perfil
             </button>
+            <PushSubscribeButton />
             <button
               className="perfil-logout-btn"
-              onClick={() => { if (confirm('¿Cerrar sesión?')) logout(); }}
+              onClick={() => { if (confirm('¿Cerrar sesión?')) void logout(); }}
             >
               <i className="fas fa-sign-out-alt" aria-hidden="true" /> Salir
             </button>

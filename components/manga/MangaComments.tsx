@@ -1,66 +1,90 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
 
 interface Comment {
-  id: string;
-  name: string;
-  avatar: string | null;
+  id: number;
   text: string;
-  timestamp: number;
+  createdAt: string;
+  userId: string;
+  username: string;
+  avatar: string;
 }
 
-const storageKey = (mangaId: string) => `grandiel_comments_${mangaId}`;
-const MAX = 50;
-
-export default function MangaComments({ mangaId }: { mangaId: string }) {
+export default function MangaComments({
+  mangaId,
+  chapterNum,
+}: {
+  mangaId: string;
+  chapterNum?: number;
+}) {
   const { profile, isLoggedIn } = useUserProfile();
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [name, setName] = useState('');
-  const [text, setText] = useState('');
-  const [error, setError] = useState('');
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
+  const [comments, setComments]     = useState<Comment[]>([]);
+  const [text, setText]             = useState('');
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const apiUrl = chapterNum !== undefined
+    ? `/api/comments/${mangaId}?chapter=${chapterNum}`
+    : `/api/comments/${mangaId}`;
+
+  const fetchComments = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(storageKey(mangaId));
-      if (stored) setComments(JSON.parse(stored) as Comment[]);
-    } catch {}
-  }, [mangaId]);
-
-  // Pre-fill name from profile
-  useEffect(() => {
-    if (isLoggedIn && profile) setName(profile.username);
-  }, [isLoggedIn, profile]);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const displayName = isLoggedIn ? profile!.username : name.trim();
-    if (!displayName || !text.trim()) {
-      setError('Por favor completa tu nombre y comentario.');
-      return;
+      const res = await fetch(apiUrl);
+      if (res.ok) setComments(await res.json() as Comment[]);
+    } catch {
+      // fallo silencioso — los comentarios son opcionales
+    } finally {
+      setLoading(false);
     }
-    const comment: Comment = {
-      id: Date.now().toString(),
-      name: displayName.slice(0, 50),
-      avatar: isLoggedIn ? profile!.avatar : null,
-      text: text.trim().slice(0, 500),
-      timestamp: Date.now(),
-    };
-    const updated = [comment, ...comments].slice(0, MAX);
-    setComments(updated);
-    try {
-      localStorage.setItem(storageKey(mangaId), JSON.stringify(updated));
-    } catch {}
-    setText('');
-    if (!isLoggedIn) setName('');
+  }, [apiUrl]);
+
+  useEffect(() => { void fetchComments(); }, [fetchComments]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+
+    setSubmitting(true);
     setError('');
+
+    const body: { text: string; chapter?: number } = { text };
+    if (chapterNum !== undefined) body.chapter = chapterNum;
+
+    const res = await fetch(`/api/comments/${mangaId}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      setText('');
+      await fetchComments();
+    } else {
+      const data = await res.json() as { error?: string };
+      setError(data.error ?? 'Error al publicar el comentario.');
+    }
+
+    setSubmitting(false);
   };
 
-  if (!mounted) return null;
+  const deleteComment = async (commentId: number) => {
+    if (!confirm('¿Eliminar este comentario?')) return;
+
+    const res = await fetch(`/api/comments/${mangaId}`, {
+      method:  'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ commentId }),
+    });
+
+    if (res.ok) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    }
+  };
 
   return (
     <section className="manga-comments">
@@ -72,10 +96,11 @@ export default function MangaComments({ mangaId }: { mangaId: string }) {
         )}
       </h2>
 
-      <form className="manga-comments__form" onSubmit={submit}>
-        {error && <p className="manga-comments__error">{error}</p>}
-        <div className="manga-comments__fields">
-          {isLoggedIn ? (
+      {/* ── Formulario ── */}
+      {isLoggedIn ? (
+        <form className="manga-comments__form" onSubmit={submit}>
+          {error && <p className="manga-comments__error">{error}</p>}
+          <div className="manga-comments__fields">
             <div className="manga-comments__user-info">
               <Image
                 src={profile!.avatar}
@@ -87,34 +112,43 @@ export default function MangaComments({ mangaId }: { mangaId: string }) {
               />
               <span className="manga-comments__user-name">{profile!.username}</span>
             </div>
-          ) : (
-            <input
-              className="manga-comments__input"
-              type="text"
-              placeholder="Tu nombre"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={50}
+            <textarea
+              className="manga-comments__textarea"
+              placeholder="¿Qué te pareció? Escribe tu comentario..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={500}
+              rows={3}
+              disabled={submitting}
             />
-          )}
-          <textarea
-            className="manga-comments__textarea"
-            placeholder="¿Qué te pareció? Escribe tu comentario..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={500}
-            rows={3}
-          />
-        </div>
-        <div className="manga-comments__form-footer">
-          <span className="manga-comments__chars">{text.length}/500</span>
-          <button type="submit" className="manga-comments__submit">
-            <i className="fas fa-paper-plane" aria-hidden="true" /> Comentar
-          </button>
-        </div>
-      </form>
+          </div>
+          <div className="manga-comments__form-footer">
+            <span className="manga-comments__chars">{text.length}/500</span>
+            <button
+              type="submit"
+              className="manga-comments__submit"
+              disabled={submitting || !text.trim()}
+            >
+              {submitting
+                ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Publicando...</>
+                : <><i className="fas fa-paper-plane" aria-hidden="true" /> Comentar</>
+              }
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className="manga-comments__login-prompt">
+          <i className="fas fa-lock" aria-hidden="true" />{' '}
+          <a href="/perfil">Inicia sesión</a> para dejar un comentario.
+        </p>
+      )}
 
-      {comments.length === 0 ? (
+      {/* ── Lista ── */}
+      {loading ? (
+        <p className="manga-comments__empty">
+          <i className="fas fa-spinner fa-spin" aria-hidden="true" /> Cargando comentarios...
+        </p>
+      ) : comments.length === 0 ? (
         <p className="manga-comments__empty">
           <i className="far fa-comment-dots" aria-hidden="true" /> Sé el primero en comentar.
         </p>
@@ -123,29 +157,35 @@ export default function MangaComments({ mangaId }: { mangaId: string }) {
           {comments.map((c) => (
             <li key={c.id} className="manga-comment">
               <div className="manga-comment__avatar" aria-hidden="true">
-                {c.avatar ? (
-                  <Image
-                    src={c.avatar}
-                    alt={c.name}
-                    width={36}
-                    height={36}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    unoptimized
-                  />
-                ) : (
-                  c.name.charAt(0).toUpperCase()
-                )}
+                <Image
+                  src={c.avatar}
+                  alt={c.username}
+                  width={36}
+                  height={36}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  unoptimized
+                />
               </div>
               <div className="manga-comment__body">
                 <div className="manga-comment__header">
-                  <span className="manga-comment__name">{c.name}</span>
+                  <span className="manga-comment__name">{c.username}</span>
                   <time className="manga-comment__time">
-                    {new Date(c.timestamp).toLocaleDateString('es-ES', {
-                      year: 'numeric',
+                    {new Date(c.createdAt).toLocaleDateString('es-ES', {
+                      year:  'numeric',
                       month: 'short',
-                      day: 'numeric',
+                      day:   'numeric',
                     })}
                   </time>
+                  {profile?.id === c.userId && (
+                    <button
+                      className="manga-comment__delete"
+                      onClick={() => void deleteComment(c.id)}
+                      title="Eliminar comentario"
+                      aria-label="Eliminar comentario"
+                    >
+                      <i className="fas fa-trash-alt" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
                 <p className="manga-comment__text">{c.text}</p>
               </div>

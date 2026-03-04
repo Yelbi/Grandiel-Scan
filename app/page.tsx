@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+
+export const revalidate = 3600; // ISR: revalidate every hour
 import Link from 'next/link';
 import MangaCard from '@/components/manga/MangaCard';
 import ContinueReading from '@/components/manga/ContinueReading';
 import HeroSection from '@/components/home/HeroSection';
-import { getAllMangas } from '@/lib/data';
-import { MOST_VIEWED_IDS } from '@/lib/config';
+import { getAllMangas, getMostViewed } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Grandiel Scan - Manhwas en Español | Inicio',
@@ -13,15 +14,14 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const mangas = await getAllMangas();
+  const [mangas, mostViewed] = await Promise.all([
+    getAllMangas(),
+    getMostViewed(12),
+  ]);
 
   const recent = [...mangas]
     .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     .slice(0, 12);
-
-  const mostViewed = mangas
-    .filter((m) => (MOST_VIEWED_IDS as readonly string[]).includes(m.id))
-    .sort((a, b) => (MOST_VIEWED_IDS as readonly string[]).indexOf(a.id) - (MOST_VIEWED_IDS as readonly string[]).indexOf(b.id));
 
   const heroCovers = mangas.filter((m) => m.image).slice(0, 18);
 

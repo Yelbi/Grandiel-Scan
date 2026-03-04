@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import { after } from 'next/server';
+
+export const revalidate = 3600; // ISR: revalidate every hour
 import { notFound } from 'next/navigation';
 import MangaDetail from '@/components/manga/MangaDetail';
-import { getAllMangas, getMangaById } from '@/lib/data';
+import { getAllMangas, getMangaById, incrementViews } from '@/lib/data';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -35,6 +38,9 @@ export default async function MangaPage({ params }: Props) {
   const manga = await getMangaById(id);
 
   if (!manga) notFound();
+
+  // Incrementa el contador después de enviar la respuesta (no bloquea el render)
+  after(() => incrementViews(id));
 
   return <MangaDetail manga={manga} />;
 }

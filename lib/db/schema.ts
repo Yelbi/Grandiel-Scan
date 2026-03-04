@@ -109,6 +109,7 @@ export const comments = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     text:      text('text').notNull(),
+    chapter:   integer('chapter'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deleted:   boolean('deleted').notNull().default(false),
@@ -116,6 +117,7 @@ export const comments = pgTable(
   (t) => [
     index('comments_manga_id_idx').on(t.mangaId),
     index('comments_user_id_idx').on(t.userId),
+    index('comments_chapter_idx').on(t.chapter),
   ],
 );
 

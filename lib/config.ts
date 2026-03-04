@@ -19,6 +19,7 @@ export const CONFIG = {
     USER_PROFILE: 'grandiel-user-profile',
     READING_MODE: 'grandiel-reading-mode',
     READER_SETTINGS: 'grandiel-reader-settings',
+    PROGRESS: 'grandiel-progress',
     FILTERS: 'grandiel-filters',
     PREFERENCES: 'grandiel-preferences',
   },

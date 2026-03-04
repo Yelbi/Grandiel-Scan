@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+export const revalidate = 3600; // ISR: revalidate every hour
 import MangaGrid from '@/components/manga/MangaGrid';
 import { getAllMangas } from '@/lib/data';
 
