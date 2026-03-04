@@ -54,9 +54,11 @@ function parseBulkList(raw: string): Array<{ chapter: number; folderId: string }
 }
 
 /* Extrae pares "capítulo: folderId" del HTML de la página de capítulos.
-   Soporta dos formatos:
+   Soporta tres formatos:
    1. /capitulo/{folderId}/comic-{slug}  → folderId es el ID real del CDN
-   2. /manga/{mangaId}/capitulo/{num}    → (kumanga.com) usa el nro de capítulo como placeholder  */
+   2. /manga/{mangaId}/capitulo/{num}    → (kumanga.com) usa el nro de capítulo como placeholder
+   3. /capitulo/{folderId}/             → (ikigaimangas / Qwik) folderId es un Snowflake ID;
+                                          nro de capítulo viene del atributo alt de la imagen  */
 function parseHtmlChapters(html: string): string {
   const pairs: string[] = [];
 
@@ -67,6 +69,27 @@ function parseHtmlChapters(html: string): string {
     const folderId  = match[1];
     const innerHtml = match[2];
     const chapMatch = /Cap[ií]tulo[&]nbsp[;](\d+(?:[.,]\d+)?)/.exec(innerHtml);
+    if (chapMatch) {
+      const chap = chapMatch[1].replace(',', '.');
+      pairs.push(`${chap}: ${folderId}`);
+    }
+  }
+  if (pairs.length > 0) return pairs.join('\n');
+
+  // Formato 3: /capitulo/{folderId}/  (ikigaimangas – Qwik framework)
+  // El folderId es un Snowflake ID grande; el nro de capítulo se extrae del
+  // atributo alt de la imagen (alt="Capítulo 12") o del texto del h3 sin comentarios HTML.
+  const re3 = /<a[^>]+href="\/capitulo\/(\d+)\/"[^>]*>([\s\S]*?)<\/a>/g;
+  while ((match = re3.exec(html)) !== null) {
+    const folderId  = match[1];
+    const innerHtml = match[2];
+    // Intentar extraer del atributo alt primero
+    let chapMatch = /alt="Cap[ií]tulo\s+(\d+(?:[.,]\d+)?)"/.exec(innerHtml);
+    if (!chapMatch) {
+      // Fallback: quitar comentarios HTML y buscar "Capítulo N"
+      const stripped = innerHtml.replace(/<!--[\s\S]*?-->/g, '');
+      chapMatch = /Cap[ií]tulo\s+(\d+(?:[.,]\d+)?)/.exec(stripped);
+    }
     if (chapMatch) {
       const chap = chapMatch[1].replace(',', '.');
       pairs.push(`${chap}: ${folderId}`);

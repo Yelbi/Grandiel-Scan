@@ -55,12 +55,17 @@ async function probeBatch(urls: string[]): Promise<boolean[]> {
   return Promise.all(urls.map(exists));
 }
 
-/* ── Patrón simple: 01.webp, 001.webp, 0.webp … ─────── */
+/* ── Patrón simple: 01.webp, 001.webp, 0.webp … ─────────────────────────
+   maxGaps: número de páginas consecutivas ausentes toleradas antes de parar.
+   0 = comportamiento estricto (parar en el primer fallo).
+   2 = tolera huecos pequeños (ej: 04→06 saltando el 05).               ── */
 async function probeSimple(
   base: string, ext: string, startIndex: number, pad: number,
+  maxGaps: number = 0,
 ): Promise<string[]> {
   const pages: string[] = [];
   let i = startIndex;
+  let consecutiveMisses = 0;
   while (i <= MAX_PAGES) {
     const batch   = Array.from({ length: BATCH_SIZE }, (_, k) =>
       base + String(i + k).padStart(pad, '0') + '.' + ext,
@@ -68,8 +73,12 @@ async function probeSimple(
     const results = await probeBatch(batch);
     let stop = false;
     for (let k = 0; k < results.length; k++) {
-      if (!results[k]) { stop = true; break; }
-      pages.push(String(i + k).padStart(pad, '0') + '.' + ext);
+      if (results[k]) {
+        pages.push(String(i + k).padStart(pad, '0') + '.' + ext);
+        consecutiveMisses = 0;
+      } else {
+        if (++consecutiveMisses > maxGaps) { stop = true; break; }
+      }
     }
     if (stop) break;
     i += BATCH_SIZE;
@@ -349,6 +358,33 @@ async function probeChapterSubPart(
   return pages;
 }
 
+/* ── Patrón "NN copia.webp": 01 copia.webp, 02 copia.webp … ────────────
+   Número padded a 2 dígitos + espacio (URL-encoded %20) + "copia" + ext.
+   Tolera hasta 2 páginas consecutivas ausentes (huecos).               ── */
+async function probeCopiaPages(base: string, ext: string): Promise<string[]> {
+  const pages: string[] = [];
+  let i = 1;
+  let consecutiveMisses = 0;
+  while (i <= MAX_PAGES) {
+    const batch   = Array.from({ length: BATCH_SIZE }, (_, k) =>
+      base + `${String(i + k).padStart(2, '0')}%20copia.${ext}`,
+    );
+    const results = await probeBatch(batch);
+    let stop = false;
+    for (let k = 0; k < results.length; k++) {
+      if (results[k]) {
+        pages.push(`${String(i + k).padStart(2, '0')}%20copia.${ext}`);
+        consecutiveMisses = 0;
+      } else {
+        if (++consecutiveMisses > 2) { stop = true; break; }
+      }
+    }
+    if (stop) break;
+    i += BATCH_SIZE;
+  }
+  return pages;
+}
+
 /* ── Scan profundo para chapter-subpart sin chapterHint ─────────────────
    Prueba en lotes qué número de capítulo tiene N_1_01 o N_01_01.webp.  ── */
 async function probeChapterSubPartDeep(base: string, ext: string): Promise<string[]> {
@@ -406,6 +442,7 @@ export async function POST(req: NextRequest) {
     `%20%20(1).${ext}`,  // double-space-paren starting at 1
     `%20%20(3).${ext}`,  // double-space-paren starting at 3 (common case)
     `1CL_01.${ext}`,     // cl-subpart
+    `01%20copia.${ext}`, // copia-pages: 01 copia.webp
     `001.${ext}`,        // simple-3digit
     `01.${ext}`,         // simple-2digit
     `0.${ext}`,          // zero-indexed
@@ -431,6 +468,7 @@ export async function POST(req: NextRequest) {
 
   const [
     hasSubPad, hasSubDash, hasSubNoPad, hasParen, hasDsP1, hasDsP3, hasCLSubPart,
+    hasCopiaPage,
     hasSimple3, hasSimple2, hasZero, hasZero1,
     ...rest
   ] = allResults;
@@ -568,27 +606,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Patrón "NN copia.webp": 01 copia.webp, 02 copia.webp …
+  if (hasCopiaPage) {
+    const pages = await probeCopiaPages(base, ext);
+    return NextResponse.json({ pages, pattern: 'copia-pages', count: pages.length });
+  }
+
   // Simple 3 dígitos: 001.webp
   if (hasSimple3) {
-    const pages = await probeSimple(base, ext, 1, 3);
+    const pages = await probeSimple(base, ext, 1, 3, 2);
     return NextResponse.json({ pages, pattern: 'simple-3digit', count: pages.length });
   }
 
   // Simple 2 dígitos: 01.webp
   if (hasSimple2) {
-    const pages = await probeSimple(base, ext, 1, 2);
+    const pages = await probeSimple(base, ext, 1, 2, 2);
     return NextResponse.json({ pages, pattern: 'simple-2digit', count: pages.length });
   }
 
   // Zero-indexed: 0.webp (requiere que 1.webp también exista para evitar falsos positivos)
   if (hasZero && hasZero1) {
-    const pages = await probeSimple(base, ext, 0, 1);
+    const pages = await probeSimple(base, ext, 0, 1, 2);
     return NextResponse.json({ pages, pattern: 'zero-indexed', count: pages.length });
   }
 
   // Simple 1 dígito desde 1: 1.webp, 2.webp, 3.webp …
   if (hasZero1) {
-    const pages = await probeSimple(base, ext, 1, 1);
+    const pages = await probeSimple(base, ext, 1, 1, 2);
     return NextResponse.json({ pages, pattern: 'simple-1digit', count: pages.length });
   }
 
