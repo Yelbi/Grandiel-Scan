@@ -230,6 +230,7 @@ function FavoritesProvider({ children }: { children: ReactNode }) {
         setFavorites(stored ? (JSON.parse(stored) as string[]) : []);
       } catch { setFavorites([]); }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, supabase]);
 
   const isFavorite = useCallback(
@@ -318,6 +319,7 @@ function HistoryProvider({ children }: { children: ReactNode }) {
         setHistory(stored ? (JSON.parse(stored) as HistoryEntry[]) : []);
       } catch { setHistory([]); }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, supabase]);
 
   const addEntry = useCallback((entry: HistoryEntry) => {
