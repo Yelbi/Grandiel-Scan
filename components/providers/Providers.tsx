@@ -309,7 +309,7 @@ function HistoryProvider({ children }: { children: ReactNode }) {
               chapter:   r.chapter as number,
               page:      (r.page as number | null) ?? undefined,
               timestamp: new Date(r.updated_at as string).getTime(),
-              title:     (r.mangas as { title: string } | null)?.title ?? (r.manga_id as string),
+              title:     ((r.mangas as unknown) as { title: string } | null)?.title ?? (r.manga_id as string),
             })));
           }
         });
