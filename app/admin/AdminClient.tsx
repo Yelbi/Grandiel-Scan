@@ -25,7 +25,7 @@ function parseManualPages(raw: string): string[] {
   return raw.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
 }
 
-type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'delete';
+type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'autodiscover' | 'delete';
 type Alert = { type: 'ok' | 'err'; msg: string } | null;
 
 type BulkStatus = 'pending' | 'probing' | 'saving' | 'done' | 'error' | 'skip';
@@ -53,18 +53,36 @@ function parseBulkList(raw: string): Array<{ chapter: number; folderId: string }
     });
 }
 
-/* Extrae pares "capítulo: folderId" del HTML de la página de capítulos */
+/* Extrae pares "capítulo: folderId" del HTML de la página de capítulos.
+   Soporta dos formatos:
+   1. /capitulo/{folderId}/comic-{slug}  → folderId es el ID real del CDN
+   2. /manga/{mangaId}/capitulo/{num}    → (kumanga.com) usa el nro de capítulo como placeholder  */
 function parseHtmlChapters(html: string): string {
   const pairs: string[] = [];
-  const anchorRe = /<a[^>]+href="\/capitulo\/(\d+)\/comic-[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+
+  // Formato 1: /capitulo/{folderId}/comic-{slug}
+  const re1 = /<a[^>]+href="\/capitulo\/(\d+)\/comic-[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
   let match;
-  while ((match = anchorRe.exec(html)) !== null) {
+  while ((match = re1.exec(html)) !== null) {
     const folderId  = match[1];
     const innerHtml = match[2];
     const chapMatch = /Cap[ií]tulo[&]nbsp[;](\d+(?:[.,]\d+)?)/.exec(innerHtml);
     if (chapMatch) {
       const chap = chapMatch[1].replace(',', '.');
       pairs.push(`${chap}: ${folderId}`);
+    }
+  }
+  if (pairs.length > 0) return pairs.join('\n');
+
+  // Formato 2: /manga/{mangaId}/capitulo/{chapterNum}  (kumanga.com)
+  // El HTML no incluye el folder ID del CDN; se usa el nro de capítulo como placeholder.
+  const re2 = /<a[^>]+href="\/manga\/\d+\/capitulo\/(\d+(?:\.\d+)?)"[^>]*>/g;
+  const seen = new Set<string>();
+  while ((match = re2.exec(html)) !== null) {
+    const chapNum = match[1];
+    if (!seen.has(chapNum)) {
+      seen.add(chapNum);
+      pairs.push(`${chapNum}: ${chapNum}`);
     }
   }
   return pairs.join('\n');
@@ -131,6 +149,23 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [ecLoading,    setEcLoading]    = useState(false);
   const [ecProbing,    setEcProbing]    = useState(false);
   const [ecProbeResult,setEcProbeResult]= useState<{ pattern: string; count: number } | null>(null);
+
+  /* ── Auto-Discover state ── */
+  const [adMangaId,   setAdMangaId]   = useState('');
+  const [adBase,      setAdBase]      = useState('');
+  const [adExt,       setAdExt]       = useState('webp');
+  const [adStart,     setAdStart]     = useState('');
+  const [adEnd,       setAdEnd]       = useState('');
+  const [adStartChap, setAdStartChap] = useState('');
+  const [adSlugHint,  setAdSlugHint]  = useState('');
+  const [adScanning,     setAdScanning]     = useState(false);
+  const [adScanProgress, setAdScanProgress] = useState<{ scanned: number; total: number; pattern: string; patternIdx: number; patternCount: number } | null>(null);
+  const [adRunning,      setAdRunning]      = useState(false);
+  const [adFound,     setAdFound]     = useState<{ folderId: number; chapter: number }[]>([]);
+  const [adTotal,     setAdTotal]     = useState(0);
+  const [adProgress,  setAdProgress]  = useState<BulkEntry[]>([]);
+  const [adAdjustIdx, setAdAdjustIdx] = useState<number | null>(null);
+  const [adAdjustVal, setAdAdjustVal] = useState('');
 
   /* ─── helpers ─────────────────────────────── */
   function notify(type: 'ok' | 'err', msg: string) {
@@ -209,7 +244,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     notify('ok', `Carga masiva terminada: ${ok}/${done} capítulos subidos.`);
   }
 
-  /* ─── AUTO-DISCOVER: escanear rango de folders ─ */
+  /* ─── AUTO-DISCOVER: escanear rango de folders (SSE) ─ */
   async function scanFolders() {
     if (!adBase.trim() || !adStart || !adEnd) {
       notify('err', 'Completa la URL base y el rango de folders.');
@@ -219,8 +254,9 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     setAdFound([]);
     setAdTotal(0);
     setAdProgress([]);
+    setAdScanProgress(null);
     try {
-      const res  = await fetch('/api/admin/scan-folders', {
+      const res = await fetch('/api/admin/scan-folders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,21 +267,45 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           slugHint:    adSlugHint.trim() || undefined,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) { notify('err', json.error ?? 'Error al escanear.'); return; }
-
+      if (!res.ok || res.headers.get('content-type')?.includes('application/json')) {
+        const json = await res.json();
+        notify('err', json.error ?? 'Error al escanear.');
+        return;
+      }
+      const reader  = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer    = '';
       const startChap = Number(adStartChap) || 1;
-      const found = (json.found as number[]).map((folderId, idx) => ({
-        folderId,
-        chapter: startChap + idx,
-      }));
-      setAdFound(found);
-      setAdTotal(json.total as number);
-      if (!found.length) notify('err', 'No se encontraron folders con páginas en ese rango.');
+      let hitCount  = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'hit') {
+              const chapter = startChap + hitCount++;
+              setAdFound((prev) => [...prev, { folderId: event.folderId as number, chapter }]);
+            } else if (event.type === 'progress') {
+              setAdScanProgress({ scanned: event.scanned as number, total: event.total as number, pattern: event.pattern as string, patternIdx: event.patternIdx as number, patternCount: event.patternCount as number });
+            } else if (event.type === 'done') {
+              setAdTotal(event.total as number);
+              if (hitCount === 0) notify('err', 'No se encontraron folders con páginas en ese rango.');
+            } else if (event.type === 'error') {
+              notify('err', String(event.message ?? 'Error al escanear.'));
+            }
+          } catch { /* línea malformada, ignorar */ }
+        }
+      }
     } catch {
       notify('err', 'Error de red al escanear.');
     } finally {
       setAdScanning(false);
+      setAdScanProgress(null);
     }
   }
 
@@ -787,15 +847,17 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             {bHtmlOpen && (
               <div style={{ padding: '12px 14px', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <p style={{ margin: 0, fontSize: '.8rem', color: 'var(--color-text-muted)' }}>
-                  Pega el HTML de la página de capítulos. El sistema extrae el ID numérico de cada URL
-                  (<code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>/capitulo/<strong>101650</strong>/comic-…</code>)
-                  y genera la lista automáticamente.
+                  Pega el HTML de la página de capítulos. Soporta dos formatos:{' '}
+                  <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>/capitulo/<strong>101650</strong>/comic-…</code>
+                  {' '}(folder ID real) y{' '}
+                  <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>/manga/10719/capitulo/<strong>1</strong></code>
+                  {' '}(kumanga.com — usa nro de capítulo como placeholder; reemplaza el segundo número con el folder ID real del CDN si es diferente).
                 </p>
                 <textarea
                   value={bHtmlRaw}
                   onChange={(e) => setBHtmlRaw(e.target.value)}
                   rows={6}
-                  placeholder='Pega aquí el HTML con los <a href="/capitulo/…"> …'
+                  placeholder='Pega aquí el HTML con los <a href="/capitulo/…"> o <a href="/manga/.../capitulo/…"> …'
                   style={{ fontFamily: 'monospace', fontSize: '.75rem', resize: 'vertical' }}
                 />
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1001,12 +1063,34 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
               className="btn-primary"
               onClick={scanFolders}
               disabled={adScanning || !adBase.trim() || !adStart || !adEnd}
-              style={{ marginBottom: '1.5rem' }}
+              style={{ marginBottom: adScanning ? '0.75rem' : '1.5rem' }}
             >
               {adScanning
                 ? <><i className="fas fa-spinner fa-spin" /> Escaneando…</>
                 : <><i className="fas fa-bolt" /> Escanear Folders</>}
             </button>
+          )}
+
+          {/* Scan progress bar */}
+          {adScanning && adScanProgress && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.75rem', color: 'var(--color-text-muted)', marginBottom: 2 }}>
+                <span><strong style={{ color: '#00c864' }}>{adFound.length}</strong> encontrados</span>
+                <span style={{ fontFamily: 'monospace' }}>{adScanProgress.pattern}.{adExt || 'webp'} [{adScanProgress.patternIdx + 1}/{adScanProgress.patternCount}]</span>
+              </div>
+              <div style={{ fontSize: '.7rem', color: 'var(--color-text-muted)', textAlign: 'right', marginBottom: 4 }}>
+                {adScanProgress.scanned.toLocaleString()} / {adScanProgress.total.toLocaleString()} folders
+              </div>
+              <div style={{ height: 6, borderRadius: 4, background: 'var(--color-bg-tertiary)', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  borderRadius: 4,
+                  background: 'var(--color-primary)',
+                  width: `${Math.round(((adScanProgress.patternIdx * adScanProgress.total + adScanProgress.scanned) / (adScanProgress.patternCount * adScanProgress.total)) * 100)}%`,
+                  transition: 'width 0.2s ease',
+                }} />
+              </div>
+            </div>
           )}
 
           {/* Scan result summary */}

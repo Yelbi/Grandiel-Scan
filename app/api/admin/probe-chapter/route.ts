@@ -14,7 +14,9 @@ const PAREN_INIT_MISS     = 32;  // si no hay ningún hit en los primeros N → 
 /* ── Si HEAD falla, usar GET para toda la sesión ── */
 let serverPrefersGet = false;
 
-async function tryFetch(url: string, method: 'HEAD' | 'GET'): Promise<number> {
+const IMGUR_PLACEHOLDER = 'imgur.com/w33tpvZ';
+
+async function tryFetch(url: string, method: 'HEAD' | 'GET'): Promise<[number, string]> {
   try {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -27,21 +29,26 @@ async function tryFetch(url: string, method: 'HEAD' | 'GET'): Promise<number> {
       },
     });
     clearTimeout(timer);
-    return res.status;
+    return [res.status, res.url];
   } catch {
-    return 0;
+    return [0, ''];
   }
+}
+
+function isReal(status: number, finalUrl: string): boolean {
+  if (status !== 200 && status !== 206) return false;
+  return !finalUrl.includes(IMGUR_PLACEHOLDER);
 }
 
 async function exists(url: string): Promise<boolean> {
   if (!serverPrefersGet) {
-    const status = await tryFetch(url, 'HEAD');
-    if (status === 200 || status === 206) return true;
+    const [status, finalUrl] = await tryFetch(url, 'HEAD');
+    if (isReal(status, finalUrl)) return true;
     if (status === 404 || status === 410 || status === 0) return false;
     serverPrefersGet = true; // 403, 405, 501… → cambiar a GET
   }
-  const status = await tryFetch(url, 'GET');
-  return status === 200 || status === 206;
+  const [status, finalUrl] = await tryFetch(url, 'GET');
+  return isReal(status, finalUrl);
 }
 
 async function probeBatch(urls: string[]): Promise<boolean[]> {
