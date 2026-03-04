@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Solo disponible en desarrollo local.' }, { status: 403 });
   }
 
-  const { baseUrl, ext = 'webp', chapterHint } = await req.json();
+  const { baseUrl, ext = 'webp', chapterHint, slugHint } = await req.json();
   if (!baseUrl) {
     return NextResponse.json({ error: 'baseUrl requerido.' }, { status: 400 });
   }
@@ -289,6 +289,26 @@ export async function POST(req: NextRequest) {
   if (hasParen) {
     const pages = await probeParenPart(base, ext);
     return NextResponse.json({ pages, pattern: 'paren-part', count: pages.length });
+  }
+
+  // Slug textual: c-463-ingeniero_01.webp / c-463-ingeniero.webp
+  // Se activa cuando el usuario proporciona el nombre base de las páginas (sin extensión).
+  // Cubre el caso donde el prefijo contiene una palabra en lugar de un número.
+  if (slugHint) {
+    const prefix = String(slugHint).replace(/\.[a-z0-9]+$/i, '').trim();
+    if (prefix) {
+      // Multi-página con sufijo _NN: c-463-ingeniero_01.webp, c-463-ingeniero_02.webp …
+      if (await exists(base + `${prefix}_01.${ext}`)) {
+        const pages = await probePagesOfPart(base, ext, prefix);
+        if (pages.length > 0) {
+          return NextResponse.json({ pages, pattern: `slug(${prefix})`, count: pages.length });
+        }
+      }
+      // Página única (sin sufijo numérico): c-463-ingeniero.webp
+      if (await exists(base + `${prefix}.${ext}`)) {
+        return NextResponse.json({ pages: [`${prefix}.${ext}`], pattern: 'slug-single', count: 1 });
+      }
+    }
   }
 
   // Prefijo dinámico con chapterHint: c-743-54_01.webp cuando se conoce el número de cap.
