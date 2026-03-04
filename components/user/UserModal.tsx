@@ -27,6 +27,7 @@ export default function UserModal({ onClose }: UserModalProps) {
 
   const [view, setView] = useState<ModalView>(isLoggedIn ? 'profile' : 'register');
   const [username, setUsername] = useState(profile?.username ?? '');
+  const [email, setEmail] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar ?? AVATARS[0]);
   const [error, setError] = useState('');
 
@@ -43,7 +44,7 @@ export default function UserModal({ onClose }: UserModalProps) {
     e.preventDefault();
     const trimmed = username.trim();
     if (!validate(trimmed)) return;
-    register(trimmed, selectedAvatar);
+    register(trimmed, selectedAvatar, email);
     onClose();
   };
 
@@ -103,6 +104,19 @@ export default function UserModal({ onClose }: UserModalProps) {
                   {error}
                 </p>
               )}
+              <div className="form-group">
+                <label htmlFor="email-input">Correo electrónico</label>
+                <input
+                  id="email-input"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+
               <div className="form-group">
                 <label htmlFor="username-input">Nombre de usuario</label>
                 <input
