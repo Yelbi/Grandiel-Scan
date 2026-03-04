@@ -2,17 +2,17 @@ import type { Metadata } from 'next';
 import { after } from 'next/server';
 
 export const revalidate = 3600; // ISR: revalidate every hour
+export const dynamicParams = true; // render on-demand, then cache
 import { notFound } from 'next/navigation';
 import MangaDetail from '@/components/manga/MangaDetail';
-import { getAllMangas, getMangaById, incrementViews } from '@/lib/data';
+import { getMangaById, incrementViews } from '@/lib/data';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 export async function generateStaticParams() {
-  const mangas = await getAllMangas();
-  return mangas.map((m) => ({ id: m.id }));
+  return [];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

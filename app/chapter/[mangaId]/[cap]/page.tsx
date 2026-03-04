@@ -1,20 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ChapterReader from '@/components/chapter/ChapterReader';
-import { getAllChapters, getChapter, getMangaById } from '@/lib/data';
+import { getChapter, getMangaById } from '@/lib/data';
 
 export const revalidate = 86400; // ISR: revalidate every 24 hours (chapters rarely change)
+export const dynamicParams = true; // render on-demand, then cache
 
 interface Props {
   params: Promise<{ mangaId: string; cap: string }>;
 }
 
 export async function generateStaticParams() {
-  const chapters = await getAllChapters();
-  return chapters.map((c) => ({
-    mangaId: c.mangaId,
-    cap: String(c.chapter),
-  }));
+  return [];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
