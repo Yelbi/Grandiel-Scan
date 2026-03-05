@@ -1,6 +1,23 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
+/** Elimina cookies de Supabase acumuladas que superan el límite de headers (494) */
+function purgeStaleSbCookies(req: NextRequest, response: NextResponse) {
+  const sbCookies = req.cookies.getAll().filter((c) => c.name.startsWith('sb-'));
+
+  // Agrupar por nombre base (sin el sufijo ".0", ".1", etc.)
+  const seen = new Set<string>();
+  for (const cookie of sbCookies) {
+    const base = cookie.name.replace(/\.\d+$/, '');
+    if (seen.has(base)) {
+      // Cookie duplicada/obsoleta — eliminar del response
+      response.cookies.set(cookie.name, '', { maxAge: 0, path: '/' });
+    } else {
+      seen.add(base);
+    }
+  }
+}
+
 export async function middleware(req: NextRequest) {
   // response es mutable: Supabase puede añadir/renovar cookies de sesión
   let response = NextResponse.next({ request: req });
@@ -30,6 +47,9 @@ export async function middleware(req: NextRequest) {
   } catch {
     // Si Supabase falla (red, token inválido, etc.), continuar sin crashear
   }
+
+  // Limpiar cookies sb-* duplicadas para evitar el error 494 REQUEST_HEADER_TOO_LARGE
+  purgeStaleSbCookies(req, response);
 
   // ── Proteger rutas de admin con Basic Auth ──────────────────────────────────
   const { pathname } = req.nextUrl;
