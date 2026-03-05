@@ -14,7 +14,17 @@ export async function GET(
   try {
     const { mangaId } = await params;
     const chapterParam = req.nextUrl.searchParams.get('chapter');
-    const chapter = chapterParam !== null ? parseInt(chapterParam, 10) : null;
+    let chapter: number | null = null;
+
+    if (chapterParam !== null) {
+      if (!/^\d+$/.test(chapterParam)) {
+        return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
+      }
+      chapter = Number(chapterParam);
+      if (chapter < 1) {
+        return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
+      }
+    }
 
     const rows = await db
       .select({
@@ -59,14 +69,21 @@ export async function POST(
       );
     }
 
-    const { text, chapter } = await req.json() as { text: string; chapter?: number };
+    const { text, chapter } = await req.json() as { text: string; chapter?: unknown };
     if (!text?.trim() || text.trim().length > 500) {
       return NextResponse.json({ error: 'Comentario inválido.' }, { status: 400 });
     }
+    if (
+      chapter !== undefined &&
+      (typeof chapter !== 'number' || !Number.isInteger(chapter) || chapter < 1)
+    ) {
+      return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
+    }
+    const chapterValue = chapter === undefined ? null : (chapter as number);
 
     const [comment] = await db
       .insert(comments)
-      .values({ mangaId, userId: user.id, text: text.trim(), chapter: chapter ?? null })
+      .values({ mangaId, userId: user.id, text: text.trim(), chapter: chapterValue })
       .returning();
 
     return NextResponse.json({ ok: true, comment });

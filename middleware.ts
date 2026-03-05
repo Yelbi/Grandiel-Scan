@@ -5,15 +5,26 @@ import { type NextRequest, NextResponse } from 'next/server';
 function purgeStaleSbCookies(req: NextRequest, response: NextResponse) {
   const sbCookies = req.cookies.getAll().filter((c) => c.name.startsWith('sb-'));
 
-  // Agrupar por nombre base (sin el sufijo ".0", ".1", etc.)
-  const seen = new Set<string>();
+  const groups = new Map<string, { baseCookies: string[]; chunkCookies: string[] }>();
   for (const cookie of sbCookies) {
-    const base = cookie.name.replace(/\.\d+$/, '');
-    if (seen.has(base)) {
-      // Cookie duplicada/obsoleta — eliminar del response
-      response.cookies.set(cookie.name, '', { maxAge: 0, path: '/' });
+    const match = cookie.name.match(/^(.*)\.(\d+)$/);
+    const base  = match ? match[1] : cookie.name;
+    const group = groups.get(base) ?? { baseCookies: [], chunkCookies: [] };
+    if (match) {
+      group.chunkCookies.push(cookie.name);
     } else {
-      seen.add(base);
+      group.baseCookies.push(cookie.name);
+    }
+    groups.set(base, group);
+  }
+
+  // Si existe versión chunked (.0/.1/...) para una cookie base, eliminar solo la base plana.
+  // Nunca se eliminan chunks válidos para evitar cortar sesiones activas.
+  for (const group of groups.values()) {
+    if (group.chunkCookies.length > 0 && group.baseCookies.length > 0) {
+      for (const staleName of group.baseCookies) {
+        response.cookies.set(staleName, '', { maxAge: 0, path: '/' });
+      }
     }
   }
 }

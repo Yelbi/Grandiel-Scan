@@ -3,11 +3,25 @@ import { db } from './db';
 import { pushSubscriptions, favorites } from './db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
-webpush.setVapidDetails(
-  `mailto:admin@${process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') ?? 'grandielscan.com'}`,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const siteHost = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://grandielscan.com')
+  .replace(/^https?:\/\//, '');
+
+let pushReady = false;
+
+if (vapidPublicKey && vapidPrivateKey) {
+  try {
+    webpush.setVapidDetails(
+      `mailto:admin@${siteHost}`,
+      vapidPublicKey,
+      vapidPrivateKey,
+    );
+    pushReady = true;
+  } catch (err) {
+    console.error('[push] VAPID config inválida:', err);
+  }
+}
 
 export interface PushPayload {
   title: string;
@@ -24,6 +38,8 @@ export async function notifyFavoriteUsers(
   mangaId: string,
   payload: PushPayload,
 ): Promise<void> {
+  if (!pushReady) return;
+
   // 1. Usuarios que tienen este manga en favoritos
   const favRows = await db
     .select({ userId: favorites.userId })

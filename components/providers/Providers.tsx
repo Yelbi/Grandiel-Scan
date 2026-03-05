@@ -143,29 +143,24 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
-    // Timeout de seguridad: si loadProfile no resuelve en 10s, desbloquear la UI
+    // Timeout de seguridad: si auth no resuelve en 10s, desbloquear la UI
     const safetyTimer = setTimeout(() => setLoading(false), 10_000);
 
-    // Comprobar sesión activa al montar
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        loadProfile(user.id, user.user_metadata).finally(() => {
-          clearTimeout(safetyTimer);
-          setLoading(false);
-        });
-      } else {
-        clearTimeout(safetyTimer);
-        setLoading(false);
-      }
-    });
-
-    // Escuchar cambios de sesión (login / logout / token refresh)
+    // onAuthStateChange dispara INITIAL_SESSION al montarse con el estado
+    // actual de la sesión (cookies/localStorage). Es más fiable que getUser()
+    // porque no hace un round-trip de red antes de resolver.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (session?.user) {
           await loadProfile(session.user.id, session.user.user_metadata);
         } else {
           setProfile(null);
+        }
+
+        // INITIAL_SESSION es el primer evento — resuelve loading
+        if (event === 'INITIAL_SESSION') {
+          clearTimeout(safetyTimer);
+          setLoading(false);
         }
       },
     );
@@ -187,7 +182,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
         password: crypto.randomUUID(), // contraseña aleatoria — se usa magic link
         options: {
           data: { username, avatar },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       if (error) return { error: error.message };

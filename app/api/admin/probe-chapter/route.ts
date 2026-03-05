@@ -69,7 +69,8 @@ async function probeSimple(
   let i = startIndex;
   let consecutiveMisses = 0;
   while (i <= MAX_PAGES) {
-    const batch   = Array.from({ length: BATCH_SIZE }, (_, k) =>
+    const count   = Math.min(BATCH_SIZE, MAX_PAGES - i + 1);
+    const batch   = Array.from({ length: count }, (_, k) =>
       base + String(i + k).padStart(pad, '0') + '.' + ext,
     );
     const results = await probeBatch(batch);
@@ -83,7 +84,7 @@ async function probeSimple(
       }
     }
     if (stop) break;
-    i += BATCH_SIZE;
+    i += count;
   }
   return pages;
 }
@@ -122,15 +123,24 @@ async function probeSubPart(
   const pages: string[] = [];
   let gaps = 0;
 
-  for (let part = 1; part <= MAX_PARTS; part++) {
-    const pp = String(part).padStart(padPart, '0');
-    if (!(await exists(base + `${pp}_01.${ext}`))) {
-      if (++gaps >= MAX_PART_GAPS) break;
-      continue;
+  for (let partStart = 1; partStart <= MAX_PARTS; partStart += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_PARTS - partStart + 1);
+    const partNums = Array.from({ length: count }, (_, k) => partStart + k);
+    const results  = await probeBatch(
+      partNums.map((p) => base + `${String(p).padStart(padPart, '0')}_01.${ext}`),
+    );
+    let stop = false;
+    for (let k = 0; k < results.length; k++) {
+      if (!results[k]) {
+        if (++gaps >= MAX_PART_GAPS) { stop = true; break; }
+        continue;
+      }
+      gaps = 0;
+      const pp        = String(partNums[k]).padStart(padPart, '0');
+      const partPages = await probePagesOfPart(base, ext, pp);
+      pages.push(...partPages);
     }
-    gaps = 0;
-    const partPages = await probePagesOfPart(base, ext, pp);
-    pages.push(...partPages);
+    if (stop) break;
   }
   return pages;
 }
@@ -145,15 +155,24 @@ async function probePrefixedSubPart(
   const pages: string[] = [];
   let gaps = 0;
 
-  for (let part = 1; part <= MAX_PARTS; part++) {
-    const pp = String(part).padStart(padPart, '0');
-    if (!(await exists(base + `${prefix}${pp}_01.${ext}`))) {
-      if (++gaps >= MAX_PART_GAPS) break;
-      continue;
+  for (let partStart = 1; partStart <= MAX_PARTS; partStart += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_PARTS - partStart + 1);
+    const partNums = Array.from({ length: count }, (_, k) => partStart + k);
+    const results  = await probeBatch(
+      partNums.map((p) => base + `${prefix}${String(p).padStart(padPart, '0')}_01.${ext}`),
+    );
+    let stop = false;
+    for (let k = 0; k < results.length; k++) {
+      if (!results[k]) {
+        if (++gaps >= MAX_PART_GAPS) { stop = true; break; }
+        continue;
+      }
+      gaps = 0;
+      const pp        = String(partNums[k]).padStart(padPart, '0');
+      const partPages = await probePagesOfPart(base, ext, `${prefix}${pp}`);
+      pages.push(...partPages);
     }
-    gaps = 0;
-    const partPages = await probePagesOfPart(base, ext, `${prefix}${pp}`);
-    pages.push(...partPages);
+    if (stop) break;
   }
   return pages;
 }
@@ -264,38 +283,51 @@ async function probeSubPartDash(base: string, ext: string): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
 
-  for (let part = 1; part <= MAX_PARTS; part++) {
-    const pp = String(part).padStart(2, '0');
-    // La primera página puede ser PP_01-1 o PP_01 (toleramos ambos)
-    const hasDash   = await exists(base + `${pp}_01-1.${ext}`);
-    const hasNormal = !hasDash && await exists(base + `${pp}_01.${ext}`);
+  for (let partStart = 1; partStart <= MAX_PARTS; partStart += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_PARTS - partStart + 1);
+    const partNums = Array.from({ length: count }, (_, k) => partStart + k);
+    const pps      = partNums.map((p) => String(p).padStart(2, '0'));
 
-    if (!hasDash && !hasNormal) {
-      if (++gaps >= MAX_PART_GAPS) break;
-      continue;
-    }
-    gaps = 0;
+    // Verificar primera página dash y normal en paralelo para todo el lote
+    const [dashResults, normalResults] = await Promise.all([
+      probeBatch(pps.map((pp) => base + `${pp}_01-1.${ext}`)),
+      probeBatch(pps.map((pp) => base + `${pp}_01.${ext}`)),
+    ]);
 
-    // Primera página
-    pages.push(hasDash ? `${pp}_01-1.${ext}` : `${pp}_01.${ext}`);
+    let stop = false;
+    for (let k = 0; k < partNums.length; k++) {
+      const hasDash   = dashResults[k];
+      const hasNormal = !hasDash && normalResults[k];
 
-    // Páginas 02, 03 … (siempre en formato normal)
-    let page = 2;
-    while (page <= MAX_PER_PART) {
-      const batchSize = Math.min(BATCH_SIZE, MAX_PER_PART - page + 1);
-      const batch     = Array.from({ length: batchSize }, (_, k) => {
-        const pg = String(page + k).padStart(2, '0');
-        return base + `${pp}_${pg}.${ext}`;
-      });
-      const results = await probeBatch(batch);
-      let stop = false;
-      for (let k = 0; k < results.length; k++) {
-        if (!results[k]) { stop = true; break; }
-        pages.push(`${pp}_${String(page + k).padStart(2, '0')}.${ext}`);
+      if (!hasDash && !hasNormal) {
+        if (++gaps >= MAX_PART_GAPS) { stop = true; break; }
+        continue;
       }
-      if (stop) break;
-      page += batchSize;
+      gaps = 0;
+
+      const pp = pps[k];
+      // Primera página
+      pages.push(hasDash ? `${pp}_01-1.${ext}` : `${pp}_01.${ext}`);
+
+      // Páginas 02, 03 … (siempre en formato normal)
+      let page = 2;
+      while (page <= MAX_PER_PART) {
+        const batchSize = Math.min(BATCH_SIZE, MAX_PER_PART - page + 1);
+        const batch     = Array.from({ length: batchSize }, (_, j) => {
+          const pg = String(page + j).padStart(2, '0');
+          return base + `${pp}_${pg}.${ext}`;
+        });
+        const results = await probeBatch(batch);
+        let innerStop = false;
+        for (let j = 0; j < results.length; j++) {
+          if (!results[j]) { innerStop = true; break; }
+          pages.push(`${pp}_${String(page + j).padStart(2, '0')}.${ext}`);
+        }
+        if (innerStop) break;
+        page += batchSize;
+      }
     }
+    if (stop) break;
   }
   return pages;
 }
@@ -326,15 +358,25 @@ async function probePrefixedPair(base: string, ext: string, prefix: string): Pro
 async function probeCLSubPart(base: string, ext: string): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
-  for (let part = 1; part <= MAX_PARTS; part++) {
-    if (!(await exists(base + `${part}CL_01.${ext}`))) {
-      if (++gaps >= MAX_PART_GAPS) break;
-      continue;
+
+  for (let partStart = 1; partStart <= MAX_PARTS; partStart += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_PARTS - partStart + 1);
+    const partNums = Array.from({ length: count }, (_, k) => partStart + k);
+    // probePagesOfPart usa partPrefix + "_" + pg, así que partPrefix = "NCL"
+    const results  = await probeBatch(
+      partNums.map((p) => base + `${p}CL_01.${ext}`),
+    );
+    let stop = false;
+    for (let k = 0; k < results.length; k++) {
+      if (!results[k]) {
+        if (++gaps >= MAX_PART_GAPS) { stop = true; break; }
+        continue;
+      }
+      gaps = 0;
+      const partPages = await probePagesOfPart(base, ext, `${partNums[k]}CL`);
+      pages.push(...partPages);
     }
-    gaps = 0;
-    // probePagesOfPart usa partPrefix + "_" + pg, así que partPrefix = "1CL"
-    const partPages = await probePagesOfPart(base, ext, `${part}CL`);
-    pages.push(...partPages);
+    if (stop) break;
   }
   return pages;
 }
@@ -548,6 +590,9 @@ export async function POST(req: NextRequest) {
   if (!baseUrl) {
     return NextResponse.json({ error: 'baseUrl requerido.' }, { status: 400 });
   }
+  if (!/^[a-z0-9]{1,5}$/i.test(ext)) {
+    return NextResponse.json({ error: 'Extensión inválida.' }, { status: 400 });
+  }
 
   const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
   serverPrefersGet = false; // reset por sesión
@@ -727,6 +772,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Patrón "NN copia.webp": 01 copia.webp, 02 copia.webp …
+  if (hasCopiaPage) {
+    const pages = await probeCopiaPages(base, ext);
+    return NextResponse.json({ pages, pattern: 'copia-pages', count: pages.length });
+  }
+
   // Scan profundo: busca en lote cualquier número de parte (capítulos 4+)
   // Resuelve el caso c-743-54_01.webp cuando no se proporcionó chapterHint.
   for (const { prefix, padPart } of prefixVariants) {
@@ -744,12 +795,6 @@ export async function POST(req: NextRequest) {
       const pages = [...coverPages, ...contentPages];
       return NextResponse.json({ pages, pattern: 'chapter-subpart', count: pages.length });
     }
-  }
-
-  // Patrón "NN copia.webp": 01 copia.webp, 02 copia.webp …
-  if (hasCopiaPage) {
-    const pages = await probeCopiaPages(base, ext);
-    return NextResponse.json({ pages, pattern: 'copia-pages', count: pages.length });
   }
 
   // Simple 3 dígitos: 001.webp

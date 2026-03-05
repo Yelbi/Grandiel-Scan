@@ -25,6 +25,12 @@ function parseManualPages(raw: string): string[] {
   return raw.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
 }
 
+function parsePositiveInt(raw: string): number | null {
+  const num = Number(raw);
+  if (!Number.isInteger(num) || num < 1) return null;
+  return num;
+}
+
 type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'autodiscover' | 'delete';
 type Alert = { type: 'ok' | 'err'; msg: string } | null;
 
@@ -41,14 +47,14 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'delete',       label: 'Eliminar',          icon: 'fas fa-trash-alt'      },
 ];
 
-/* Parsea "28: 65076", "28 65076", "28,65076", "1.1: 83734", "29.5: 66022"… */
+/* Parsea "28: 65076", "28 65076", "28,65076"… (solo capítulos enteros) */
 function parseBulkList(raw: string): Array<{ chapter: number; folderId: string }> {
   return raw
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
     .flatMap((line) => {
-      const m = line.match(/^(\d+(?:\.\d+)?)\s*[:\-,\s]\s*(\S+)/);
+      const m = line.match(/^(\d+)\s*[:\-,\s]\s*(\S+)/);
       return m ? [{ chapter: Number(m[1]), folderId: m[2] }] : [];
     });
 }
@@ -68,9 +74,9 @@ function parseHtmlChapters(html: string): string {
   while ((match = re1.exec(html)) !== null) {
     const folderId  = match[1];
     const innerHtml = match[2];
-    const chapMatch = /Cap[ií]tulo[&]nbsp[;](\d+(?:[.,]\d+)?)/.exec(innerHtml);
+    const chapMatch = /Cap[ií]tulo[&]nbsp[;](\d+)/.exec(innerHtml);
     if (chapMatch) {
-      const chap = chapMatch[1].replace(',', '.');
+      const chap = chapMatch[1];
       pairs.push(`${chap}: ${folderId}`);
     }
   }
@@ -84,14 +90,14 @@ function parseHtmlChapters(html: string): string {
     const folderId  = match[1];
     const innerHtml = match[2];
     // Intentar extraer del atributo alt primero
-    let chapMatch = /alt="Cap[ií]tulo\s+(\d+(?:[.,]\d+)?)"/.exec(innerHtml);
+    let chapMatch = /alt="Cap[ií]tulo\s+(\d+)"/.exec(innerHtml);
     if (!chapMatch) {
       // Fallback: quitar comentarios HTML y buscar "Capítulo N"
       const stripped = innerHtml.replace(/<!--[\s\S]*?-->/g, '');
-      chapMatch = /Cap[ií]tulo\s+(\d+(?:[.,]\d+)?)/.exec(stripped);
+      chapMatch = /Cap[ií]tulo\s+(\d+)/.exec(stripped);
     }
     if (chapMatch) {
-      const chap = chapMatch[1].replace(',', '.');
+      const chap = chapMatch[1];
       pairs.push(`${chap}: ${folderId}`);
     }
   }
@@ -99,7 +105,7 @@ function parseHtmlChapters(html: string): string {
 
   // Formato 2: /manga/{mangaId}/capitulo/{chapterNum}  (kumanga.com)
   // El HTML no incluye el folder ID del CDN; se usa el nro de capítulo como placeholder.
-  const re2 = /<a[^>]+href="\/manga\/\d+\/capitulo\/(\d+(?:\.\d+)?)"[^>]*>/g;
+  const re2 = /<a[^>]+href="\/manga\/\d+\/capitulo\/(\d+)"[^>]*>/g;
   const seen = new Set<string>();
   while ((match = re2.exec(html)) !== null) {
     const chapNum = match[1];
@@ -207,6 +213,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     const comicBase = bComicBase.replace(/\/$/, '');
     setBRunning(true);
     setBProgress(entries.map((e) => ({ ...e, status: 'pending', pages: 0, pattern: '' })));
+    let okCount = 0;
 
     for (let i = 0; i < entries.length; i++) {
       const { chapter, folderId } = entries[i];
@@ -249,6 +256,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           setBProgress((prev) => prev.map((e, idx) => idx === i
             ? { ...e, status: saveJson.error?.includes('ya existe') ? 'skip' : 'error', error: saveJson.error } : e));
         } else {
+          okCount++;
           setBProgress((prev) => prev.map((e, idx) => idx === i ? { ...e, status: 'done' } : e));
           setMangas((prev) => prev.map((m) =>
             m.id === bMangaId
@@ -264,8 +272,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
 
     setBRunning(false);
     const done  = entries.length;
-    const ok    = bProgress.filter((e) => e.status === 'done').length;
-    notify('ok', `Carga masiva terminada: ${ok}/${done} capítulos subidos.`);
+    notify('ok', `Carga masiva terminada: ${okCount}/${done} capítulos subidos.`);
   }
 
   /* ─── AUTO-DISCOVER: escanear rango de folders (SSE) ─ */
@@ -299,7 +306,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
       const reader  = res.body!.getReader();
       const decoder = new TextDecoder();
       let buffer    = '';
-      const startChap = Number(adStartChap) || 1;
+      const startChap = parsePositiveInt(adStartChap) ?? 1;
       let hitCount  = 0;
       while (true) {
         const { done, value } = await reader.read();
@@ -412,9 +419,10 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     if (!cBaseUrl.trim()) { notify('err', 'Ingresa la Base URL primero.'); return; }
     setProbing(true); setProbeResult(null);
     try {
+      const chapterHint = parsePositiveInt(cNum);
       const res  = await fetch('/api/admin/probe-chapter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp', chapterHint: Number(cNum) || undefined, slugHint: cSlugHint.trim() || undefined, viewerUrl: cViewerUrl.trim() || undefined }),
+        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp', chapterHint: chapterHint ?? undefined, slugHint: cSlugHint.trim() || undefined, viewerUrl: cViewerUrl.trim() || undefined }),
       });
       const json = await res.json();
       if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
@@ -433,9 +441,10 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     if (!ecBaseUrl.trim()) { notify('err', 'Ingresa la Base URL primero.'); return; }
     setEcProbing(true); setEcProbeResult(null);
     try {
+      const chapterHint = parsePositiveInt(ecChapterNum);
       const res  = await fetch('/api/admin/probe-chapter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl: ecBaseUrl.trim(), ext: 'webp', chapterHint: Number(ecChapterNum) || undefined }),
+        body: JSON.stringify({ baseUrl: ecBaseUrl.trim(), ext: 'webp', chapterHint: chapterHint ?? undefined }),
       });
       const json = await res.json();
       if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
@@ -507,24 +516,30 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   /* ─── SUBMIT: add chapter ─────────────────── */
   async function submitChapter(e: React.FormEvent) {
     e.preventDefault(); setLoading(true);
+    const chapterNum = parsePositiveInt(cNum);
+    if (chapterNum === null) {
+      notify('err', 'El número de capítulo debe ser un entero mayor a 0.');
+      setLoading(false);
+      return;
+    }
     const pages = cMode === 'auto'
       ? generatePages(Number(cCount), cExt.trim() || 'webp')
       : parseManualPages(cManual);
     if (!pages.length) { notify('err', 'La lista de páginas está vacía.'); setLoading(false); return; }
-    const chapter = { mangaId: cMangaId, chapter: Number(cNum), ...(cBaseUrl.trim() ? { baseUrl: cBaseUrl.trim() } : {}), pages };
+    const chapter = { mangaId: cMangaId, chapter: chapterNum, ...(cBaseUrl.trim() ? { baseUrl: cBaseUrl.trim() } : {}), pages };
     const res  = await fetch('/api/admin/chapter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(chapter) });
     const json = await res.json();
     setLoading(false);
     if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
     else {
       const title = mangas.find((m) => m.id === cMangaId)?.title ?? cMangaId;
-      notify('ok', `✓ Capítulo ${cNum} de "${title}" añadido (${pages.length} páginas)`);
+      notify('ok', `✓ Capítulo ${chapterNum} de "${title}" añadido (${pages.length} páginas)`);
       setCNum(''); setCBaseUrl(''); setCCount(''); setCManual(''); setCSlugHint('');
       setProbeResult(null); setCMode('auto');
       // sync local manga chapters list
       setMangas((prev) => prev.map((m) =>
         m.id === cMangaId
-          ? { ...m, chapters: [...new Set([...m.chapters, Number(cNum)])].sort((a,b)=>a-b), latestChapter: Math.max(m.latestChapter, Number(cNum)) }
+          ? { ...m, chapters: [...new Set([...m.chapters, chapterNum])].sort((a,b)=>a-b), latestChapter: Math.max(m.latestChapter, chapterNum) }
           : m,
       ));
     }
@@ -567,10 +582,16 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   /* ─── SUBMIT: edit chapter ────────────────── */
   async function submitEditChapter(e: React.FormEvent) {
     e.preventDefault(); setLoading(true);
+    const chapterNum = parsePositiveInt(ecChapterNum);
+    if (chapterNum === null) {
+      notify('err', 'El número de capítulo debe ser un entero mayor a 0.');
+      setLoading(false);
+      return;
+    }
     const pages = parseManualPages(ecManual);
     if (!pages.length) { notify('err', 'La lista de páginas está vacía.'); setLoading(false); return; }
     const payload = {
-      mangaId: ecMangaId, chapter: Number(ecChapterNum), pages,
+      mangaId: ecMangaId, chapter: chapterNum, pages,
       baseUrl: ecBaseUrl.trim() || undefined,
     };
     const res  = await fetch('/api/admin/chapter', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -579,24 +600,29 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
     else {
       const title = mangas.find((m) => m.id === ecMangaId)?.title ?? ecMangaId;
-      notify('ok', `✓ Capítulo ${ecChapterNum} de "${title}" actualizado (${pages.length} páginas).`);
+      notify('ok', `✓ Capítulo ${chapterNum} de "${title}" actualizado (${pages.length} páginas).`);
     }
   }
 
   /* ─── DELETE chapter ──────────────────────── */
   async function deleteChapter() {
     if (!window.confirm(`¿Eliminar capítulo ${ecChapterNum}? Esta acción no se puede deshacer.`)) return;
+    const chapterNum = parsePositiveInt(ecChapterNum);
+    if (chapterNum === null) {
+      notify('err', 'Capítulo inválido.');
+      return;
+    }
     setLoading(true);
-    const res  = await fetch('/api/admin/chapter', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mangaId: ecMangaId, chapter: Number(ecChapterNum) }) });
+    const res  = await fetch('/api/admin/chapter', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mangaId: ecMangaId, chapter: chapterNum }) });
     const json = await res.json();
     setLoading(false);
     if (!res.ok) { notify('err', json.error ?? 'Error desconocido'); }
     else {
       const title = mangas.find((m) => m.id === ecMangaId)?.title ?? ecMangaId;
-      notify('ok', `✓ Capítulo ${ecChapterNum} de "${title}" eliminado.`);
+      notify('ok', `✓ Capítulo ${chapterNum} de "${title}" eliminado.`);
       setMangas((prev) => prev.map((m) =>
         m.id === ecMangaId
-          ? { ...m, chapters: m.chapters.filter((n) => n !== Number(ecChapterNum)) }
+          ? { ...m, chapters: m.chapters.filter((n) => n !== chapterNum) }
           : m,
       ));
       setEcChapterNum(''); setEcBaseUrl(''); setEcManual(''); setEcProbeResult(null);
@@ -752,7 +778,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
             <div className="form-group">
               <label>Número de capítulo *</label>
-              <input type="number" min={0.1} step="any" value={cNum} onChange={(e) => setCNum(e.target.value)} required placeholder="1" />
+              <input type="number" min={1} step={1} value={cNum} onChange={(e) => setCNum(e.target.value)} required placeholder="1" />
             </div>
             <div className="form-group">
               <label>Base URL</label>
@@ -922,13 +948,13 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           </div>
 
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label>Lista de capítulos * <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(formato: capítulo: carpeta)</span></label>
+            <label>Lista de capítulos * <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(formato: capítulo entero: carpeta)</span></label>
             <textarea
               value={bList}
               onChange={(e) => setBList(e.target.value)}
               disabled={bRunning}
               rows={10}
-              placeholder={'28: 65076\n28.5: 65500\n29: 66022\n29.5: 66400\n30: 66571'}
+              placeholder={'28: 65076\n29: 66022\n30: 66571'}
               style={{ fontFamily: 'monospace', fontSize: '.85rem' }}
             />
             {bList && !bRunning && (
@@ -1083,7 +1109,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             <div className="form-group">
               <label>Capítulo inicial</label>
               <input
-                type="number" min={0.1} step="any" value={adStartChap}
+                type="number" min={1} step={1} value={adStartChap}
                 onChange={(e) => setAdStartChap(e.target.value)}
                 placeholder="1" disabled={adRunning}
               />
@@ -1142,7 +1168,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           {adFound.length > 0 && !adRunning && adProgress.length === 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '.8rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
-                Folders encontrados — edita los números si hay capítulos decimales, o usa <strong>↓ Ajustar</strong> para corregir el offset desde una fila:
+                Folders encontrados — edita los números (solo enteros), o usa <strong>↓ Ajustar</strong> para corregir el offset desde una fila:
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 300, overflowY: 'auto' }}>
                 {adFound.map((e, idx) => (
@@ -1151,11 +1177,14 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                       <span style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>Cap.</span>
                       <input
                         type="number"
-                        step="any"
+                        min={1}
+                        step={1}
                         value={e.chapter}
                         onChange={(ev) => {
+                          const chapterNum = parsePositiveInt(ev.target.value);
+                          if (chapterNum === null) return;
                           setAdAdjustIdx(null);
-                          setAdFound((prev) => prev.map((x, i) => i === idx ? { ...x, chapter: Number(ev.target.value) } : x));
+                          setAdFound((prev) => prev.map((x, i) => i === idx ? { ...x, chapter: chapterNum } : x));
                         }}
                         style={{ width: 70, padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontSize: '.8rem' }}
                       />
@@ -1187,7 +1216,8 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                         <span style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>Desde aquí, capítulo correcto:</span>
                         <input
                           type="number"
-                          step="any"
+                          min={1}
+                          step={1}
                           value={adAdjustVal}
                           onChange={(ev) => setAdAdjustVal(ev.target.value)}
                           style={{ width: 70, padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text)', fontSize: '.8rem' }}
@@ -1196,11 +1226,11 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                         <button
                           type="button"
                           onClick={() => {
-                            const newStart = Number(adAdjustVal);
-                            if (isNaN(newStart)) return;
+                            const newStart = parsePositiveInt(adAdjustVal);
+                            if (newStart === null) return;
                             setAdFound((prev) => prev.map((x, i) => {
                               if (i < idx) return x;
-                              return { ...x, chapter: Math.round((newStart + (i - idx)) * 10) / 10 };
+                              return { ...x, chapter: newStart + (i - idx) };
                             }));
                             setAdAdjustIdx(null);
                             setAdAdjustVal('');

@@ -5,14 +5,20 @@ import { eq, and, desc } from 'drizzle-orm';
 import { revalidateManga } from '@/lib/revalidate';
 import { notifyFavoriteUsers } from '@/lib/push';
 
+function normalizeChapter(value: unknown): number | null {
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(num) || num < 1) return null;
+  return num;
+}
+
 /* ── GET — obtener un capítulo ── */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const mangaId   = searchParams.get('mangaId');
-    const chapterNum = Number(searchParams.get('chapter'));
+    const mangaId = searchParams.get('mangaId');
+    const chapterNum = normalizeChapter(searchParams.get('chapter'));
 
-    if (!mangaId || !chapterNum) {
+    if (!mangaId || chapterNum === null) {
       return NextResponse.json({ error: 'mangaId y chapter requeridos.' }, { status: 400 });
     }
 
@@ -36,27 +42,28 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { mangaId, chapter: chapterNum, pages, baseUrl } = await req.json();
+    const chapterValue = normalizeChapter(chapterNum);
 
-    if (!mangaId || chapterNum == null || !pages?.length) {
+    if (!mangaId || chapterValue === null || !Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json({ error: 'Faltan campos obligatorios.' }, { status: 400 });
     }
 
     const duplicate = await db
       .select({ id: chapters.id })
       .from(chapters)
-      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterNum)))
+      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)))
       .limit(1);
 
     if (duplicate.length > 0) {
       return NextResponse.json(
-        { error: `El capítulo ${chapterNum} de "${mangaId}" ya existe.` },
+        { error: `El capítulo ${chapterValue} de "${mangaId}" ya existe.` },
         { status: 409 },
       );
     }
 
     const [chapter] = await db
       .insert(chapters)
-      .values({ mangaId, chapter: chapterNum, pages, baseUrl: baseUrl ?? null })
+      .values({ mangaId, chapter: chapterValue, pages, baseUrl: baseUrl ?? null })
       .returning();
 
     // Actualizar latestChapter y lastUpdated del manga si corresponde
@@ -66,11 +73,11 @@ export async function POST(req: NextRequest) {
       .where(eq(mangas.id, mangaId))
       .limit(1);
 
-    if (mangaRows[0] && chapterNum >= mangaRows[0].latestChapter) {
+    if (mangaRows[0] && chapterValue >= mangaRows[0].latestChapter) {
       await db
         .update(mangas)
         .set({
-          latestChapter: chapterNum,
+          latestChapter: chapterValue,
           lastUpdated:   new Date().toISOString().split('T')[0],
         })
         .where(eq(mangas.id, mangaId));
@@ -81,8 +88,8 @@ export async function POST(req: NextRequest) {
     // Notificación push solo a usuarios que tienen este manga en favoritos
     void notifyFavoriteUsers(mangaId, {
       title: '¡Nuevo capítulo disponible!',
-      body:  `${mangaRows[0]?.title ?? mangaId} — Capítulo ${chapterNum}`,
-      url:   `/chapter/${mangaId}/${chapterNum}`,
+      body:  `${mangaRows[0]?.title ?? mangaId} — Capítulo ${chapterValue}`,
+      url:   `/chapter/${mangaId}/${chapterValue}`,
       icon:  '/img/logo.jpg',
     });
 
@@ -96,15 +103,16 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const { mangaId, chapter: chapterNum, pages, baseUrl } = await req.json();
+    const chapterValue = normalizeChapter(chapterNum);
 
-    if (!mangaId || !chapterNum || !pages?.length) {
+    if (!mangaId || chapterValue === null || !Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json({ error: 'mangaId, chapter y pages requeridos.' }, { status: 400 });
     }
 
     const existing = await db
       .select({ id: chapters.id })
       .from(chapters)
-      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterNum)))
+      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)))
       .limit(1);
 
     if (!existing[0]) {
@@ -114,7 +122,7 @@ export async function PATCH(req: NextRequest) {
     const [chapter] = await db
       .update(chapters)
       .set({ pages, ...(baseUrl !== undefined && { baseUrl }) })
-      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterNum)))
+      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)))
       .returning();
 
     revalidateManga(mangaId);
@@ -128,15 +136,16 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { mangaId, chapter: chapterNum } = await req.json();
+    const chapterValue = normalizeChapter(chapterNum);
 
-    if (!mangaId || !chapterNum) {
+    if (!mangaId || chapterValue === null) {
       return NextResponse.json({ error: 'mangaId y chapter requeridos.' }, { status: 400 });
     }
 
     const existing = await db
       .select({ id: chapters.id })
       .from(chapters)
-      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterNum)))
+      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)))
       .limit(1);
 
     if (!existing[0]) {
@@ -145,7 +154,7 @@ export async function DELETE(req: NextRequest) {
 
     await db
       .delete(chapters)
-      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterNum)));
+      .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)));
 
     // Recalcular latestChapter desde los capítulos restantes
     const remaining = await db
