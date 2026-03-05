@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 import { db } from './db';
-import { pushSubscriptions } from './db/schema';
+import { pushSubscriptions, favorites } from './db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 webpush.setVapidDetails(
@@ -16,9 +16,30 @@ export interface PushPayload {
   icon?: string;
 }
 
-/** Envía notificación push a todos los suscriptores. */
-export async function sendPushToAll(payload: PushPayload): Promise<void> {
-  const subs = await db.select().from(pushSubscriptions);
+/**
+ * Envía notificación push solo a los suscriptores que tienen
+ * el manga en favoritos. Limpia suscripciones expiradas.
+ */
+export async function notifyFavoriteUsers(
+  mangaId: string,
+  payload: PushPayload,
+): Promise<void> {
+  // 1. Usuarios que tienen este manga en favoritos
+  const favRows = await db
+    .select({ userId: favorites.userId })
+    .from(favorites)
+    .where(eq(favorites.mangaId, mangaId));
+
+  if (favRows.length === 0) return;
+
+  const userIds = favRows.map((r) => r.userId);
+
+  // 2. Suscripciones push de esos usuarios
+  const subs = await db
+    .select()
+    .from(pushSubscriptions)
+    .where(inArray(pushSubscriptions.userId, userIds));
+
   if (subs.length === 0) return;
 
   const message = JSON.stringify(payload);

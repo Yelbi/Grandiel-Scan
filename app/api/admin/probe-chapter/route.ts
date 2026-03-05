@@ -464,6 +464,67 @@ async function probeDirectoryListing(base: string): Promise<string[]> {
   }
 }
 
+/* ── Extrae imágenes de una página del visor de capítulos ───────────────
+   Cuando el CDN usa hashes impredecibles (ej: "1 - bb006670.webp"),
+   se puede proporcionar la URL de la página del lector del manga.
+   Esta función hace GET a esa página y extrae todas las URLs de imagen
+   que empiecen por `base`, devolviendo solo los nombres de archivo.   ── */
+async function probeViewerPage(viewerUrl: string, base: string): Promise<string[]> {
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const res   = await fetch(viewerUrl, {
+      signal: ctrl.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
+    clearTimeout(timer);
+
+    if (res.status !== 200) return [];
+    const html = await res.text();
+
+    // Normalizar base: forzar https y trailing slash; también preparar variante http
+    const baseHttps = base.replace(/^http:\/\//, 'https://').replace(/\/?$/, '/');
+    const baseHttp  = baseHttps.replace(/^https:\/\//, 'http://');
+
+    const found = new Set<string>();
+
+    for (const b of [baseHttps, baseHttp]) {
+      const escaped = b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Buscar la base seguida de cualquier carácter de nombre de archivo
+      const re = new RegExp(escaped + '([^"\'\\s>\\\\,)\\]\\r\\n]+)', 'gi');
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(html)) !== null) {
+        let raw = m[1];
+        // Quitar puntuación final que no sea parte del nombre
+        raw = raw.replace(/[.,;)}\]'"\\]+$/, '');
+        let decoded: string;
+        try { decoded = decodeURIComponent(raw); } catch { decoded = raw; }
+        const dot = decoded.lastIndexOf('.');
+        if (dot < 0) continue;
+        if (!IMG_EXTS.has(decoded.slice(dot + 1).toLowerCase())) continue;
+        found.add(encodeURIComponent(decoded));
+      }
+    }
+
+    if (found.size === 0) return [];
+
+    const files = [...found];
+    files.sort((a, b) => {
+      const na = parseInt(decodeURIComponent(a), 10);
+      const nb = parseInt(decodeURIComponent(b), 10);
+      if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+      return decodeURIComponent(a).localeCompare(decodeURIComponent(b));
+    });
+
+    return files;
+  } catch {
+    return [];
+  }
+}
+
 /* ── Extrae prefijos candidatos de la URL base ───────────
    Ej: ".../comics/743/58812/" → ["c-743-", "c-58812-", "743-", "58812-"]
 ── */
@@ -483,13 +544,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Solo disponible en desarrollo local.' }, { status: 403 });
   }
 
-  const { baseUrl, ext = 'webp', chapterHint, slugHint } = await req.json();
+  const { baseUrl, ext = 'webp', chapterHint, slugHint, viewerUrl } = await req.json();
   if (!baseUrl) {
     return NextResponse.json({ error: 'baseUrl requerido.' }, { status: 400 });
   }
 
   const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
   serverPrefersGet = false; // reset por sesión
+
+  /* ── 0. Si se proporcionó URL del visor, extraer imágenes de la página ── */
+  if (viewerUrl) {
+    const pages = await probeViewerPage(String(viewerUrl), base);
+    if (pages.length > 0) {
+      return NextResponse.json({ pages, pattern: 'viewer-page', count: pages.length });
+    }
+  }
 
   /* ── 1. Sondear patrones estándar + prefijados en paralelo ── */
   const prefixes = extractPrefixes(base); // ["c-743-", "c-58812-", "743-", "58812-"]

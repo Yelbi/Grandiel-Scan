@@ -20,14 +20,6 @@ export interface Chapter {
   pages: string[];
 }
 
-export interface MangasData {
-  mangas: Manga[];
-}
-
-export interface ChaptersData {
-  chapters: Chapter[];
-}
-
 export interface HistoryEntry {
   mangaId: string;
   chapter: number;

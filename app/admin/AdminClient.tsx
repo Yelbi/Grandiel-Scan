@@ -136,6 +136,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [cExt,        setCExt]        = useState('webp');
   const [cManual,     setCManual]     = useState('');
   const [cSlugHint,   setCSlugHint]   = useState('');
+  const [cViewerUrl,  setCViewerUrl]  = useState('');
   const [probing,     setProbing]     = useState(false);
   const [probeResult, setProbeResult] = useState<{ pattern: string; count: number } | null>(null);
 
@@ -413,7 +414,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     try {
       const res  = await fetch('/api/admin/probe-chapter', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp', chapterHint: Number(cNum) || undefined, slugHint: cSlugHint.trim() || undefined }),
+        body: JSON.stringify({ baseUrl: cBaseUrl.trim(), ext: cExt.trim() || 'webp', chapterHint: Number(cNum) || undefined, slugHint: cSlugHint.trim() || undefined, viewerUrl: cViewerUrl.trim() || undefined }),
       });
       const json = await res.json();
       if (!res.ok) { notify('err', json.error ?? 'No se detectaron páginas.'); }
@@ -776,6 +777,17 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             />
             <span className="form-hint">
               Solo necesario si las páginas usan un nombre textual en vez de números (ej: <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 4px', borderRadius: 3 }}>c-463-ingeniero_01.webp</code>)
+            </span>
+          </div>
+          <div className="form-group">
+            <label>URL del visor <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(opcional — para CDNs con hash)</span></label>
+            <input
+              value={cViewerUrl}
+              onChange={(e) => { setCViewerUrl(e.target.value); setProbeResult(null); }}
+              placeholder="https://olympusbiblioteca.com/capitulo/40429/comic-titulo"
+            />
+            <span className="form-hint">
+              Si las páginas tienen nombres con hash impredecible (ej: <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 4px', borderRadius: 3 }}>1 - bb006670.webp</code>), pega aquí la URL de la página del capítulo en el sitio de lectura y el detector extraerá las imágenes de ahí.
             </span>
           </div>
           <div className="form-group">

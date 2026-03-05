@@ -6,31 +6,30 @@ export async function middleware(req: NextRequest) {
   let response = NextResponse.next({ request: req });
 
   // ── Refrescar sesión de Supabase en cada request ────────────────────────────
-  // Esto renueva el access token cuando está próximo a expirar,
-  // garantizando que los Server Components siempre lean la sesión correcta.
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          // 1. Actualizar las cookies en el objeto request
-          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
-          // 2. Recrear response para que las cookies nuevas se propaguen al cliente
-          response = NextResponse.next({ request: req });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return req.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+            response = NextResponse.next({ request: req });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options),
+            );
+          },
         },
       },
-    },
-  );
-
-  // IMPORTANTE: no usar getSession() aquí — getUser() valida el token en el servidor
-  await supabase.auth.getUser();
+    );
+    // IMPORTANTE: no usar getSession() aquí — getUser() valida el token en el servidor
+    await supabase.auth.getUser();
+  } catch {
+    // Si Supabase falla (red, token inválido, etc.), continuar sin crashear
+  }
 
   // ── Proteger rutas de admin con Basic Auth ──────────────────────────────────
   const { pathname } = req.nextUrl;

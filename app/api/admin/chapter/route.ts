@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { chapters, mangas } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { revalidateManga } from '@/lib/revalidate';
-import { sendPushToAll } from '@/lib/push';
+import { notifyFavoriteUsers } from '@/lib/push';
 
 /* ── GET — obtener un capítulo ── */
 export async function GET(req: NextRequest) {
@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
 
     revalidateManga(mangaId);
 
-    // Notificación push (fire-and-forget, no bloquea la respuesta)
-    void sendPushToAll({
+    // Notificación push solo a usuarios que tienen este manga en favoritos
+    void notifyFavoriteUsers(mangaId, {
       title: '¡Nuevo capítulo disponible!',
       body:  `${mangaRows[0]?.title ?? mangaId} — Capítulo ${chapterNum}`,
       url:   `/chapter/${mangaId}/${chapterNum}`,
