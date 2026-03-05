@@ -1,47 +1,66 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 /**
  * Supabase Auth callback.
- * Supabase redirige aquí tras confirmar un email o completar OAuth.
- * 1. Intercambia el `code` por una sesión de usuario.
- * 2. Crea la fila en public.users si no existe.
- * 3. Redirige al perfil.
+ * Maneja el intercambio del code PKCE por una sesión y crea el perfil de usuario.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/perfil';
 
-  if (code) {
-    try {
-      const supabase = await createClient();
-      const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
+  const redirectError = () =>
+    NextResponse.redirect(`${origin}/perfil?error=auth`);
 
-      if (!error && exchangeData.user) {
-        const user = exchangeData.user;
-        const meta = user.user_metadata ?? {};
+  if (!code) return redirectError();
 
-        const username = (meta.username as string | undefined)?.trim();
-        const avatar   = (meta.avatar  as string | undefined) ?? '/img/avatars/avatar1.svg';
+  try {
+    const cookieStore = await cookies();
 
-        if (username) {
-          // Crear fila en public.users si no existe todavía.
-          await supabase
-            .from('users')
-            .upsert(
-              { id: user.id, username, avatar },
-              { onConflict: 'id', ignoreDuplicates: true },
-            );
-        }
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => cookieStore.getAll(),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          },
+        },
+      },
+    );
 
-        return NextResponse.redirect(`${origin}${next}`);
-      }
-    } catch (err) {
-      console.error('[auth/callback] Error:', err);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error || !data.user) {
+      console.error('[auth/callback] exchangeCodeForSession error:', error?.message);
+      return redirectError();
     }
-  }
 
-  // Si algo falla, redirigir al perfil con indicador de error
-  return NextResponse.redirect(`${origin}/perfil?error=auth`);
+    const user = data.user;
+    const meta = user.user_metadata ?? {};
+    const username = (meta.username as string | undefined)?.trim();
+    const avatar = (meta.avatar as string | undefined) ?? '/img/avatars/avatar1.svg';
+
+    if (username) {
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert(
+          { id: user.id, username, avatar },
+          { onConflict: 'id', ignoreDuplicates: true },
+        );
+      if (upsertError) {
+        console.error('[auth/callback] upsert error:', upsertError.message);
+      }
+    }
+
+    return NextResponse.redirect(`${origin}${next}`);
+  } catch (err) {
+    console.error('[auth/callback] Unexpected error:', err);
+    return redirectError();
+  }
 }
