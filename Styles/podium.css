@@ -1,0 +1,333 @@
+/* ===================================================
+   PODIO — Sección "Más Vistos" (Top 3)
+   =================================================== */
+
+/* ── Variables ── */
+:root {
+  --podium-gold-light:   #FFD700;
+  --podium-gold-mid:     #D4A000;
+  --podium-gold-dark:    #8A5E00;
+  --podium-silver-light: #E0E0E0;
+  --podium-silver-dark:  #7A7A7A;
+  --podium-bronze-light: #E8975A;
+  --podium-bronze-dark:  #7A3B10;
+}
+
+/* ─────────────────────────────────────────────────────
+   ANIMACIONES
+───────────────────────────────────────────────────── */
+
+/* Base sube desde el suelo */
+@keyframes podium-rise {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Número aparece con rebote */
+@keyframes podium-number-pop {
+  0%   { transform: scale(0);   opacity: 0; }
+  55%  { transform: scale(1.35); opacity: 1; }
+  75%  { transform: scale(0.88); }
+  90%  { transform: scale(1.08); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* Tarjeta cae suavemente desde arriba */
+@keyframes podium-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Corona flota para el #1 */
+@keyframes podium-crown-float {
+  0%, 100% { transform: translateY(0)   rotate(-6deg); }
+  50%       { transform: translateY(-7px) rotate(6deg);  }
+}
+
+/* Brillo dorado pulsante en la corona */
+@keyframes podium-crown-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6)); }
+  50%       { filter: drop-shadow(0 0 14px rgba(255, 215, 0, 1));  }
+}
+
+/* ─────────────────────────────────────────────────────
+   CONTENEDOR PRINCIPAL
+───────────────────────────────────────────────────── */
+.podium-section {
+  padding-bottom: 0;
+}
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 20px;
+  padding: 0 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────
+   ITEM
+───────────────────────────────────────────────────── */
+.podium__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────
+   TARJETA (cover + info)
+───────────────────────────────────────────────────── */
+.podium__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--color-text);
+  width: 100%;
+  transition: transform 0.28s ease;
+
+  /* Animación de entrada */
+  opacity: 0;
+  animation: podium-card-in 0.55s ease forwards;
+}
+
+.podium__card:hover {
+  transform: translateY(-8px);
+}
+
+.podium__card:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Retrasos de la tarjeta — de izquierda a derecha (3→1→2) */
+.podium__item--rank3 .podium__card { animation-delay: 0.5s; }
+.podium__item--rank1 .podium__card { animation-delay: 1.0s; }
+.podium__item--rank2 .podium__card { animation-delay: 0.75s; }
+
+/* ─────────────────────────────────────────────────────
+   ESPACIO DE ÍCONO (fijo para todos, visible solo #1)
+───────────────────────────────────────────────────── */
+.podium__icon-slot {
+  height: 44px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+/* ── Corona dorada (#1) ── */
+.podium__crown {
+  font-size: 2.2rem;
+  color: var(--podium-gold-light);
+  animation:
+    podium-crown-float 3s ease-in-out 1.6s infinite,
+    podium-crown-glow  2.5s ease-in-out 1.6s infinite;
+}
+
+/* ─────────────────────────────────────────────────────
+   PORTADA
+───────────────────────────────────────────────────── */
+.podium__cover {
+  position: relative;
+  width: 100%;
+  max-width: 185px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
+}
+
+.podium__cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 55%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+  pointer-events: none;
+}
+
+/* Portada más grande y borde dorado para #1 */
+.podium__item--rank1 .podium__cover {
+  max-width: 205px;
+  border: 3px solid var(--podium-gold-light);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.75),
+    0 0 20px rgba(255, 215, 0, 0.25);
+}
+
+.podium__item--rank2 .podium__cover {
+  border: 2px solid var(--podium-silver-light);
+}
+
+.podium__item--rank3 .podium__cover {
+  border: 2px solid var(--podium-bronze-light);
+}
+
+/* ─────────────────────────────────────────────────────
+   INFO (título y vistas)
+───────────────────────────────────────────────────── */
+.podium__info {
+  width: 100%;
+  text-align: center;
+  padding: 12px 6px 0;
+}
+
+.podium__title {
+  margin: 0 0 5px;
+  font-family: var(--font-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--color-text);
+}
+
+.podium__views {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #aaa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* ─────────────────────────────────────────────────────
+   BASE DEL PODIO
+───────────────────────────────────────────────────── */
+.podium__base {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px 6px 0 0;
+  margin-top: 14px;
+  transform-origin: bottom;
+
+  /* Animación de subida */
+  transform: scaleY(0);
+  opacity: 0;
+  animation: podium-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Retrasos de la base — primero sube el #3, luego #2, luego #1 */
+.podium__item--rank3 .podium__base { animation-delay: 0.1s; }
+.podium__item--rank2 .podium__base { animation-delay: 0.35s; }
+.podium__item--rank1 .podium__base { animation-delay: 0.6s; }
+
+/* ── Alturas ── */
+.podium__item--rank1 .podium__base {
+  height: 110px;
+  background: linear-gradient(180deg, var(--podium-gold-light) 0%, var(--podium-gold-dark) 100%);
+  box-shadow: 0 -4px 18px rgba(255, 215, 0, 0.4);
+}
+
+.podium__item--rank2 .podium__base {
+  height: 75px;
+  background: linear-gradient(180deg, var(--podium-silver-light) 0%, var(--podium-silver-dark) 100%);
+  box-shadow: 0 -4px 12px rgba(192, 192, 192, 0.25);
+}
+
+.podium__item--rank3 .podium__base {
+  height: 50px;
+  background: linear-gradient(180deg, var(--podium-bronze-light) 0%, var(--podium-bronze-dark) 100%);
+  box-shadow: 0 -4px 12px rgba(205, 127, 50, 0.25);
+}
+
+/* ── Número en la base ── */
+.podium__place {
+  font-family: var(--font-primary);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.02em;
+
+  /* Animación de rebote */
+  opacity: 0;
+  animation: podium-number-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Retrasos del número (justo después de que sube la base) */
+.podium__item--rank3 .podium__place { animation-delay: 0.55s; }
+.podium__item--rank2 .podium__place { animation-delay: 0.80s; }
+.podium__item--rank1 .podium__place { animation-delay: 1.05s; }
+
+/* ─────────────────────────────────────────────────────
+   HOVER: brillo en la base
+───────────────────────────────────────────────────── */
+.podium__item--rank1:hover .podium__base {
+  box-shadow: 0 -4px 28px rgba(255, 215, 0, 0.65);
+}
+.podium__item--rank2:hover .podium__base {
+  box-shadow: 0 -4px 18px rgba(192, 192, 192, 0.45);
+}
+.podium__item--rank3:hover .podium__base {
+  box-shadow: 0 -4px 18px rgba(205, 127, 50, 0.45);
+}
+
+/* ─────────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .podium {
+    gap: 10px;
+    padding: 0 0.75rem;
+  }
+
+  .podium__cover {
+    max-width: 110px;
+  }
+
+  .podium__item--rank1 .podium__cover {
+    max-width: 124px;
+  }
+
+  .podium__crown {
+    font-size: 1.6rem;
+  }
+
+  .podium__icon-slot {
+    height: 32px;
+    margin-bottom: 6px;
+  }
+
+  .podium__title {
+    font-size: 0.75rem;
+  }
+
+  .podium__views {
+    font-size: 0.68rem;
+  }
+
+  .podium__item--rank1 .podium__base { height: 80px; }
+  .podium__item--rank2 .podium__base { height: 55px; }
+  .podium__item--rank3 .podium__base { height: 36px; }
+
+  .podium__place {
+    font-size: 0.95rem;
+  }
+}

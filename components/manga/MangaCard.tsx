@@ -7,6 +7,7 @@ import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import type { Manga } from '@/lib/types';
 
 const DAYS_NEW = 30;
+const DAYS_HOT = 7;
 
 interface MangaCardProps {
   manga: Manga;
@@ -17,6 +18,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
   const { isFavorite, toggle } = useFavoritesContext();
   const fav = isFavorite(manga.id);
   const [isNew, setIsNew] = useState(false);
+  const [isHot, setIsHot] = useState(false);
   const [imgError, setImgError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -25,6 +27,12 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
     const age = Date.now() - new Date(manga.dateAdded).getTime();
     setIsNew(age < DAYS_NEW * 24 * 60 * 60 * 1000);
   }, [manga.dateAdded]);
+
+  useEffect(() => {
+    if (!manga.lastUpdated) return;
+    const age = Date.now() - new Date(manga.lastUpdated).getTime();
+    setIsHot(age < DAYS_HOT * 24 * 60 * 60 * 1000);
+  }, [manga.lastUpdated]);
 
   useEffect(() => {
     const img = imgRef.current;
@@ -72,6 +80,11 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
           </div>
           {isNew && (
             <span className="badge-new" aria-label="Nuevo">NUEVO</span>
+          )}
+          {isHot && (
+            <span className="badge-hot" aria-label="Actualizado recientemente">
+              <i className="fas fa-fire" aria-hidden="true" />
+            </span>
           )}
         </div>
         <h3 className="manga-card__title">{manga.title}</h3>

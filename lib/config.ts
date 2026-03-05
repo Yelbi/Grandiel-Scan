@@ -13,7 +13,7 @@ export const CONFIG = {
     PREFERENCES: 'grandiel-preferences',
   },
   PAGINATION: {
-    ITEMS_PER_PAGE: 24,
+    ITEMS_PER_PAGE: 36,
     MAX_HISTORY_ITEMS: 100,
     MAX_SEARCH_HISTORY: 20,
   },

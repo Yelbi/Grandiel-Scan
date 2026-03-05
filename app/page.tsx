@@ -5,6 +5,7 @@ import Link from 'next/link';
 import MangaCard from '@/components/manga/MangaCard';
 import ContinueReading from '@/components/manga/ContinueReading';
 import HeroSection from '@/components/home/HeroSection';
+import MostViewedPodium from '@/components/home/MostViewedPodium';
 import { getAllMangas, getMostViewed } from '@/lib/data';
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const [mangas, mostViewed] = await Promise.all([
     getAllMangas(),
-    getMostViewed(12),
+    getMostViewed(3),
   ]);
 
   const recent = [...mangas]
@@ -53,17 +54,8 @@ export default async function HomePage() {
         <ContinueReading mangas={mangas} />
 
         {/* ===== MÁS VISTOS ===== */}
-        {mostViewed.length > 0 && (
-          <section className="index-section" aria-label="Mangas más vistos">
-            <h2 className="section-title">
-              <i className="fas fa-fire" aria-hidden="true" /> Más Vistos
-            </h2>
-            <div className="mami">
-              {mostViewed.map((manga) => (
-                <MangaCard key={manga.id} manga={manga} />
-              ))}
-            </div>
-          </section>
+        {mostViewed.length >= 3 && (
+          <MostViewedPodium mangas={mostViewed} />
         )}
 
         {/* ===== RECIENTES ===== */}

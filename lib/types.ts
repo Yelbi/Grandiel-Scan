@@ -11,6 +11,7 @@ export interface Manga {
   dateAdded: string;
   lastUpdated: string;
   latestChapter: number;
+  views?: number;
 }
 
 export interface Chapter {

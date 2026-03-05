@@ -147,14 +147,15 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [probeResult, setProbeResult] = useState<{ pattern: string; count: number } | null>(null);
 
   /* ── Bulk state ── */
-  const [bMangaId,   setBMangaId]   = useState('');
-  const [bComicBase, setBComicBase] = useState('');
-  const [bExt,       setBExt]       = useState('webp');
-  const [bList,      setBList]      = useState('');
-  const [bRunning,   setBRunning]   = useState(false);
-  const [bProgress,  setBProgress]  = useState<BulkEntry[]>([]);
-  const [bHtmlRaw,   setBHtmlRaw]   = useState('');
-  const [bHtmlOpen,  setBHtmlOpen]  = useState(false);
+  const [bMangaId,        setBMangaId]        = useState('');
+  const [bComicBase,      setBComicBase]      = useState('');
+  const [bExt,            setBExt]            = useState('webp');
+  const [bViewerTemplate, setBViewerTemplate] = useState('');
+  const [bList,           setBList]           = useState('');
+  const [bRunning,        setBRunning]        = useState(false);
+  const [bProgress,       setBProgress]       = useState<BulkEntry[]>([]);
+  const [bHtmlRaw,        setBHtmlRaw]        = useState('');
+  const [bHtmlOpen,       setBHtmlOpen]       = useState(false);
 
   /* ── Delete state ── */
   const [dMangaId,   setDMangaId]   = useState('');
@@ -227,7 +228,14 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
         const res = await fetch('/api/admin/probe-chapter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ baseUrl, ext: bExt, chapterHint: chapter }),
+          body: JSON.stringify({
+            baseUrl,
+            ext: bExt,
+            chapterHint: chapter,
+            viewerUrl: bViewerTemplate.trim()
+              ? bViewerTemplate.trim().replace('{folderId}', folderId)
+              : undefined,
+          }),
         });
         probeJson = await res.json();
         if (!res.ok || !probeJson.pages?.length) {
@@ -890,6 +898,21 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             />
             <span className="form-hint">
               El sistema construye: <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>URL base / carpeta /</code> para cada capítulo
+            </span>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <label>Plantilla URL del lector <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(opcional — para archivos con hash aleatorio)</span></label>
+            <input
+              value={bViewerTemplate}
+              onChange={(e) => setBViewerTemplate(e.target.value)}
+              placeholder="https://olympusbiblioteca.com/leer/manga/52/{folderId}"
+              disabled={bRunning}
+            />
+            <span className="form-hint">
+              Debe ser la URL de la <strong>página lectora</strong> del manga (no la URL del CDN/storage).
+              Usa <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>{'{folderId}'}</code> donde va el ID del capítulo — el sistema lo reemplaza por cada folder ID de la lista.
+              El sistema raspa ese HTML buscando imágenes como <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>1 - bb006670.webp</code>.
             </span>
           </div>
 

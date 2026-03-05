@@ -2008,6 +2008,30 @@ mark.search-highlight {
   pointer-events: none;
 }
 
+.badge-hot {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #ff8c00, #ff2200);
+  color: #fff;
+  font-size: 12px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(255, 80, 0, 0.55);
+  animation: badge-hot-glow 2s ease-in-out infinite;
+}
+
+@keyframes badge-hot-glow {
+  0%, 100% { box-shadow: 0 2px 8px rgba(255, 80, 0, 0.55); }
+  50%       { box-shadow: 0 2px 18px rgba(255, 80, 0, 0.9); }
+}
+
 /* ============================================================
    PANEL DE FILTROS — REDISEÑO CATÁLOGO
    ============================================================ */

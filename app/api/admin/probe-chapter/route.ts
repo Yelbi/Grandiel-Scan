@@ -11,8 +11,10 @@ const PAREN_MAX_SCAN      = 500; // máximo nro a probar dentro de un paréntesi
 const PAREN_TAIL_MISS     = 50;  // misses consecutivos DESPUÉS del último hit → parar
 const PAREN_INIT_MISS     = 32;  // si no hay ningún hit en los primeros N → parte no existe
 
-/* ── Si HEAD falla, usar GET para toda la sesión ── */
-let serverPrefersGet = false;
+/* Estado por request — evita race conditions entre peticiones concurrentes */
+interface Session {
+  prefersGet: boolean;
+}
 
 const IMG_EXTS = new Set(['webp', 'jpg', 'jpeg', 'png', 'avif', 'gif']);
 
@@ -42,19 +44,19 @@ function isReal(status: number, finalUrl: string): boolean {
   return !finalUrl.includes(IMGUR_PLACEHOLDER);
 }
 
-async function exists(url: string): Promise<boolean> {
-  if (!serverPrefersGet) {
+async function exists(url: string, session: Session): Promise<boolean> {
+  if (!session.prefersGet) {
     const [status, finalUrl] = await tryFetch(url, 'HEAD');
     if (isReal(status, finalUrl)) return true;
     if (status === 404 || status === 410 || status === 0) return false;
-    serverPrefersGet = true; // 403, 405, 501… → cambiar a GET
+    session.prefersGet = true; // 403, 405, 501… → cambiar a GET
   }
   const [status, finalUrl] = await tryFetch(url, 'GET');
   return isReal(status, finalUrl);
 }
 
-async function probeBatch(urls: string[]): Promise<boolean[]> {
-  return Promise.all(urls.map(exists));
+async function probeBatch(urls: string[], session: Session): Promise<boolean[]> {
+  return Promise.all(urls.map((u) => exists(u, session)));
 }
 
 /* ── Patrón simple: 01.webp, 001.webp, 0.webp … ─────────────────────────
@@ -63,7 +65,7 @@ async function probeBatch(urls: string[]): Promise<boolean[]> {
    2 = tolera huecos pequeños (ej: 04→06 saltando el 05).               ── */
 async function probeSimple(
   base: string, ext: string, startIndex: number, pad: number,
-  maxGaps: number = 0,
+  maxGaps: number = 0, session: Session,
 ): Promise<string[]> {
   const pages: string[] = [];
   let i = startIndex;
@@ -73,7 +75,7 @@ async function probeSimple(
     const batch   = Array.from({ length: count }, (_, k) =>
       base + String(i + k).padStart(pad, '0') + '.' + ext,
     );
-    const results = await probeBatch(batch);
+    const results = await probeBatch(batch, session);
     let stop = false;
     for (let k = 0; k < results.length; k++) {
       if (results[k]) {
@@ -91,7 +93,7 @@ async function probeSimple(
 
 /* ── Sondea páginas dentro de una parte (en lotes) ───── */
 async function probePagesOfPart(
-  base: string, ext: string, partPrefix: string,
+  base: string, ext: string, partPrefix: string, session: Session,
 ): Promise<string[]> {
   const pages: string[] = [];
   let page = 1;
@@ -101,7 +103,7 @@ async function probePagesOfPart(
       const pg = String(page + k).padStart(2, '0');
       return base + `${partPrefix}_${pg}.${ext}`;
     });
-    const results = await probeBatch(batch);
+    const results = await probeBatch(batch, session);
     let stop = false;
     for (let k = 0; k < results.length; k++) {
       if (!results[k]) { stop = true; break; }
@@ -118,7 +120,7 @@ async function probePagesOfPart(
    Tolera hasta MAX_PART_GAPS partes consecutivas vacías
    (por si hay huecos en la numeración).                 ── */
 async function probeSubPart(
-  base: string, ext: string, padPart: number,
+  base: string, ext: string, padPart: number, session: Session,
 ): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
@@ -128,6 +130,7 @@ async function probeSubPart(
     const partNums = Array.from({ length: count }, (_, k) => partStart + k);
     const results  = await probeBatch(
       partNums.map((p) => base + `${String(p).padStart(padPart, '0')}_01.${ext}`),
+      session,
     );
     let stop = false;
     for (let k = 0; k < results.length; k++) {
@@ -137,7 +140,7 @@ async function probeSubPart(
       }
       gaps = 0;
       const pp        = String(partNums[k]).padStart(padPart, '0');
-      const partPages = await probePagesOfPart(base, ext, pp);
+      const partPages = await probePagesOfPart(base, ext, pp, session);
       pages.push(...partPages);
     }
     if (stop) break;
@@ -150,7 +153,7 @@ async function probeSubPart(
    padPart controla si la parte va sin padding (1→"1") o con 2 dígitos (2→"01").
    Tolera huecos igual que probeSubPart.                              ── */
 async function probePrefixedSubPart(
-  base: string, ext: string, prefix: string, padPart: number = 1,
+  base: string, ext: string, prefix: string, padPart: number = 1, session: Session,
 ): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
@@ -160,6 +163,7 @@ async function probePrefixedSubPart(
     const partNums = Array.from({ length: count }, (_, k) => partStart + k);
     const results  = await probeBatch(
       partNums.map((p) => base + `${prefix}${String(p).padStart(padPart, '0')}_01.${ext}`),
+      session,
     );
     let stop = false;
     for (let k = 0; k < results.length; k++) {
@@ -169,7 +173,7 @@ async function probePrefixedSubPart(
       }
       gaps = 0;
       const pp        = String(partNums[k]).padStart(padPart, '0');
-      const partPages = await probePagesOfPart(base, ext, `${prefix}${pp}`);
+      const partPages = await probePagesOfPart(base, ext, `${prefix}${pp}`, session);
       pages.push(...partPages);
     }
     if (stop) break;
@@ -182,7 +186,7 @@ async function probePrefixedSubPart(
    Algoritmo: barrido adaptativo que rastrea el último hit y
    para solo cuando hay PAREN_TAIL_MISS misses seguidos al final.
    Almacena filenames URL-encoded: "1%20(28).webp".      ── */
-async function probeParenPart(base: string, ext: string): Promise<string[]> {
+async function probeParenPart(base: string, ext: string, session: Session): Promise<string[]> {
   const pages: string[] = [];
   let partGaps = 0;
 
@@ -196,7 +200,7 @@ async function probeParenPart(base: string, ext: string): Promise<string[]> {
       const batch     = Array.from({ length: batchSize }, (_, k) =>
         base + `${part}%20(${i + k}).${ext}`,
       );
-      const results = await probeBatch(batch);
+      const results = await probeBatch(batch, session);
 
       for (let k = 0; k < results.length; k++) {
         if (results[k]) {
@@ -230,7 +234,7 @@ async function probeParenPart(base: string, ext: string): Promise<string[]> {
    Sondea en lotes hasta MAX_CHAPTER_NUM y retorna páginas del
    primer número de parte encontrado.                               ── */
 async function probePrefixedSubPartDeep(
-  base: string, ext: string, prefix: string, padPart: number,
+  base: string, ext: string, prefix: string, padPart: number, session: Session,
 ): Promise<string[]> {
   for (let i = 0; i < MAX_CHAPTER_NUM; i += BATCH_SIZE) {
     const count    = Math.min(BATCH_SIZE, MAX_CHAPTER_NUM - i);
@@ -238,11 +242,11 @@ async function probePrefixedSubPartDeep(
     const batch    = partNums.map((part) =>
       base + `${prefix}${String(part).padStart(padPart, '0')}_01.${ext}`,
     );
-    const results = await probeBatch(batch);
+    const results = await probeBatch(batch, session);
     for (let k = 0; k < results.length; k++) {
       if (results[k]) {
         const pp = String(partNums[k]).padStart(padPart, '0');
-        return probePagesOfPart(base, ext, `${prefix}${pp}`);
+        return probePagesOfPart(base, ext, `${prefix}${pp}`, session);
       }
     }
   }
@@ -253,7 +257,7 @@ async function probePrefixedSubPartDeep(
    Dos espacios seguidos de un número entre paréntesis.
    El número inicial puede no ser 1 (e.g. empieza en 3).
    Usa el mismo algoritmo adaptativo que probeParenPart.  ── */
-async function probeDoubleSpaceParen(base: string, ext: string): Promise<string[]> {
+async function probeDoubleSpaceParen(base: string, ext: string, session: Session): Promise<string[]> {
   const pages: string[] = [];
   let lastHit = -1;
   let i = 1;
@@ -262,7 +266,7 @@ async function probeDoubleSpaceParen(base: string, ext: string): Promise<string[
     const batch     = Array.from({ length: batchSize }, (_, k) =>
       base + `%20%20(${i + k}).${ext}`,
     );
-    const results = await probeBatch(batch);
+    const results = await probeBatch(batch, session);
     for (let k = 0; k < results.length; k++) {
       if (results[k]) {
         pages.push(`%20%20(${i + k}).${ext}`);
@@ -279,7 +283,7 @@ async function probeDoubleSpaceParen(base: string, ext: string): Promise<string[
 /* ── Patrón subpart-padded con primera página "-1": 01_01-1.webp, 01_02.webp …
    La primera página de la primera parte lleva sufijo "-1".
    Resto de páginas siguen el patrón normal PP_NN.webp.              ── */
-async function probeSubPartDash(base: string, ext: string): Promise<string[]> {
+async function probeSubPartDash(base: string, ext: string, session: Session): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
 
@@ -290,8 +294,8 @@ async function probeSubPartDash(base: string, ext: string): Promise<string[]> {
 
     // Verificar primera página dash y normal en paralelo para todo el lote
     const [dashResults, normalResults] = await Promise.all([
-      probeBatch(pps.map((pp) => base + `${pp}_01-1.${ext}`)),
-      probeBatch(pps.map((pp) => base + `${pp}_01.${ext}`)),
+      probeBatch(pps.map((pp) => base + `${pp}_01-1.${ext}`), session),
+      probeBatch(pps.map((pp) => base + `${pp}_01.${ext}`), session),
     ]);
 
     let stop = false;
@@ -317,7 +321,7 @@ async function probeSubPartDash(base: string, ext: string): Promise<string[]> {
           const pg = String(page + j).padStart(2, '0');
           return base + `${pp}_${pg}.${ext}`;
         });
-        const results = await probeBatch(batch);
+        const results = await probeBatch(batch, session);
         let innerStop = false;
         for (let j = 0; j < results.length; j++) {
           if (!results[j]) { innerStop = true; break; }
@@ -334,14 +338,14 @@ async function probeSubPartDash(base: string, ext: string): Promise<string[]> {
 
 /* ── Patrón "prefix+N-(N+1).webp": c-231-1-2.webp, c-231-2-3.webp … ───
    Cada filename: {prefix}{N}-{N+1}.webp, N incrementa de 1 en 1.    ── */
-async function probePrefixedPair(base: string, ext: string, prefix: string): Promise<string[]> {
+async function probePrefixedPair(base: string, ext: string, prefix: string, session: Session): Promise<string[]> {
   const pages: string[] = [];
   let n = 1;
   while (n <= MAX_PAGES) {
     const batch   = Array.from({ length: BATCH_SIZE }, (_, k) =>
       base + `${prefix}${n + k}-${n + k + 1}.${ext}`,
     );
-    const results = await probeBatch(batch);
+    const results = await probeBatch(batch, session);
     let stop = false;
     for (let k = 0; k < results.length; k++) {
       if (!results[k]) { stop = true; break; }
@@ -355,7 +359,7 @@ async function probePrefixedPair(base: string, ext: string, prefix: string): Pro
 
 /* ── Patrón "{part}CL_{page}.webp": 1CL_01.webp, 2CL_01.webp … ────────
    Igual que probeSubPart pero con separador "CL_" en vez de "_".      ── */
-async function probeCLSubPart(base: string, ext: string): Promise<string[]> {
+async function probeCLSubPart(base: string, ext: string, session: Session): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
 
@@ -365,6 +369,7 @@ async function probeCLSubPart(base: string, ext: string): Promise<string[]> {
     // probePagesOfPart usa partPrefix + "_" + pg, así que partPrefix = "NCL"
     const results  = await probeBatch(
       partNums.map((p) => base + `${p}CL_01.${ext}`),
+      session,
     );
     let stop = false;
     for (let k = 0; k < results.length; k++) {
@@ -373,7 +378,7 @@ async function probeCLSubPart(base: string, ext: string): Promise<string[]> {
         continue;
       }
       gaps = 0;
-      const partPages = await probePagesOfPart(base, ext, `${partNums[k]}CL`);
+      const partPages = await probePagesOfPart(base, ext, `${partNums[k]}CL`, session);
       pages.push(...partPages);
     }
     if (stop) break;
@@ -385,18 +390,18 @@ async function probeCLSubPart(base: string, ext: string): Promise<string[]> {
    padPart=1 → "3_1_01", padPart=2 → "3_01_01".
    Se necesita chapterHint para evitar un scan ciego.                  ── */
 async function probeChapterSubPart(
-  base: string, ext: string, chap: number, padPart: number = 1,
+  base: string, ext: string, chap: number, padPart: number = 1, session: Session,
 ): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
   for (let part = 1; part <= MAX_PARTS; part++) {
     const pp = String(part).padStart(padPart, '0');
-    if (!(await exists(base + `${chap}_${pp}_01.${ext}`))) {
+    if (!(await exists(base + `${chap}_${pp}_01.${ext}`, session))) {
       if (++gaps >= MAX_PART_GAPS) break;
       continue;
     }
     gaps = 0;
-    const partPages = await probePagesOfPart(base, ext, `${chap}_${pp}`);
+    const partPages = await probePagesOfPart(base, ext, `${chap}_${pp}`, session);
     pages.push(...partPages);
   }
   return pages;
@@ -405,7 +410,7 @@ async function probeChapterSubPart(
 /* ── Patrón "NN copia.webp": 01 copia.webp, 02 copia.webp … ────────────
    Número padded a 2 dígitos + espacio (URL-encoded %20) + "copia" + ext.
    Tolera hasta 2 páginas consecutivas ausentes (huecos).               ── */
-async function probeCopiaPages(base: string, ext: string): Promise<string[]> {
+async function probeCopiaPages(base: string, ext: string, session: Session): Promise<string[]> {
   const pages: string[] = [];
   let i = 1;
   let consecutiveMisses = 0;
@@ -413,7 +418,7 @@ async function probeCopiaPages(base: string, ext: string): Promise<string[]> {
     const batch   = Array.from({ length: BATCH_SIZE }, (_, k) =>
       base + `${String(i + k).padStart(2, '0')}%20copia.${ext}`,
     );
-    const results = await probeBatch(batch);
+    const results = await probeBatch(batch, session);
     let stop = false;
     for (let k = 0; k < results.length; k++) {
       if (results[k]) {
@@ -431,27 +436,92 @@ async function probeCopiaPages(base: string, ext: string): Promise<string[]> {
 
 /* ── Scan profundo para chapter-subpart sin chapterHint ─────────────────
    Prueba en lotes qué número de capítulo tiene N_1_01 o N_01_01.webp.  ── */
-async function probeChapterSubPartDeep(base: string, ext: string): Promise<string[]> {
+async function probeChapterSubPartDeep(base: string, ext: string, session: Session): Promise<string[]> {
   for (let i = 0; i < MAX_CHAPTER_NUM; i += BATCH_SIZE) {
     const count    = Math.min(BATCH_SIZE, MAX_CHAPTER_NUM - i);
     const chapNums = Array.from({ length: count }, (_, k) => i + k + 1);
     // Chequear ambas variantes en paralelo por lote
     const [resUnpad, resPad] = await Promise.all([
-      probeBatch(chapNums.map((ch) => base + `${ch}_1_01.${ext}`)),
-      probeBatch(chapNums.map((ch) => base + `${ch}_01_01.${ext}`)),
+      probeBatch(chapNums.map((ch) => base + `${ch}_1_01.${ext}`), session),
+      probeBatch(chapNums.map((ch) => base + `${ch}_01_01.${ext}`), session),
     ]);
     for (let k = 0; k < chapNums.length; k++) {
-      if (resUnpad[k]) return probeChapterSubPart(base, ext, chapNums[k], 1);
-      if (resPad[k])   return probeChapterSubPart(base, ext, chapNums[k], 2);
+      if (resUnpad[k]) return probeChapterSubPart(base, ext, chapNums[k], 1, session);
+      if (resPad[k])   return probeChapterSubPart(base, ext, chapNums[k], 2, session);
     }
   }
   return [];
 }
 
-/* ── Obtiene imágenes vía listado de directorio HTML ────────────────────
-   Si el servidor sirve un índice HTML (Apache/Nginx/storage CDN),
-   extrae y ordena numéricamente los nombres de archivo de imagen.
-   Soporta patrones con hash impredecible como "1 - a2404c67.webp".   ── */
+/* ── Ordena filenames URL-encoded numéricamente ─────────── */
+function sortImageFiles(files: Iterable<string>): string[] {
+  const unique = [...new Set(files)];
+  unique.sort((a, b) => {
+    const na = parseInt(decodeURIComponent(a), 10);
+    const nb = parseInt(decodeURIComponent(b), 10);
+    if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+    return decodeURIComponent(a).localeCompare(decodeURIComponent(b));
+  });
+  return unique;
+}
+
+/* ── Valida y normaliza un nombre de fichero a filename URL-encoded ──── */
+function normalizeFilename(raw: string): string | null {
+  const segment = raw.split('/').pop() ?? raw;
+  let decoded: string;
+  try { decoded = decodeURIComponent(segment.trim()); } catch { decoded = segment.trim(); }
+  if (!decoded) return null;
+  const dot = decoded.lastIndexOf('.');
+  if (dot < 0) return null;
+  if (!IMG_EXTS.has(decoded.slice(dot + 1).toLowerCase())) return null;
+  return encodeURIComponent(decoded);
+}
+
+/* ── Parsea un JSON de listado de archivos ──────────────────────────────
+   Formatos soportados:
+   • Array de strings:  ["1 - bb006670.webp", "2 - 6dbb4d70.webp"]
+   • Array de objetos:  [{name:"…"}, {filename:"…"}, {key:"…"}, {url:"…"}]
+   • Wrapper con clave: {files:[…]}, {data:[…]}, {items:[…]}, {results:[…]} ── */
+function parseJsonFileListing(body: unknown): string[] {
+  const candidates: string[] = [];
+  const extract = (v: unknown): void => {
+    if (typeof v === 'string') {
+      candidates.push(v);
+    } else if (Array.isArray(v)) {
+      v.forEach(extract);
+    } else if (v && typeof v === 'object') {
+      const obj = v as Record<string, unknown>;
+      for (const key of ['name', 'filename', 'file', 'key', 'Key', 'path', 'url', 'src']) {
+        if (typeof obj[key] === 'string') candidates.push(obj[key] as string);
+      }
+      for (const key of ['files', 'data', 'items', 'results', 'contents', 'objects']) {
+        if (Array.isArray(obj[key])) (obj[key] as unknown[]).forEach(extract);
+      }
+    }
+  };
+  extract(body);
+  return sortImageFiles(candidates.map(normalizeFilename).filter((f): f is string => f !== null));
+}
+
+/* ── Parsea XML compatible con S3/MinIO/GCS/Wasabi ─────────────────────
+   Extrae los elementos <Key>…</Key> (S3) o <Name>…</Name>.           ── */
+function parseXmlFileListing(xml: string): string[] {
+  const re = /<(?:Key|Name|Filename|filename)>([^<]+)<\/(?:Key|Name|Filename|filename)>/g;
+  const files: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml)) !== null) {
+    const f = normalizeFilename(m[1]);
+    if (f) files.push(f);
+  }
+  return sortImageFiles(files);
+}
+
+/* ── Obtiene imágenes vía listado de directorio ─────────────────────────
+   Soporta tres formatos de respuesta del servidor:
+   • HTML  — índice Apache/Nginx autoindex (href="…")
+   • JSON  — backends de almacenamiento que retornan array de archivos
+   • XML   — API compatible con S3/MinIO/GCS (elementos <Key>)
+   Cubre patrones con hash impredecible como "1 - a2404c67.webp".      ── */
 async function probeDirectoryListing(base: string): Promise<string[]> {
   try {
     const ctrl  = new AbortController();
@@ -459,48 +529,64 @@ async function probeDirectoryListing(base: string): Promise<string[]> {
     const res   = await fetch(base, {
       method: 'GET',
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GrandielProbe/1.0)' },
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; GrandielProbe/1.0)',
+        // Preferir JSON/XML pero aceptar HTML también
+        'Accept': 'application/json, application/xml, text/html, */*',
+      },
     });
     clearTimeout(timer);
 
     if (res.status !== 200) return [];
     const ct = res.headers.get('content-type') ?? '';
-    if (!ct.includes('text/html')) return [];
 
+    // ── JSON listing ─────────────────────────────────────────────────────
+    if (ct.includes('application/json') || ct.includes('text/json')) {
+      try { return parseJsonFileListing(await res.json() as unknown); }
+      catch { return []; }
+    }
+
+    // ── S3 / MinIO / GCS / Wasabi XML listing ────────────────────────────
+    if (ct.includes('/xml')) return parseXmlFileListing(await res.text());
+
+    // ── Texto desconocido: intentar parsear como JSON (content-type incorrecto) ──
+    if (!ct.includes('text/html')) {
+      try { return parseJsonFileListing(JSON.parse(await res.text())); }
+      catch { return []; }
+    }
+
+    // ── HTML: buscar tanto hrefs relativos como URLs absolutas que empiecen en base ──
     const html   = await res.text();
-    const hrefRe = /href="([^"?#]+)"/gi;
     const files: string[] = [];
     let m: RegExpExecArray | null;
 
+    // 1. Hrefs relativos (nginx/apache autoindex)
+    const hrefRe = /href="([^"?#]+)"/gi;
     while ((m = hrefRe.exec(html)) !== null) {
       let href = m[1];
-      // Ignorar enlaces de directorio padre, rutas absolutas y subdirectorios
       if (href === '../' || href.startsWith('/') || href.startsWith('http')) continue;
       if (href.startsWith('./')) href = href.slice(2);
       if (href.includes('/')) continue;
-
-      // Decodificar para verificar extensión
-      let decoded: string;
-      try { decoded = decodeURIComponent(href); } catch { decoded = href; }
-      const dot = decoded.lastIndexOf('.');
-      if (dot < 0) continue;
-      if (!IMG_EXTS.has(decoded.slice(dot + 1).toLowerCase())) continue;
-
-      // Re-codificar limpiamente (cubre "1 - a2404c67.webp" → "1%20-%20a2404c67.webp")
-      files.push(encodeURIComponent(decoded));
+      const f = normalizeFilename(href);
+      if (f) files.push(f);
     }
 
-    if (files.length === 0) return [];
+    // 2. URLs absolutas que empiecen en base (CDNs que retornan URLs completas en el HTML)
+    if (files.length === 0) {
+      const baseHttps = base.replace(/^http:\/\//, 'https://').replace(/\/?$/, '/');
+      const baseHttp  = baseHttps.replace(/^https:\/\//, 'http://');
+      for (const b of [baseHttps, baseHttp]) {
+        const escaped = b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const absRe   = new RegExp(escaped + '([^"\'\\s>\\\\,)\\]\\r\\n]+)', 'gi');
+        while ((m = absRe.exec(html)) !== null) {
+          const f = normalizeFilename(m[1].replace(/[.,;)}\]'"\\]+$/, ''));
+          if (f) files.push(f);
+        }
+        if (files.length > 0) break;
+      }
+    }
 
-    // Ordenar numéricamente por el entero inicial del nombre de archivo
-    files.sort((a, b) => {
-      const na = parseInt(decodeURIComponent(a), 10);
-      const nb = parseInt(decodeURIComponent(b), 10);
-      if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
-      return decodeURIComponent(a).localeCompare(decodeURIComponent(b));
-    });
-
-    return files;
+    return sortImageFiles(files);
   } catch {
     return [];
   }
@@ -552,16 +638,7 @@ async function probeViewerPage(viewerUrl: string, base: string): Promise<string[
     }
 
     if (found.size === 0) return [];
-
-    const files = [...found];
-    files.sort((a, b) => {
-      const na = parseInt(decodeURIComponent(a), 10);
-      const nb = parseInt(decodeURIComponent(b), 10);
-      if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
-      return decodeURIComponent(a).localeCompare(decodeURIComponent(b));
-    });
-
-    return files;
+    return sortImageFiles(found);
   } catch {
     return [];
   }
@@ -595,7 +672,8 @@ export async function POST(req: NextRequest) {
   }
 
   const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-  serverPrefersGet = false; // reset por sesión
+  // Estado aislado por request — evita interferencias con requests concurrentes
+  const session: Session = { prefersGet: false };
 
   /* ── 0. Si se proporcionó URL del visor, extraer imágenes de la página ── */
   if (viewerUrl) {
@@ -642,7 +720,7 @@ export async function POST(req: NextRequest) {
   // Ejecutar listado de directorio y checks estándar en paralelo
   const [directoryFiles, allResults] = await Promise.all([
     probeDirectoryListing(base),
-    Promise.all(allChecks.map((f) => exists(base + f))),
+    Promise.all(allChecks.map((f) => exists(base + f, session))),
   ]);
 
   // Listado de directorio tiene prioridad: cubre patrones con hash impredecible
@@ -665,31 +743,31 @@ export async function POST(req: NextRequest) {
 
   // Subpart con padding: 01_01.webp
   if (hasSubPad) {
-    const pages = await probeSubPart(base, ext, 2);
+    const pages = await probeSubPart(base, ext, 2, session);
     return NextResponse.json({ pages, pattern: 'subpart-padded', count: pages.length });
   }
 
   // Subpart con primera página "-1": 01_01-1.webp, 01_02.webp …
   if (hasSubDash) {
-    const pages = await probeSubPartDash(base, ext);
+    const pages = await probeSubPartDash(base, ext, session);
     return NextResponse.json({ pages, pattern: 'subpart-dash', count: pages.length });
   }
 
   // Subpart sin padding: 1_01.webp
   if (hasSubNoPad) {
-    const pages = await probeSubPart(base, ext, 1);
+    const pages = await probeSubPart(base, ext, 1, session);
     return NextResponse.json({ pages, pattern: 'subpart-nopad', count: pages.length });
   }
 
   // CL-subpart: 1CL_01.webp, 2CL_01.webp …
   if (hasCLSubPart) {
-    const pages = await probeCLSubPart(base, ext);
+    const pages = await probeCLSubPart(base, ext, session);
     return NextResponse.json({ pages, pattern: 'cl-subpart', count: pages.length });
   }
 
   // Patrón "N (M).webp": 1 (1).webp → almacenado como 1%20(1).webp
   if (hasParen) {
-    const pages = await probeParenPart(base, ext);
+    const pages = await probeParenPart(base, ext, session);
     return NextResponse.json({ pages, pattern: 'paren-part', count: pages.length });
   }
 
@@ -700,14 +778,14 @@ export async function POST(req: NextRequest) {
     const prefix = String(slugHint).replace(/\.[a-z0-9]+$/i, '').trim();
     if (prefix) {
       // Multi-página con sufijo _NN: c-463-ingeniero_01.webp, c-463-ingeniero_02.webp …
-      if (await exists(base + `${prefix}_01.${ext}`)) {
-        const pages = await probePagesOfPart(base, ext, prefix);
+      if (await exists(base + `${prefix}_01.${ext}`, session)) {
+        const pages = await probePagesOfPart(base, ext, prefix, session);
         if (pages.length > 0) {
           return NextResponse.json({ pages, pattern: `slug(${prefix})`, count: pages.length });
         }
       }
       // Página única (sin sufijo numérico): c-463-ingeniero.webp
-      if (await exists(base + `${prefix}.${ext}`)) {
+      if (await exists(base + `${prefix}.${ext}`, session)) {
         return NextResponse.json({ pages: [`${prefix}.${ext}`], pattern: 'slug-single', count: 1 });
       }
     }
@@ -715,7 +793,7 @@ export async function POST(req: NextRequest) {
 
   // Patrón "  (N).webp": %20%20(3).webp (dos espacios antes del paréntesis)
   if (hasDoubleSpaceParen) {
-    const pages = await probeDoubleSpaceParen(base, ext);
+    const pages = await probeDoubleSpaceParen(base, ext, session);
     return NextResponse.json({ pages, pattern: 'double-space-paren', count: pages.length });
   }
 
@@ -725,14 +803,14 @@ export async function POST(req: NextRequest) {
 
     // Chapter-subpart: detectar variante unpadded (3_1_01) y padded (3_01_01) en paralelo
     const [hasChUnpad, hasChPad] = await Promise.all([
-      exists(base + `${chNum}_1_01.${ext}`),
-      exists(base + `${chNum}_01_01.${ext}`),
+      exists(base + `${chNum}_1_01.${ext}`, session),
+      exists(base + `${chNum}_01_01.${ext}`, session),
     ]);
     if (hasChUnpad || hasChPad) {
       const padPart = hasChPad && !hasChUnpad ? 2 : 1;
       // Recoger portadas simples (1.webp, 2.webp…) que preceden al contenido del capítulo
-      const coverPages   = hasZero1 ? await probeSimple(base, ext, 1, 1) : [];
-      const contentPages = await probeChapterSubPart(base, ext, chNum, padPart);
+      const coverPages   = hasZero1 ? await probeSimple(base, ext, 1, 1, 0, session) : [];
+      const contentPages = await probeChapterSubPart(base, ext, chNum, padPart, session);
       const pages = [...coverPages, ...contentPages];
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `chapter-subpart(${chNum},pad=${padPart})`, count: pages.length });
@@ -742,8 +820,8 @@ export async function POST(req: NextRequest) {
     // Prefixed-subpart con chapterHint: c-743-54_01.webp
     for (const { prefix, padPart } of prefixVariants) {
       const pp = String(chNum).padStart(padPart, '0');
-      if (await exists(base + `${prefix}${pp}_01.${ext}`)) {
-        const pages = await probePagesOfPart(base, ext, `${prefix}${pp}`);
+      if (await exists(base + `${prefix}${pp}_01.${ext}`, session)) {
+        const pages = await probePagesOfPart(base, ext, `${prefix}${pp}`, session);
         if (pages.length > 0) {
           return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
         }
@@ -755,7 +833,7 @@ export async function POST(req: NextRequest) {
   for (let i = 0; i < prefixVariants.length; i++) {
     if (prefixResults[i]) {
       const { prefix, padPart } = prefixVariants[i];
-      const pages = await probePrefixedSubPart(base, ext, prefix, padPart);
+      const pages = await probePrefixedSubPart(base, ext, prefix, padPart, session);
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
       }
@@ -765,7 +843,7 @@ export async function POST(req: NextRequest) {
   // Patrón par prefijado: c-231-1-2.webp, c-231-2-3.webp …
   for (let i = 0; i < prefixes.length; i++) {
     if (pairPrefixResults[i]) {
-      const pages = await probePrefixedPair(base, ext, prefixes[i]);
+      const pages = await probePrefixedPair(base, ext, prefixes[i], session);
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `prefixed-pair(${prefixes[i]})`, count: pages.length });
       }
@@ -774,14 +852,14 @@ export async function POST(req: NextRequest) {
 
   // Patrón "NN copia.webp": 01 copia.webp, 02 copia.webp …
   if (hasCopiaPage) {
-    const pages = await probeCopiaPages(base, ext);
+    const pages = await probeCopiaPages(base, ext, session);
     return NextResponse.json({ pages, pattern: 'copia-pages', count: pages.length });
   }
 
   // Scan profundo: busca en lote cualquier número de parte (capítulos 4+)
   // Resuelve el caso c-743-54_01.webp cuando no se proporcionó chapterHint.
   for (const { prefix, padPart } of prefixVariants) {
-    const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart);
+    const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart, session);
     if (pages.length > 0) {
       return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
     }
@@ -789,9 +867,9 @@ export async function POST(req: NextRequest) {
 
   // Scan profundo chapter-subpart sin chapterHint: N_1_01.webp / N_01_01.webp
   {
-    const contentPages = await probeChapterSubPartDeep(base, ext);
+    const contentPages = await probeChapterSubPartDeep(base, ext, session);
     if (contentPages.length > 0) {
-      const coverPages = hasZero1 ? await probeSimple(base, ext, 1, 1) : [];
+      const coverPages = hasZero1 ? await probeSimple(base, ext, 1, 1, 0, session) : [];
       const pages = [...coverPages, ...contentPages];
       return NextResponse.json({ pages, pattern: 'chapter-subpart', count: pages.length });
     }
@@ -799,25 +877,25 @@ export async function POST(req: NextRequest) {
 
   // Simple 3 dígitos: 001.webp
   if (hasSimple3) {
-    const pages = await probeSimple(base, ext, 1, 3, 2);
+    const pages = await probeSimple(base, ext, 1, 3, 2, session);
     return NextResponse.json({ pages, pattern: 'simple-3digit', count: pages.length });
   }
 
   // Simple 2 dígitos: 01.webp
   if (hasSimple2) {
-    const pages = await probeSimple(base, ext, 1, 2, 2);
+    const pages = await probeSimple(base, ext, 1, 2, 2, session);
     return NextResponse.json({ pages, pattern: 'simple-2digit', count: pages.length });
   }
 
   // Zero-indexed: 0.webp (requiere que 1.webp también exista para evitar falsos positivos)
   if (hasZero && hasZero1) {
-    const pages = await probeSimple(base, ext, 0, 1, 2);
+    const pages = await probeSimple(base, ext, 0, 1, 2, session);
     return NextResponse.json({ pages, pattern: 'zero-indexed', count: pages.length });
   }
 
   // Simple 1 dígito desde 1: 1.webp, 2.webp, 3.webp …
   if (hasZero1) {
-    const pages = await probeSimple(base, ext, 1, 1, 2);
+    const pages = await probeSimple(base, ext, 1, 1, 2, session);
     return NextResponse.json({ pages, pattern: 'simple-1digit', count: pages.length });
   }
 

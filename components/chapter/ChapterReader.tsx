@@ -386,7 +386,6 @@ export default function ChapterReader({
           onClick={() => setPanelOpen((o) => !o)}
           aria-label="Ajustes de lectura"
           aria-expanded={panelOpen}
-          suppressHydrationWarning
         >
           <IcoCog />
         </button>

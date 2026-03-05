@@ -22,6 +22,7 @@ function toManga(
     lastUpdated:   row.lastUpdated,
     latestChapter: row.latestChapter,
     chapters:      chapterNums,
+    views:         row.views,
   };
 }
 
