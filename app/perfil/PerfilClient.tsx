@@ -282,6 +282,16 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   }
 
   /* ─────────────────── LOGGED-IN VIEW ─────────────────── */
+  // Autenticado pero el perfil aún se está creando/cargando desde la BD
+  if (isLoggedIn && !profile) {
+    return (
+      <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+        <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', opacity: 0.5 }} aria-label="Configurando perfil..." />
+        <p style={{ marginTop: '1rem', opacity: 0.6 }}>Configurando tu perfil...</p>
+      </div>
+    );
+  }
+
   if (!profile) return null;
 
   return (

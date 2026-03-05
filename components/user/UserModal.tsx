@@ -30,6 +30,8 @@ export default function UserModal({ onClose }: UserModalProps) {
   const [email, setEmail] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar ?? AVATARS[0]);
   const [error, setError] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+  const [regSuccess, setRegSuccess] = useState(false);
 
   const validate = (name: string) => {
     if (name.length < 3 || name.length > 20) {
@@ -40,12 +42,18 @@ export default function UserModal({ onClose }: UserModalProps) {
     return true;
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = username.trim();
     if (!validate(trimmed)) return;
-    register(trimmed, selectedAvatar, email);
-    onClose();
+    setRegLoading(true);
+    const result = await register(trimmed, selectedAvatar, email);
+    setRegLoading(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setRegSuccess(true);
+    }
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -91,6 +99,21 @@ export default function UserModal({ onClose }: UserModalProps) {
         {/* ── REGISTRO ── */}
         {view === 'register' && (
           <>
+            {regSuccess ? (
+              /* ── Email enviado ── */
+              <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                <i className="fas fa-envelope-open-text" style={{ fontSize: '2.5rem', color: 'var(--accent)', marginBottom: '1rem' }} aria-hidden="true" />
+                <h2 id="modal-title" className="user-modal-title">¡Revisa tu email!</h2>
+                <p style={{ marginTop: '0.5rem', opacity: 0.8, fontSize: '0.9rem' }}>
+                  Enviamos un enlace a <strong>{email}</strong>.<br />
+                  Haz clic en él para activar tu cuenta.
+                </p>
+                <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', opacity: 0.55 }}>
+                  ¿No lo ves? Revisa la carpeta de spam.
+                </p>
+              </div>
+            ) : (
+              <>
             <h2 id="modal-title" className="user-modal-title">
               Bienvenido a Grandiel Scan
             </h2>
@@ -151,16 +174,12 @@ export default function UserModal({ onClose }: UserModalProps) {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary user-submit-btn">
-                Crear Cuenta
+              <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
+                {regLoading ? 'Enviando...' : 'Crear Cuenta'}
               </button>
             </form>
-
-            <p className="user-modal-note">
-              <small>
-                Los datos se guardan en tu navegador. No se requiere email ni contraseña.
-              </small>
-            </p>
+              </>
+            )}
           </>
         )}
 

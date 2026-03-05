@@ -101,7 +101,10 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile]   = useState<UserProfile | null>(null);
   const [loading, setLoading]   = useState(true);
 
-  const loadProfile = useCallback(async (userId: string) => {
+  const loadProfile = useCallback(async (
+    userId: string,
+    metadata?: Record<string, unknown>,
+  ) => {
     const { data } = await supabase
       .from('users')
       .select('id, username, avatar, created_at')
@@ -115,6 +118,27 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
         avatar:    data.avatar,
         createdAt: new Date(data.created_at).getTime(),
       });
+      return;
+    }
+
+    // Fila no encontrada — crearla desde los metadatos del usuario de Supabase Auth.
+    // Esto ocurre cuando el trigger SQL no está configurado en el proyecto.
+    const username = (metadata?.username as string | undefined)?.trim();
+    const avatar   = (metadata?.avatar  as string | undefined) ?? '/img/avatars/avatar1.svg';
+    if (username) {
+      const { data: newUser } = await supabase
+        .from('users')
+        .insert({ id: userId, username, avatar })
+        .select('id, username, avatar, created_at')
+        .single();
+      if (newUser) {
+        setProfile({
+          id:        newUser.id,
+          username:  newUser.username,
+          avatar:    newUser.avatar,
+          createdAt: new Date(newUser.created_at).getTime(),
+        });
+      }
     }
   }, [supabase]);
 
@@ -122,7 +146,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
     // Comprobar sesión activa al montar
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        loadProfile(user.id).finally(() => setLoading(false));
+        loadProfile(user.id, user.user_metadata).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -132,7 +156,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (session?.user) {
-          await loadProfile(session.user.id);
+          await loadProfile(session.user.id, session.user.user_metadata);
         } else {
           setProfile(null);
         }
