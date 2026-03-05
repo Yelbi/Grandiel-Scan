@@ -14,6 +14,8 @@ const PAREN_INIT_MISS     = 32;  // si no hay ningún hit en los primeros N → 
 /* ── Si HEAD falla, usar GET para toda la sesión ── */
 let serverPrefersGet = false;
 
+const IMG_EXTS = new Set(['webp', 'jpg', 'jpeg', 'png', 'avif', 'gif']);
+
 const IMGUR_PLACEHOLDER = 'imgur.com/w33tpvZ';
 
 async function tryFetch(url: string, method: 'HEAD' | 'GET'): Promise<[number, string]> {
@@ -404,6 +406,64 @@ async function probeChapterSubPartDeep(base: string, ext: string): Promise<strin
   return [];
 }
 
+/* ── Obtiene imágenes vía listado de directorio HTML ────────────────────
+   Si el servidor sirve un índice HTML (Apache/Nginx/storage CDN),
+   extrae y ordena numéricamente los nombres de archivo de imagen.
+   Soporta patrones con hash impredecible como "1 - a2404c67.webp".   ── */
+async function probeDirectoryListing(base: string): Promise<string[]> {
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const res   = await fetch(base, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GrandielProbe/1.0)' },
+    });
+    clearTimeout(timer);
+
+    if (res.status !== 200) return [];
+    const ct = res.headers.get('content-type') ?? '';
+    if (!ct.includes('text/html')) return [];
+
+    const html   = await res.text();
+    const hrefRe = /href="([^"?#]+)"/gi;
+    const files: string[] = [];
+    let m: RegExpExecArray | null;
+
+    while ((m = hrefRe.exec(html)) !== null) {
+      let href = m[1];
+      // Ignorar enlaces de directorio padre, rutas absolutas y subdirectorios
+      if (href === '../' || href.startsWith('/') || href.startsWith('http')) continue;
+      if (href.startsWith('./')) href = href.slice(2);
+      if (href.includes('/')) continue;
+
+      // Decodificar para verificar extensión
+      let decoded: string;
+      try { decoded = decodeURIComponent(href); } catch { decoded = href; }
+      const dot = decoded.lastIndexOf('.');
+      if (dot < 0) continue;
+      if (!IMG_EXTS.has(decoded.slice(dot + 1).toLowerCase())) continue;
+
+      // Re-codificar limpiamente (cubre "1 - a2404c67.webp" → "1%20-%20a2404c67.webp")
+      files.push(encodeURIComponent(decoded));
+    }
+
+    if (files.length === 0) return [];
+
+    // Ordenar numéricamente por el entero inicial del nombre de archivo
+    files.sort((a, b) => {
+      const na = parseInt(decodeURIComponent(a), 10);
+      const nb = parseInt(decodeURIComponent(b), 10);
+      if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+      return decodeURIComponent(a).localeCompare(decodeURIComponent(b));
+    });
+
+    return files;
+  } catch {
+    return [];
+  }
+}
+
 /* ── Extrae prefijos candidatos de la URL base ───────────
    Ej: ".../comics/743/58812/" → ["c-743-", "c-58812-", "743-", "58812-"]
 ── */
@@ -463,8 +523,19 @@ export async function POST(req: NextRequest) {
   // Chequeos de pares por prefijo: c-231-1-2.webp
   const pairPrefixChecks = prefixes.map((p) => `${p}1-2.${ext}`);
 
-  const allChecks  = [...standardChecks, ...prefixChecks, ...pairPrefixChecks];
-  const allResults = await Promise.all(allChecks.map((f) => exists(base + f)));
+  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks];
+
+  // Ejecutar listado de directorio y checks estándar en paralelo
+  const [directoryFiles, allResults] = await Promise.all([
+    probeDirectoryListing(base),
+    Promise.all(allChecks.map((f) => exists(base + f))),
+  ]);
+
+  // Listado de directorio tiene prioridad: cubre patrones con hash impredecible
+  // (ej: "1 - a2404c67.webp", "2 - 4b129cdb.webp" …)
+  if (directoryFiles.length > 0) {
+    return NextResponse.json({ pages: directoryFiles, pattern: 'directory-listing', count: directoryFiles.length });
+  }
 
   const [
     hasSubPad, hasSubDash, hasSubNoPad, hasParen, hasDsP1, hasDsP3, hasCLSubPart,
