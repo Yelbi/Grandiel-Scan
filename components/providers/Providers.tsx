@@ -143,11 +143,18 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
+    // Timeout de seguridad: si loadProfile no resuelve en 10s, desbloquear la UI
+    const safetyTimer = setTimeout(() => setLoading(false), 10_000);
+
     // Comprobar sesión activa al montar
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        loadProfile(user.id, user.user_metadata).finally(() => setLoading(false));
+        loadProfile(user.id, user.user_metadata).finally(() => {
+          clearTimeout(safetyTimer);
+          setLoading(false);
+        });
       } else {
+        clearTimeout(safetyTimer);
         setLoading(false);
       }
     });
@@ -163,7 +170,10 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
       },
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimer);
+    };
   }, [supabase, loadProfile]);
 
   /**

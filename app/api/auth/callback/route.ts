@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 
 /**
  * Intercambia el código PKCE de Supabase por una sesión en el servidor.
- * El Route Handler tiene acceso a las cookies (incluyendo code_verifier),
- * por lo que el intercambio es confiable independientemente del navegador.
+ * Las cookies de sesión se setean directamente en el NextResponse.redirect
+ * para garantizar que lleguen al navegador.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -13,7 +12,6 @@ export async function GET(request: NextRequest) {
   const next  = searchParams.get('next') ?? '/perfil';
   const error = searchParams.get('error');
 
-  // Redirigir errores que Supabase nos envía directamente
   if (error) {
     return NextResponse.redirect(`${origin}/auth/callback?error=${encodeURIComponent(error)}`);
   }
@@ -22,39 +20,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/callback?error=missing_code`);
   }
 
-  try {
-    const cookieStore = await cookies();
+  // Crear la respuesta redirect de antemano para poder setear cookies en ella
+  const successUrl = new URL(next, origin);
+  const response   = NextResponse.redirect(successUrl);
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Setear en request (para el cliente Supabase) Y en la respuesta (para el navegador)
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
         },
       },
+    },
+  );
+
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (exchangeError) {
+    console.error('[auth/callback] exchange error:', exchangeError.message);
+    return NextResponse.redirect(
+      `${origin}/auth/callback?error=${encodeURIComponent(exchangeError.message)}`,
     );
-
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (exchangeError) {
-      console.error('[auth/callback] exchange error:', exchangeError.message);
-      return NextResponse.redirect(
-        `${origin}/auth/callback?error=${encodeURIComponent(exchangeError.message)}`,
-      );
-    }
-
-    // Intercambio exitoso → ir al perfil (o a la ruta solicitada)
-    return NextResponse.redirect(`${origin}${next}`);
-  } catch (err) {
-    console.error('[auth/callback] unexpected error:', err);
-    return NextResponse.redirect(`${origin}/auth/callback?error=unexpected`);
   }
+
+  return response;
 }
