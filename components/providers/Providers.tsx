@@ -177,7 +177,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
         password: crypto.randomUUID(), // contraseña aleatoria — se usa magic link
         options: {
           data: { username, avatar },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       if (error) return { error: error.message };
