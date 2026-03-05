@@ -523,15 +523,28 @@ function parseXmlFileListing(xml: string): string[] {
    • XML   — API compatible con S3/MinIO/GCS (elementos <Key>)
    Cubre patrones con hash impredecible como "1 - a2404c67.webp".      ── */
 async function probeDirectoryListing(base: string): Promise<string[]> {
+  // Probar primero con trailing slash, luego sin él (algunos servidores listan en /path no en /path/)
+  const urls = base.endsWith('/')
+    ? [base, base.slice(0, -1)]
+    : [base + '/', base];
+
+  for (const url of urls) {
+    const result = await fetchDirectoryListing(url);
+    if (result.length > 0) return result;
+  }
+  return [];
+}
+
+async function fetchDirectoryListing(url: string): Promise<string[]> {
   try {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    const res   = await fetch(base, {
+    const res   = await fetch(url, {
       method: 'GET',
       signal: ctrl.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; GrandielProbe/1.0)',
-        // Preferir JSON/XML pero aceptar HTML también
+        // Usar UA de navegador real — servidores bloquean UAs de bots con 403/404
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'application/json, application/xml, text/html, */*',
       },
     });
@@ -571,9 +584,9 @@ async function probeDirectoryListing(base: string): Promise<string[]> {
       if (f) files.push(f);
     }
 
-    // 2. URLs absolutas que empiecen en base (CDNs que retornan URLs completas en el HTML)
+    // 2. URLs absolutas que empiecen en la URL del directorio (CDNs que retornan URLs completas en el HTML)
     if (files.length === 0) {
-      const baseHttps = base.replace(/^http:\/\//, 'https://').replace(/\/?$/, '/');
+      const baseHttps = url.replace(/^http:\/\//, 'https://').replace(/\/?$/, '/');
       const baseHttp  = baseHttps.replace(/^https:\/\//, 'http://');
       for (const b of [baseHttps, baseHttp]) {
         const escaped = b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
