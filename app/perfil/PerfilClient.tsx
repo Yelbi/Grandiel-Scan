@@ -478,11 +478,18 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
               </Link>
             </div>
           ) : (
-            <div className="mami">
-              {favoriteMangas.map((manga) => (
-                <MangaCard key={manga.id} manga={manga} />
-              ))}
-            </div>
+            <>
+              <div className="perfil-section__header">
+                <span className="results-counter">
+                  {favoriteMangas.length} título{favoriteMangas.length !== 1 ? 's' : ''} guardados
+                </span>
+              </div>
+              <div className="mami">
+                {favoriteMangas.map((manga) => (
+                  <MangaCard key={manga.id} manga={manga} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -537,7 +544,11 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                         {entry.title}
                       </Link>
                       <span className="perfil-history-item__chapter">
-                        <i className="fas fa-bookmark" aria-hidden="true" /> Capítulo {entry.chapter}
+                        <i className="fas fa-bookmark" aria-hidden="true" />
+                        {' '}Capítulo {entry.chapter}
+                        {entry.page != null && entry.page > 0 && (
+                          <> · Pág. {entry.page + 1}</>
+                        )}
                       </span>
                       <span className="perfil-history-item__time">
                         <i className="fas fa-clock" aria-hidden="true" /> {relativeDate(entry.timestamp)}

@@ -2757,6 +2757,7 @@ mark.search-highlight {
   font-size: 3rem;
   color: var(--color-primary);
   margin-bottom: var(--spacing-lg);
+  filter: drop-shadow(0 0 14px rgba(255, 0, 0, 0.4));
 }
 
 .perfil-guest-benefits__title {
@@ -2788,11 +2789,20 @@ mark.search-highlight {
   gap: var(--spacing-md);
 }
 
+/* Icono con fondo circular */
 .perfil-benefit i {
-  font-size: 1.25rem;
+  font-size: 1rem;
   color: var(--color-primary);
-  margin-top: 2px;
   flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
 }
 
 .perfil-benefit strong {
@@ -2814,6 +2824,7 @@ mark.search-highlight {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 .perfil-guest-form-card__title {
@@ -2847,12 +2858,33 @@ mark.search-highlight {
   border-radius: var(--border-radius-lg);
   margin-bottom: var(--spacing-xl);
   overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Línea de acento superior */
+.perfil-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-primary) 35%,
+    rgba(255, 120, 120, 0.9) 55%,
+    transparent 100%
+  );
+  z-index: 1;
 }
 
 .perfil-banner__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(255, 0, 0, 0.08) 0%, transparent 65%);
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 0, 0, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 10%, rgba(255, 0, 0, 0.04) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -2867,12 +2899,26 @@ mark.search-highlight {
 
 .perfil-banner__avatar-wrap {
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Halo exterior del avatar */
+.perfil-banner__avatar-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.18) 0%, transparent 68%);
+  pointer-events: none;
 }
 
 .perfil-banner__avatar {
   border-radius: 50%;
   border: 3px solid var(--color-primary);
   object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1;
 }
 
 .perfil-banner__info {
@@ -2902,27 +2948,29 @@ mark.search-highlight {
   gap: var(--spacing-md);
 }
 
+/* Stats como tarjetas/chips */
 .perfil-stat-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--border-radius-sm);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: all 0.15s ease;
+  min-width: 76px;
 }
 
 .perfil-stat-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--color-border);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .perfil-stat-btn.active {
-  background: rgba(255, 0, 0, 0.08);
-  border-color: rgba(255, 0, 0, 0.3);
+  background: rgba(255, 0, 0, 0.1);
+  border-color: rgba(255, 0, 0, 0.4);
 }
 
 .perfil-stat-btn__number {
@@ -2981,6 +3029,7 @@ mark.search-highlight {
   background: rgba(255, 255, 255, 0.12);
   border-color: var(--color-primary);
   color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .perfil-logout-btn {
@@ -2992,6 +3041,7 @@ mark.search-highlight {
 .perfil-logout-btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 /* ── Edit card (expandable below banner) ── */
@@ -3002,6 +3052,7 @@ mark.search-highlight {
   margin-bottom: var(--spacing-xl);
   overflow: hidden;
   animation: slideDown 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 @keyframes slideDown {
@@ -3015,6 +3066,7 @@ mark.search-highlight {
   justify-content: space-between;
   padding: var(--spacing-lg) var(--spacing-xl);
   border-bottom: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .perfil-edit-card__title {
@@ -3175,10 +3227,13 @@ mark.search-highlight {
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  transition: opacity 0.15s ease;
+  transition: all 0.15s ease;
 }
 
-.perfil-empty__cta:hover { opacity: 0.85; }
+.perfil-empty__cta:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
 
 /* ── History list ── */
 .perfil-history-list {
@@ -3190,18 +3245,25 @@ mark.search-highlight {
   gap: var(--spacing-sm);
 }
 
+/* Borde izquierdo de acento al hover */
 .perfil-history-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
   border-radius: var(--border-radius-md);
   padding: var(--spacing-sm);
-  transition: border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
-.perfil-history-item:hover { border-color: rgba(255, 255, 255, 0.2); }
+.perfil-history-item:hover {
+  border-color: var(--color-border);
+  border-left-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.02);
+  transform: translateX(3px);
+}
 
 .perfil-history-item__cover {
   flex-shrink: 0;
@@ -3265,10 +3327,13 @@ mark.search-highlight {
   font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;
-  transition: opacity 0.15s ease;
+  transition: all 0.15s ease;
 }
 
-.perfil-history-item__btn:hover { opacity: 0.85; }
+.perfil-history-item__btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
@@ -3286,6 +3351,8 @@ mark.search-highlight {
   .perfil-guest-benefits__title { text-align: center !important; }
 
   .perfil-benefit { text-align: left; }
+
+  .perfil-benefit i { margin-top: 0; }
 
   .perfil-banner__body {
     padding: var(--spacing-lg);
@@ -3321,6 +3388,8 @@ mark.search-highlight {
     padding: var(--spacing-sm);
     border-radius: var(--border-radius-sm);
   }
+
+  .perfil-history-item:hover { transform: none; }
 }
 
 /* ===== NOVEDADES PAGE (merged Actualizaciones + Nuevos) ===== */

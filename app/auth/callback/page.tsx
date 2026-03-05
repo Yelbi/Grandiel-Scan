@@ -3,23 +3,34 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
+import { createClient } from '@/lib/supabase/client';
 
-/**
- * Página de confirmación de email (lado cliente).
- *
- * El `createBrowserClient` de Supabase detecta automáticamente el parámetro
- * `?code=` en la URL, ejecuta el intercambio PKCE directamente desde el
- * navegador (sin pasar por ninguna función serverless), y dispara
- * `onAuthStateChange`. El provider crea el perfil y aquí redirigimos.
- */
 export default function AuthCallbackPage() {
   const { isLoggedIn, loading } = useUserProfile();
   const router = useRouter();
   const [timedOut, setTimedOut] = useState(false);
+  const [exchangeError, setExchangeError] = useState(false);
 
-  // Si tras 8 segundos no hay sesión, mostramos error
+  // Intercambiar el código PKCE explícitamente (createBrowserClient no lo hace automáticamente)
   useEffect(() => {
-    const t = setTimeout(() => setTimedOut(true), 8000);
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (!code) {
+      setTimedOut(true);
+      return;
+    }
+    const supabase = createClient();
+    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      if (error) {
+        console.error('[auth/callback] exchangeCodeForSession error:', error.message);
+        setExchangeError(true);
+      }
+      // Si tiene éxito, onAuthStateChange en Providers disparará y pondrá isLoggedIn = true
+    });
+  }, []);
+
+  // Si tras 12 segundos no hay sesión, mostramos error
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), 12000);
     return () => clearTimeout(t);
   }, []);
 
@@ -30,7 +41,7 @@ export default function AuthCallbackPage() {
     }
   }, [isLoggedIn, loading, router]);
 
-  if (timedOut && !isLoggedIn) {
+  if ((timedOut || exchangeError) && !isLoggedIn) {
     return (
       <div className="curva" style={{ textAlign: 'center', paddingTop: '6rem' }}>
         <i className="fas fa-exclamation-circle" style={{ fontSize: '2.5rem', color: 'var(--color-primary)' }} />
