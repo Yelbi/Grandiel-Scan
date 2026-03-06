@@ -31,6 +31,12 @@ function parsePositiveInt(raw: string): number | null {
   return num;
 }
 
+function buildViewerUrl(template: string, folderId: string, chapter: number): string {
+  return template
+    .replace(/\{folderId\}/g, folderId)
+    .replace(/\{chapter\}/g, String(chapter));
+}
+
 type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'autodiscover' | 'delete';
 type Alert = { type: 'ok' | 'err'; msg: string } | null;
 
@@ -228,15 +234,15 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
         const res = await fetch('/api/admin/probe-chapter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            baseUrl,
-            ext: bExt,
-            chapterHint: chapter,
-            viewerUrl: bViewerTemplate.trim()
-              ? bViewerTemplate.trim().replace('{folderId}', folderId)
-              : undefined,
-          }),
-        });
+            body: JSON.stringify({
+              baseUrl,
+              ext: bExt,
+              chapterHint: chapter,
+              viewerUrl: bViewerTemplate.trim()
+                ? buildViewerUrl(bViewerTemplate.trim(), folderId, chapter)
+                : undefined,
+            }),
+          });
         probeJson = await res.json();
         if (!res.ok || !probeJson.pages?.length) {
           setBProgress((prev) => prev.map((e, idx) => idx === i
@@ -911,7 +917,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             />
             <span className="form-hint">
               Debe ser la URL de la <strong>página lectora</strong> del manga (no la URL del CDN/storage).
-              Usa <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>{'{folderId}'}</code> donde va el ID del capítulo — el sistema lo reemplaza por cada folder ID de la lista.
+              Usa <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>{'{folderId}'}</code> para el folder ID y/o <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>{'{chapter}'}</code> para el número de capítulo.
               El sistema raspa ese HTML buscando imágenes como <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>1 - bb006670.webp</code>.
             </span>
           </div>

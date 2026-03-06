@@ -477,6 +477,37 @@ function normalizeFilename(raw: string): string | null {
   return encodeURIComponent(decoded);
 }
 
+/* ── Extrae filenames standalone con patrón "N - hash.ext" ───────────────
+   Soporta variantes URL-encoded y textos JS escapados:
+   • 1%20-%20bb006670.webp
+   • 1 - bb006670.webp
+   • https:\/\/...\/1 - bb006670.webp                                       ── */
+function extractStandaloneHashFiles(html: string): string[] {
+  const sources = [
+    html,
+    html.replace(/\\\//g, '/').replace(/\\u002f/gi, '/').replace(/\\u0020/gi, ' '),
+  ];
+
+  const patterns = [
+    /\b(\d{1,4}%20-%20[a-f0-9]{6,}\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
+    /\b(\d{1,4}(?:%20|\s)?-(?:%20|\s)?[a-f0-9]{6,}\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
+  ];
+
+  const found = new Set<string>();
+  for (const source of sources) {
+    for (const re of patterns) {
+      let m: RegExpExecArray | null;
+      re.lastIndex = 0;
+      while ((m = re.exec(source)) !== null) {
+        const f = normalizeFilename(m[1]);
+        if (f) found.add(f);
+      }
+    }
+  }
+
+  return sortImageFiles(found);
+}
+
 /* ── Parsea un JSON de listado de archivos ──────────────────────────────
    Formatos soportados:
    • Array de strings:  ["1 - bb006670.webp", "2 - 6dbb4d70.webp"]
@@ -524,9 +555,17 @@ function parseXmlFileListing(xml: string): string[] {
    Cubre patrones con hash impredecible como "1 - a2404c67.webp".      ── */
 async function probeDirectoryListing(base: string): Promise<string[]> {
   // Probar primero con trailing slash, luego sin él (algunos servidores listan en /path no en /path/)
-  const urls = base.endsWith('/')
+  const roots = base.endsWith('/')
     ? [base, base.slice(0, -1)]
     : [base + '/', base];
+
+  const queryVariants = ['', '?json=1', '?format=json', '?output=json', '?list=1', '?listing=1', '?list-type=2'];
+  const urls = new Set<string>();
+  for (const root of roots) {
+    for (const q of queryVariants) {
+      urls.add(`${root}${q}`);
+    }
+  }
 
   for (const url of urls) {
     const result = await fetchDirectoryListing(url);
@@ -650,8 +689,10 @@ async function probeViewerPage(viewerUrl: string, base: string): Promise<string[
       }
     }
 
-    if (found.size === 0) return [];
-    return sortImageFiles(found);
+    if (found.size > 0) return sortImageFiles(found);
+
+    // Fallback: algunas páginas exponen solo filenames (sin URL completa).
+    return extractStandaloneHashFiles(html);
   } catch {
     return [];
   }

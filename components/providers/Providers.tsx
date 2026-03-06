@@ -105,7 +105,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
     userId: string,
     metadata?: Record<string, unknown>,
   ) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select('id, username, avatar, created_at')
       .eq('id', userId)
@@ -121,24 +121,28 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Fila no encontrada — crearla desde los metadatos del usuario de Supabase Auth.
-    // Esto ocurre cuando el trigger SQL no está configurado en el proyecto.
+    // PGRST116 = no se encontró ninguna fila (usuario nuevo sin trigger SQL).
+    // Cualquier otro error (permisos, red) se ignora para no bloquear la UI.
+    if (error?.code !== 'PGRST116') return;
+
+    // Crear la fila usando los metadatos del usuario de Supabase Auth.
     const username = (metadata?.username as string | undefined)?.trim();
     const avatar   = (metadata?.avatar  as string | undefined) ?? '/img/avatars/avatar1.svg';
-    if (username) {
-      const { data: newUser } = await supabase
-        .from('users')
-        .insert({ id: userId, username, avatar })
-        .select('id, username, avatar, created_at')
-        .single();
-      if (newUser) {
-        setProfile({
-          id:        newUser.id,
-          username:  newUser.username,
-          avatar:    newUser.avatar,
-          createdAt: new Date(newUser.created_at).getTime(),
-        });
-      }
+    if (!username) return;
+
+    const { data: newUser } = await supabase
+      .from('users')
+      .insert({ id: userId, username, avatar })
+      .select('id, username, avatar, created_at')
+      .single();
+
+    if (newUser) {
+      setProfile({
+        id:        newUser.id,
+        username:  newUser.username,
+        avatar:    newUser.avatar,
+        createdAt: new Date(newUser.created_at).getTime(),
+      });
     }
   }, [supabase]);
 
@@ -172,17 +176,19 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   }, [supabase, loadProfile]);
 
   /**
-   * Registra un usuario con email + magic link.
-   * El trigger SQL de Supabase (5.4) crea la fila en public.users automáticamente.
+   * Registra un usuario con email + enlace de confirmación (flujo PKCE).
+   * Supabase envía un email con un link que lleva a /api/auth/callback?code=...
+   * El server route intercambia el código por una sesión y redirige al perfil.
+   * El username y avatar se guardan en user_metadata y se usan en loadProfile().
    */
   const register = useCallback(
     async (username: string, avatar: string, email: string): Promise<{ error?: string }> => {
       const { error } = await supabase.auth.signUp({
         email,
-        password: crypto.randomUUID(), // contraseña aleatoria — se usa magic link
+        password: crypto.randomUUID(),
         options: {
           data: { username, avatar },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
         },
       });
       if (error) return { error: error.message };
