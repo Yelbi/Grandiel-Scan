@@ -108,6 +108,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (
     userId: string,
     metadata?: Record<string, unknown>,
+    email?: string,
   ) => {
     const { data, error } = await supabase
       .from('users')
@@ -129,10 +130,13 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
     // Cualquier otro error (permisos, red) se ignora para no bloquear la UI.
     if (error?.code !== 'PGRST116') return;
 
-    // Crear la fila usando los metadatos del usuario de Supabase Auth.
-    const username = (metadata?.username as string | undefined)?.trim();
-    const avatar   = (metadata?.avatar  as string | undefined) ?? '/img/avatars/avatar1.svg';
-    if (!username) return;
+    // Determinar username: prioridad metadata → parte local del email → ID truncado.
+    const metaUsername = (metadata?.username as string | undefined)?.trim();
+    const username = metaUsername
+      || (email ? email.split('@')[0].slice(0, 20) : null)
+      || `user_${userId.slice(0, 8)}`;
+
+    const avatar = (metadata?.avatar as string | undefined) ?? '/img/avatars/avatar1.svg';
 
     const { data: newUser } = await supabase
       .from('users')
@@ -161,7 +165,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         if (session?.user) {
           setHasSession(true);
-          await loadProfile(session.user.id, session.user.user_metadata);
+          await loadProfile(session.user.id, session.user.user_metadata, session.user.email ?? undefined);
         } else {
           setHasSession(false);
           setProfile(null);

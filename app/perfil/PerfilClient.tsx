@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
@@ -56,6 +56,14 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const [loginError, setLoginError]     = useState('');
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+
+  // Si la sesión está activa pero el perfil no carga en 10s, mostrar error
+  const [profileSetupFailed, setProfileSetupFailed] = useState(false);
+  useEffect(() => {
+    if (!isLoggedIn || profile || loading) return;
+    const t = setTimeout(() => setProfileSetupFailed(true), 10_000);
+    return () => clearTimeout(t);
+  }, [isLoggedIn, profile, loading]);
 
   const regFileRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
@@ -355,6 +363,24 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   /* ─────────────────── LOGGED-IN VIEW ─────────────────── */
   // Autenticado pero el perfil aún se está creando/cargando desde la BD
   if (isLoggedIn && !profile) {
+    if (profileSetupFailed) {
+      return (
+        <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+          <i className="fas fa-exclamation-circle" style={{ fontSize: '2.5rem', color: 'var(--color-primary)', marginBottom: '1rem' }} aria-hidden="true" />
+          <p style={{ marginTop: '0.5rem', opacity: 0.8 }}>No se pudo cargar tu perfil.</p>
+          <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', opacity: 0.55 }}>
+            Puede ser un problema temporal. Cierra sesión e intenta de nuevo.
+          </p>
+          <button
+            className="btn-secondary"
+            style={{ marginTop: '1.5rem' }}
+            onClick={() => void logout()}
+          >
+            <i className="fas fa-sign-out-alt" aria-hidden="true" /> Cerrar sesión
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
         <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', opacity: 0.5 }} aria-label="Configurando perfil..." />
