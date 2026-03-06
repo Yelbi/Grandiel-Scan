@@ -78,6 +78,7 @@ interface UserProfileContextValue {
   isLoggedIn: boolean;
   loading: boolean;
   register: (username: string, avatar: string, email: string) => Promise<{ error?: string }>;
+  login: (email: string) => Promise<{ error?: string }>;
   updateProfile: (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -87,6 +88,7 @@ const UserProfileContext = createContext<UserProfileContextValue>({
   isLoggedIn:    false,
   loading:       true,
   register:      async () => ({}),
+  login:         async () => ({}),
   updateProfile: async () => {},
   logout:        async () => {},
 });
@@ -99,6 +101,8 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   // useState con lazy initializer garantiza una sola instancia del cliente
   const [supabase] = useState(() => createClient());
   const [profile, setProfile]   = useState<UserProfile | null>(null);
+  // hasSession: true si existe una sesión de auth activa (independiente de si el perfil cargó)
+  const [hasSession, setHasSession] = useState(false);
   const [loading, setLoading]   = useState(true);
 
   const loadProfile = useCallback(async (
@@ -156,8 +160,10 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
+          setHasSession(true);
           await loadProfile(session.user.id, session.user.user_metadata);
         } else {
+          setHasSession(false);
           setProfile(null);
         }
 
@@ -197,6 +203,25 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
     [supabase],
   );
 
+  /**
+   * Inicia sesión para usuarios existentes mediante magic link (OTP).
+   * No crea nuevos usuarios — solo envía el link si el email ya está registrado.
+   */
+  const login = useCallback(
+    async (email: string): Promise<{ error?: string }> => {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        },
+      });
+      if (error) return { error: error.message };
+      return {};
+    },
+    [supabase],
+  );
+
   const updateProfile = useCallback(
     async (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => {
       if (!profile) return;
@@ -213,12 +238,13 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
+    setHasSession(false);
     setProfile(null);
   }, [supabase]);
 
   return (
     <UserProfileContext.Provider
-      value={{ profile, isLoggedIn: !!profile, loading, register, updateProfile, logout }}
+      value={{ profile, isLoggedIn: hasSession, loading, register, login, updateProfile, logout }}
     >
       {children}
     </UserProfileContext.Provider>

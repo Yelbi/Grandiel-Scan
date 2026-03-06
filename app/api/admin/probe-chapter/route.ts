@@ -711,6 +711,47 @@ function extractPrefixes(baseUrl: string): string[] {
   }
 }
 
+function buildViewerCandidates(viewerUrl: string, baseUrl: string): string[] {
+  const raw = viewerUrl.trim();
+  if (!raw) return [];
+  if (/^https?:\/\//i.test(raw)) return [raw];
+  if (!raw.startsWith('/')) return [raw];
+
+  const out = new Set<string>();
+  const addWithHost = (host: string, protocol = 'https:') => {
+    if (!host) return;
+    out.add(`${protocol}//${host}${raw}`);
+  };
+
+  try {
+    const base = new URL(baseUrl);
+    addWithHost(base.host, base.protocol);
+
+    const dashboardPrefix = 'dashboard.';
+    if (base.hostname.startsWith(dashboardPrefix)) {
+      const plainHost = base.hostname.slice(dashboardPrefix.length);
+      addWithHost(plainHost, base.protocol);
+      addWithHost(plainHost, 'https:');
+    }
+
+    const hostParts = base.hostname.split('.');
+    if (hostParts.length >= 2) {
+      const rootHost = hostParts.slice(-2).join('.');
+      addWithHost(rootHost, base.protocol);
+      addWithHost(rootHost, 'https:');
+    }
+  } catch {
+    // ignore malformed base URL
+  }
+
+  // Hosts comunes de los viewers usados con este storage.
+  addWithHost('olympusbiblioteca.com');
+  addWithHost('olympusscans.com');
+  addWithHost('ikigaimangas.com');
+
+  return [...out];
+}
+
 /* ── Handler ─────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
   if (process.env.NODE_ENV !== 'development') {
@@ -731,9 +772,11 @@ export async function POST(req: NextRequest) {
 
   /* ── 0. Si se proporcionó URL del visor, extraer imágenes de la página ── */
   if (viewerUrl) {
-    const pages = await probeViewerPage(String(viewerUrl), base);
-    if (pages.length > 0) {
-      return NextResponse.json({ pages, pattern: 'viewer-page', count: pages.length });
+    for (const candidate of buildViewerCandidates(String(viewerUrl), base)) {
+      const pages = await probeViewerPage(candidate, base);
+      if (pages.length > 0) {
+        return NextResponse.json({ pages, pattern: 'viewer-page', count: pages.length });
+      }
     }
   }
 
@@ -954,7 +997,10 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json(
-    { error: 'No se detectó ningún patrón conocido. Verifica que la URL base sea correcta y termine en /.', pages: [] },
+    {
+      error: 'No se detectó ningún patrón conocido. Verifica que la URL base sea correcta y termine en /. Si los archivos usan hash aleatorio, proporciona viewerUrl o una plantilla del lector.',
+      pages: [],
+    },
     { status: 404 },
   );
 }

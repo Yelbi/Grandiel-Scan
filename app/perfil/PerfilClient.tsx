@@ -32,7 +32,7 @@ function relativeDate(timestamp: number): string {
 }
 
 export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
-  const { profile, isLoggedIn, loading, register, updateProfile, logout } = useUserProfile();
+  const { profile, isLoggedIn, loading, register, login, updateProfile, logout } = useUserProfile();
   const { favorites } = useFavoritesContext();
   const { history, clearHistory } = useHistoryContext();
 
@@ -42,12 +42,20 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const [editAvatar, setEditAvatar] = useState('');
   const [editError, setEditError] = useState('');
 
+  // Vista activa en el formulario de acceso
+  const [authView, setAuthView] = useState<'register' | 'login'>('register');
+
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail]       = useState('');
   const [regAvatar, setRegAvatar]     = useState(AVATARS[0]);
   const [regError, setRegError]       = useState('');
   const [regSuccess, setRegSuccess]   = useState(false);
   const [regLoading, setRegLoading]   = useState(false);
+
+  const [loginEmail, setLoginEmail]     = useState('');
+  const [loginError, setLoginError]     = useState('');
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const regFileRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
@@ -116,6 +124,21 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     }
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = loginEmail.trim();
+    if (!email) { setLoginError('El email es obligatorio.'); return; }
+    setLoginLoading(true);
+    setLoginError('');
+    const result = await login(email);
+    setLoginLoading(false);
+    if (result.error) {
+      setLoginError(result.error);
+    } else {
+      setLoginSuccess(true);
+    }
+  };
+
   const favoriteMangas = mangas.filter((m) => favorites.includes(m.id));
   const historyItems = history.map((entry) => ({
     entry,
@@ -132,7 +155,8 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   }
 
   /* ── Email enviado ── */
-  if (regSuccess) {
+  if (regSuccess || loginSuccess) {
+    const sentTo = regSuccess ? regEmail : loginEmail;
     return (
       <div className="curva">
         <div className="perfil-guest-layout">
@@ -140,9 +164,8 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
             <i className="fas fa-envelope-open-text" style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '1rem' }} aria-hidden="true" />
             <h2 className="perfil-guest-form-card__title">¡Revisa tu email!</h2>
             <p style={{ marginTop: '0.75rem', opacity: 0.8 }}>
-              Te enviamos un enlace de confirmación a{' '}
-              <strong>{regEmail}</strong>.
-              <br />Haz clic en el enlace para activar tu cuenta.
+              Enviamos un enlace a <strong>{sentTo}</strong>.<br />
+              Haz clic en él para {regSuccess ? 'activar tu cuenta' : 'iniciar sesión'}.
             </p>
             <p style={{ marginTop: '1rem', fontSize: '0.85rem', opacity: 0.55 }}>
               ¿No lo ves? Revisa la carpeta de spam.
@@ -163,118 +186,166 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
             <div className="perfil-guest-benefits__icon">
               <i className="fas fa-dragon" aria-hidden="true" />
             </div>
-            <h1 className="perfil-guest-benefits__title">Únete a Grandiel Scan</h1>
+            <h1 className="perfil-guest-benefits__title">
+              {authView === 'register' ? 'Únete a Grandiel Scan' : 'Bienvenido de vuelta'}
+            </h1>
             <p className="perfil-guest-benefits__sub">
-              Crea tu cuenta gratuita y desbloquea funciones exclusivas.
+              {authView === 'register'
+                ? 'Crea tu cuenta gratuita y desbloquea funciones exclusivas.'
+                : 'Ingresa tu email y te enviaremos un enlace para entrar.'}
             </p>
-            <ul className="perfil-benefits-list">
-              <li className="perfil-benefit">
-                <i className="fas fa-heart" aria-hidden="true" />
-                <div>
-                  <strong>Guarda tus favoritos</strong>
-                  <p>Mantén tu lista de mangas favoritos siempre a mano.</p>
-                </div>
-              </li>
-              <li className="perfil-benefit">
-                <i className="fas fa-history" aria-hidden="true" />
-                <div>
-                  <strong>Historial de lectura</strong>
-                  <p>Retoma donde lo dejaste en cualquier momento.</p>
-                </div>
-              </li>
-              <li className="perfil-benefit">
-                <i className="fas fa-comments" aria-hidden="true" />
-                <div>
-                  <strong>Comenta con tu perfil</strong>
-                  <p>Deja tus opiniones con tu nombre y avatar.</p>
-                </div>
-              </li>
-              <li className="perfil-benefit">
-                <i className="fas fa-user-circle" aria-hidden="true" />
-                <div>
-                  <strong>Perfil personalizado</strong>
-                  <p>Elige tu nombre y avatar entre varias opciones.</p>
-                </div>
-              </li>
-            </ul>
+            {authView === 'register' && (
+              <ul className="perfil-benefits-list">
+                <li className="perfil-benefit">
+                  <i className="fas fa-heart" aria-hidden="true" />
+                  <div>
+                    <strong>Guarda tus favoritos</strong>
+                    <p>Mantén tu lista de mangas favoritos siempre a mano.</p>
+                  </div>
+                </li>
+                <li className="perfil-benefit">
+                  <i className="fas fa-history" aria-hidden="true" />
+                  <div>
+                    <strong>Historial de lectura</strong>
+                    <p>Retoma donde lo dejaste en cualquier momento.</p>
+                  </div>
+                </li>
+                <li className="perfil-benefit">
+                  <i className="fas fa-comments" aria-hidden="true" />
+                  <div>
+                    <strong>Comenta con tu perfil</strong>
+                    <p>Deja tus opiniones con tu nombre y avatar.</p>
+                  </div>
+                </li>
+                <li className="perfil-benefit">
+                  <i className="fas fa-user-circle" aria-hidden="true" />
+                  <div>
+                    <strong>Perfil personalizado</strong>
+                    <p>Elige tu nombre y avatar entre varias opciones.</p>
+                  </div>
+                </li>
+              </ul>
+            )}
           </div>
 
           {/* Right: form */}
           <div className="perfil-guest-form-card">
-            <h2 className="perfil-guest-form-card__title">Crear Cuenta</h2>
-            <p className="perfil-guest-form-card__sub">
-              Te enviaremos un enlace mágico a tu email. Sin contraseña.
-            </p>
-
-            <form className="user-form" onSubmit={handleRegister}>
-              {regError && (
-                <p className="perfil-form-error">{regError}</p>
-              )}
-              <div className="form-group">
-                <label htmlFor="reg-email">Email</label>
-                <input
-                  id="reg-email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="reg-username">Nombre de usuario</label>
-                <input
-                  id="reg-username"
-                  type="text"
-                  placeholder="Ej: MangaLover99"
-                  value={regUsername}
-                  onChange={(e) => setRegUsername(e.target.value)}
-                  minLength={3}
-                  maxLength={20}
-                  required
-                  autoComplete="username"
-                />
-                <span className="form-hint">3–20 caracteres</span>
-              </div>
-              <div className="form-group">
-                <label>Elige tu avatar</label>
-                <div className="avatar-selector">
-                  {AVATARS.map((av, i) => (
-                    <button
-                      key={av}
-                      type="button"
-                      className={`avatar-option${regAvatar === av ? ' selected' : ''}`}
-                      onClick={() => setRegAvatar(av)}
-                      aria-pressed={regAvatar === av}
-                      aria-label={`Avatar ${i + 1}`}
-                    >
-                      <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className={`avatar-option avatar-option--upload${!AVATARS.includes(regAvatar) ? ' selected' : ''}`}
-                    onClick={() => regFileRef.current?.click()}
-                    aria-label="Subir foto"
-                    title="Subir foto propia"
-                  >
-                    {!AVATARS.includes(regAvatar) ? (
-                      <Image src={regAvatar} alt="Foto personalizada" width={56} height={56} unoptimized style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }} />
-                    ) : (
-                      <i className="fas fa-camera" aria-hidden="true" />
-                    )}
-                  </button>
-                  <input ref={regFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleRegPhoto} />
-                </div>
-              </div>
-              <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
-                {regLoading
-                  ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Enviando...</>
-                  : <><i className="fas fa-paper-plane" aria-hidden="true" /> Enviar enlace</>
-                }
+            {/* Tabs registro / login */}
+            <div className="perfil-auth-tabs">
+              <button
+                type="button"
+                className={`perfil-auth-tab${authView === 'register' ? ' active' : ''}`}
+                onClick={() => { setAuthView('register'); setRegError(''); setLoginError(''); }}
+              >
+                Crear Cuenta
               </button>
-            </form>
+              <button
+                type="button"
+                className={`perfil-auth-tab${authView === 'login' ? ' active' : ''}`}
+                onClick={() => { setAuthView('login'); setRegError(''); setLoginError(''); }}
+              >
+                Iniciar Sesión
+              </button>
+            </div>
+
+            {/* ── Formulario de Registro ── */}
+            {authView === 'register' && (
+              <form className="user-form" onSubmit={handleRegister}>
+                {regError && <p className="perfil-form-error">{regError}</p>}
+                <div className="form-group">
+                  <label htmlFor="reg-email">Email</label>
+                  <input
+                    id="reg-email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="reg-username">Nombre de usuario</label>
+                  <input
+                    id="reg-username"
+                    type="text"
+                    placeholder="Ej: MangaLover99"
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    minLength={3}
+                    maxLength={20}
+                    required
+                    autoComplete="username"
+                  />
+                  <span className="form-hint">3–20 caracteres</span>
+                </div>
+                <div className="form-group">
+                  <label>Elige tu avatar</label>
+                  <div className="avatar-selector">
+                    {AVATARS.map((av, i) => (
+                      <button
+                        key={av}
+                        type="button"
+                        className={`avatar-option${regAvatar === av ? ' selected' : ''}`}
+                        onClick={() => setRegAvatar(av)}
+                        aria-pressed={regAvatar === av}
+                        aria-label={`Avatar ${i + 1}`}
+                      >
+                        <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`avatar-option avatar-option--upload${!AVATARS.includes(regAvatar) ? ' selected' : ''}`}
+                      onClick={() => regFileRef.current?.click()}
+                      aria-label="Subir foto"
+                      title="Subir foto propia"
+                    >
+                      {!AVATARS.includes(regAvatar) ? (
+                        <Image src={regAvatar} alt="Foto personalizada" width={56} height={56} unoptimized style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }} />
+                      ) : (
+                        <i className="fas fa-camera" aria-hidden="true" />
+                      )}
+                    </button>
+                    <input ref={regFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleRegPhoto} />
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
+                  {regLoading
+                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Enviando...</>
+                    : <><i className="fas fa-paper-plane" aria-hidden="true" /> Enviar enlace</>
+                  }
+                </button>
+              </form>
+            )}
+
+            {/* ── Formulario de Login ── */}
+            {authView === 'login' && (
+              <form className="user-form" onSubmit={handleLogin}>
+                {loginError && <p className="perfil-form-error">{loginError}</p>}
+                <div className="form-group">
+                  <label htmlFor="login-email">Email</label>
+                  <input
+                    id="login-email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <p style={{ fontSize: '0.85rem', opacity: 0.6, margin: '0 0 0.5rem' }}>
+                  Te enviaremos un enlace mágico para entrar sin contraseña.
+                </p>
+                <button type="submit" className="btn-primary user-submit-btn" disabled={loginLoading}>
+                  {loginLoading
+                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Enviando...</>
+                    : <><i className="fas fa-sign-in-alt" aria-hidden="true" /> Enviar enlace</>
+                  }
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>

@@ -14,14 +14,14 @@ const AVATARS = [
   '/img/avatars/avatar4.svg',
 ];
 
-type ModalView = 'register' | 'profile' | 'edit';
+type ModalView = 'register' | 'login' | 'profile' | 'edit';
 
 interface UserModalProps {
   onClose: () => void;
 }
 
 export default function UserModal({ onClose }: UserModalProps) {
-  const { profile, isLoggedIn, register, updateProfile, logout } = useUserProfile();
+  const { profile, isLoggedIn, register, login, updateProfile, logout } = useUserProfile();
   const { favorites } = useFavoritesContext();
   const { history } = useHistoryContext();
 
@@ -32,6 +32,11 @@ export default function UserModal({ onClose }: UserModalProps) {
   const [error, setError] = useState('');
   const [regLoading, setRegLoading] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
+
+  const [loginEmail, setLoginEmail]     = useState('');
+  const [loginError, setLoginError]     = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const validate = (name: string) => {
     if (name.length < 3 || name.length > 20) {
@@ -53,6 +58,21 @@ export default function UserModal({ onClose }: UserModalProps) {
       setError(result.error);
     } else {
       setRegSuccess(true);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = loginEmail.trim();
+    if (!trimmedEmail) { setLoginError('El email es obligatorio.'); return; }
+    setLoginLoading(true);
+    setLoginError('');
+    const result = await login(trimmedEmail);
+    setLoginLoading(false);
+    if (result.error) {
+      setLoginError(result.error);
+    } else {
+      setLoginSuccess(true);
     }
   };
 
@@ -96,17 +116,17 @@ export default function UserModal({ onClose }: UserModalProps) {
           ×
         </button>
 
-        {/* ── REGISTRO ── */}
-        {view === 'register' && (
+        {/* ── REGISTRO / LOGIN ── */}
+        {(view === 'register' || view === 'login') && (
           <>
-            {regSuccess ? (
+            {(regSuccess || loginSuccess) ? (
               /* ── Email enviado ── */
               <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
                 <i className="fas fa-envelope-open-text" style={{ fontSize: '2.5rem', color: 'var(--accent)', marginBottom: '1rem' }} aria-hidden="true" />
                 <h2 id="modal-title" className="user-modal-title">¡Revisa tu email!</h2>
                 <p style={{ marginTop: '0.5rem', opacity: 0.8, fontSize: '0.9rem' }}>
-                  Enviamos un enlace a <strong>{email}</strong>.<br />
-                  Haz clic en él para activar tu cuenta.
+                  Enviamos un enlace a <strong>{regSuccess ? email : loginEmail}</strong>.<br />
+                  Haz clic en él para {regSuccess ? 'activar tu cuenta' : 'iniciar sesión'}.
                 </p>
                 <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', opacity: 0.55 }}>
                   ¿No lo ves? Revisa la carpeta de spam.
@@ -114,70 +134,110 @@ export default function UserModal({ onClose }: UserModalProps) {
               </div>
             ) : (
               <>
-            <h2 id="modal-title" className="user-modal-title">
-              Bienvenido a Grandiel Scan
-            </h2>
-            <p className="user-modal-subtitle">
-              Crea una cuenta para guardar tus favoritos y personalizar tu experiencia.
-            </p>
-
-            <form className="user-form" onSubmit={handleRegister}>
-              {error && (
-                <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
-                  {error}
-                </p>
-              )}
-              <div className="form-group">
-                <label htmlFor="email-input">Correo electrónico</label>
-                <input
-                  id="email-input"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="username-input">Nombre de usuario</label>
-                <input
-                  id="username-input"
-                  type="text"
-                  placeholder="Tu nombre de usuario"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  minLength={3}
-                  maxLength={20}
-                  required
-                  autoComplete="username"
-                />
-                <span className="form-hint">3–20 caracteres</span>
-              </div>
-
-              <div className="form-group">
-                <label>Avatar</label>
-                <div className="avatar-selector">
-                  {AVATARS.map((av, i) => (
-                    <button
-                      key={av}
-                      type="button"
-                      className={`avatar-option${selectedAvatar === av ? ' selected' : ''}`}
-                      onClick={() => setSelectedAvatar(av)}
-                      aria-pressed={selectedAvatar === av}
-                      aria-label={`Avatar ${i + 1}`}
-                    >
-                      <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
-                    </button>
-                  ))}
+                {/* Tabs */}
+                <div className="perfil-auth-tabs" style={{ marginBottom: '1rem' }}>
+                  <button
+                    type="button"
+                    className={`perfil-auth-tab${view === 'register' ? ' active' : ''}`}
+                    onClick={() => { setView('register'); setError(''); setLoginError(''); }}
+                  >
+                    Crear Cuenta
+                  </button>
+                  <button
+                    type="button"
+                    className={`perfil-auth-tab${view === 'login' ? ' active' : ''}`}
+                    onClick={() => { setView('login'); setError(''); setLoginError(''); }}
+                  >
+                    Iniciar Sesión
+                  </button>
                 </div>
-              </div>
 
-              <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
-                {regLoading ? 'Enviando...' : 'Crear Cuenta'}
-              </button>
-            </form>
+                {/* ── Formulario de Registro ── */}
+                {view === 'register' && (
+                  <form className="user-form" onSubmit={handleRegister}>
+                    {error && (
+                      <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                        {error}
+                      </p>
+                    )}
+                    <div className="form-group">
+                      <label htmlFor="email-input">Correo electrónico</label>
+                      <input
+                        id="email-input"
+                        type="email"
+                        placeholder="tu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="username-input">Nombre de usuario</label>
+                      <input
+                        id="username-input"
+                        type="text"
+                        placeholder="Tu nombre de usuario"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        minLength={3}
+                        maxLength={20}
+                        required
+                        autoComplete="username"
+                      />
+                      <span className="form-hint">3–20 caracteres</span>
+                    </div>
+                    <div className="form-group">
+                      <label>Avatar</label>
+                      <div className="avatar-selector">
+                        {AVATARS.map((av, i) => (
+                          <button
+                            key={av}
+                            type="button"
+                            className={`avatar-option${selectedAvatar === av ? ' selected' : ''}`}
+                            onClick={() => setSelectedAvatar(av)}
+                            aria-pressed={selectedAvatar === av}
+                            aria-label={`Avatar ${i + 1}`}
+                          >
+                            <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
+                      {regLoading ? 'Enviando...' : 'Crear Cuenta'}
+                    </button>
+                  </form>
+                )}
+
+                {/* ── Formulario de Login ── */}
+                {view === 'login' && (
+                  <form className="user-form" onSubmit={handleLogin}>
+                    {loginError && (
+                      <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                        {loginError}
+                      </p>
+                    )}
+                    <div className="form-group">
+                      <label htmlFor="login-email-input">Correo electrónico</label>
+                      <input
+                        id="login-email-input"
+                        type="email"
+                        placeholder="tu@email.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
+                    <p style={{ fontSize: '0.82rem', opacity: 0.6, margin: '0 0 0.5rem' }}>
+                      Te enviaremos un enlace mágico para entrar sin contraseña.
+                    </p>
+                    <button type="submit" className="btn-primary user-submit-btn" disabled={loginLoading}>
+                      {loginLoading ? 'Enviando...' : 'Enviar enlace'}
+                    </button>
+                  </form>
+                )}
               </>
             )}
           </>

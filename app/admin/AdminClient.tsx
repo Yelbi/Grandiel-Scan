@@ -37,6 +37,12 @@ function buildViewerUrl(template: string, folderId: string, chapter: number): st
     .replace(/\{chapter\}/g, String(chapter));
 }
 
+type HtmlChapterEntry = {
+  chapter: number;
+  folderId: string;
+  viewerUrl?: string;
+};
+
 type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'autodiscover' | 'delete';
 type Alert = { type: 'ok' | 'err'; msg: string } | null;
 
@@ -53,74 +59,126 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'delete',       label: 'Eliminar',          icon: 'fas fa-trash-alt'      },
 ];
 
-/* Parsea "28: 65076", "28 65076", "28,65076"… (solo capítulos enteros) */
-function parseBulkList(raw: string): Array<{ chapter: number; folderId: string }> {
+/* Parsea:
+   • "28: 65076"
+   • "28 65076"
+   • "28,65076"
+   • "28:65076:https://.../capitulo/65076/comic-xxx"
+   • "28:65076:/capitulo/65076/comic-xxx"                                  */
+function parseBulkList(raw: string): Array<{ chapter: number; folderId: string; viewerUrl?: string }> {
   return raw
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
     .flatMap((line) => {
-      const m = line.match(/^(\d+)\s*[:\-,\s]\s*(\S+)/);
-      return m ? [{ chapter: Number(m[1]), folderId: m[2] }] : [];
+      const m = line.match(/^(\d+)\s*[:\-,\s]\s*(\S+)(.*)$/);
+      if (!m) return [];
+
+      const chapter = Number(m[1]);
+      const folderId = m[2];
+
+      let viewerUrl: string | undefined;
+      const tail = m[3]?.trim() ?? '';
+      if (tail) {
+        const cleaned = tail.replace(/^[:|,\s-]+/, '').trim();
+        if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith('/')) {
+          viewerUrl = cleaned;
+        }
+      }
+
+      return [{ chapter, folderId, ...(viewerUrl ? { viewerUrl } : {}) }];
     });
 }
 
-/* Extrae pares "capítulo: folderId" del HTML de la página de capítulos.
+/* Extrae entradas capítulo/folder (y opcionalmente URL lectora) del HTML.
    Soporta tres formatos:
    1. /capitulo/{folderId}/comic-{slug}  → folderId es el ID real del CDN
    2. /manga/{mangaId}/capitulo/{num}    → (kumanga.com) usa el nro de capítulo como placeholder
    3. /capitulo/{folderId}/             → (ikigaimangas / Qwik) folderId es un Snowflake ID;
                                           nro de capítulo viene del atributo alt de la imagen  */
-function parseHtmlChapters(html: string): string {
-  const pairs: string[] = [];
+function parseHtmlChapterEntries(html: string): HtmlChapterEntry[] {
+  const entries: HtmlChapterEntry[] = [];
+  const seen = new Set<string>();
+
+  function toViewerUrl(href: string): string | undefined {
+    const normalized = href.trim();
+    if (!normalized) return undefined;
+    if (/^https?:\/\//i.test(normalized)) return normalized;
+    if (normalized.startsWith('/')) return normalized;
+    return undefined;
+  }
+
+  function pushEntry(entry: HtmlChapterEntry) {
+    const key = `${entry.chapter}:${entry.folderId}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    entries.push(entry);
+  }
+
+  function chapterFromChunk(chunk: string): number | null {
+    const match = /Cap[ií]tulo(?:&nbsp;|\s)+(\d+(?:[.,]\d+)?)/i.exec(chunk);
+    if (!match) return null;
+    const raw = match[1].replace(',', '.');
+    if (raw.includes('.')) return null; // este proyecto maneja solo capítulos enteros
+    const chapter = Number(raw);
+    return Number.isInteger(chapter) && chapter > 0 ? chapter : null;
+  }
 
   // Formato 1: /capitulo/{folderId}/comic-{slug}
-  const re1 = /<a[^>]+href="\/capitulo\/(\d+)\/comic-[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+  const re1 = /<a[^>]+href="([^"]*\/capitulo\/(\d+)\/comic-[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = re1.exec(html)) !== null) {
-    const folderId  = match[1];
-    const innerHtml = match[2];
-    const chapMatch = /Cap[ií]tulo[&]nbsp[;](\d+)/.exec(innerHtml);
-    if (chapMatch) {
-      const chap = chapMatch[1];
-      pairs.push(`${chap}: ${folderId}`);
-    }
+    const viewerUrl = toViewerUrl(match[1]);
+    const folderId  = match[2];
+    const chapter   = chapterFromChunk(match[3]);
+    if (chapter !== null) pushEntry({ chapter, folderId, viewerUrl });
   }
-  if (pairs.length > 0) return pairs.join('\n');
+  if (entries.length > 0) return entries;
 
   // Formato 3: /capitulo/{folderId}/  (ikigaimangas – Qwik framework)
   // El folderId es un Snowflake ID grande; el nro de capítulo se extrae del
   // atributo alt de la imagen (alt="Capítulo 12") o del texto del h3 sin comentarios HTML.
-  const re3 = /<a[^>]+href="\/capitulo\/(\d+)\/"[^>]*>([\s\S]*?)<\/a>/g;
+  const re3 = /<a[^>]+href="([^"]*\/capitulo\/(\d+)\/)"[^>]*>([\s\S]*?)<\/a>/gi;
   while ((match = re3.exec(html)) !== null) {
-    const folderId  = match[1];
-    const innerHtml = match[2];
+    const viewerUrl = toViewerUrl(match[1]);
+    const folderId  = match[2];
+    const innerHtml = match[3];
     // Intentar extraer del atributo alt primero
-    let chapMatch = /alt="Cap[ií]tulo\s+(\d+)"/.exec(innerHtml);
+    let chapMatch = /alt="Cap[ií]tulo\s+(\d+(?:[.,]\d+)?)"/i.exec(innerHtml);
     if (!chapMatch) {
       // Fallback: quitar comentarios HTML y buscar "Capítulo N"
       const stripped = innerHtml.replace(/<!--[\s\S]*?-->/g, '');
-      chapMatch = /Cap[ií]tulo\s+(\d+)/.exec(stripped);
+      chapMatch = /Cap[ií]tulo\s+(\d+(?:[.,]\d+)?)/i.exec(stripped);
     }
     if (chapMatch) {
-      const chap = chapMatch[1];
-      pairs.push(`${chap}: ${folderId}`);
+      const raw = chapMatch[1].replace(',', '.');
+      if (!raw.includes('.')) {
+        const chapter = Number(raw);
+        if (Number.isInteger(chapter) && chapter > 0) {
+          pushEntry({ chapter, folderId, viewerUrl });
+        }
+      }
     }
   }
-  if (pairs.length > 0) return pairs.join('\n');
+  if (entries.length > 0) return entries;
 
   // Formato 2: /manga/{mangaId}/capitulo/{chapterNum}  (kumanga.com)
   // El HTML no incluye el folder ID del CDN; se usa el nro de capítulo como placeholder.
-  const re2 = /<a[^>]+href="\/manga\/\d+\/capitulo\/(\d+)"[^>]*>/g;
-  const seen = new Set<string>();
+  const re2 = /<a[^>]+href="([^"]*\/manga\/\d+\/capitulo\/(\d+))"[^>]*>/gi;
   while ((match = re2.exec(html)) !== null) {
-    const chapNum = match[1];
-    if (!seen.has(chapNum)) {
-      seen.add(chapNum);
-      pairs.push(`${chapNum}: ${chapNum}`);
+    const viewerUrl = toViewerUrl(match[1]);
+    const chapter   = Number(match[2]);
+    if (Number.isInteger(chapter) && chapter > 0) {
+      pushEntry({ chapter, folderId: String(chapter), viewerUrl });
     }
   }
-  return pairs.join('\n');
+  return entries;
+}
+
+function parseHtmlChapters(html: string): string {
+  return parseHtmlChapterEntries(html)
+    .map((e) => `${e.chapter}: ${e.folderId}`)
+    .join('\n');
 }
 
 /* ─── component ────────────────────────────────────── */
@@ -157,6 +215,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [bComicBase,      setBComicBase]      = useState('');
   const [bExt,            setBExt]            = useState('webp');
   const [bViewerTemplate, setBViewerTemplate] = useState('');
+  const [bViewerByFolder, setBViewerByFolder] = useState<Record<string, string>>({});
   const [bList,           setBList]           = useState('');
   const [bRunning,        setBRunning]        = useState(false);
   const [bProgress,       setBProgress]       = useState<BulkEntry[]>([]);
@@ -223,8 +282,11 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     let okCount = 0;
 
     for (let i = 0; i < entries.length; i++) {
-      const { chapter, folderId } = entries[i];
+      const { chapter, folderId, viewerUrl: viewerFromList } = entries[i];
       const baseUrl = `${comicBase}/${folderId}/`;
+      const viewerUrl = viewerFromList
+        ?? bViewerByFolder[folderId]
+        ?? (bViewerTemplate.trim() ? buildViewerUrl(bViewerTemplate.trim(), folderId, chapter) : undefined);
 
       // → probing
       setBProgress((prev) => prev.map((e, idx) => idx === i ? { ...e, status: 'probing' } : e));
@@ -234,15 +296,13 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
         const res = await fetch('/api/admin/probe-chapter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              baseUrl,
-              ext: bExt,
-              chapterHint: chapter,
-              viewerUrl: bViewerTemplate.trim()
-                ? buildViewerUrl(bViewerTemplate.trim(), folderId, chapter)
-                : undefined,
-            }),
-          });
+          body: JSON.stringify({
+            baseUrl,
+            ext: bExt,
+            chapterHint: chapter,
+            viewerUrl,
+          }),
+        });
         probeJson = await res.json();
         if (!res.ok || !probeJson.pages?.length) {
           setBProgress((prev) => prev.map((e, idx) => idx === i
@@ -956,19 +1016,37 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                     className="btn-primary"
                     disabled={!bHtmlRaw.trim()}
                     onClick={() => {
-                      const result = parseHtmlChapters(bHtmlRaw);
-                      if (!result) { notify('err', 'No se encontraron capítulos en el HTML.'); return; }
+                      const entries = parseHtmlChapterEntries(bHtmlRaw);
+                      if (!entries.length) { notify('err', 'No se encontraron capítulos en el HTML.'); return; }
+                      const result = entries
+                        .map((e) => e.viewerUrl
+                          ? `${e.chapter}: ${e.folderId}: ${e.viewerUrl}`
+                          : `${e.chapter}: ${e.folderId}`)
+                        .join('\n');
                       setBList((prev) => prev.trim() ? prev.trim() + '\n' + result : result);
+                      setBViewerByFolder((prev) => {
+                        const next = { ...prev };
+                        entries.forEach((e) => {
+                          if (e.viewerUrl) next[e.folderId] = e.viewerUrl;
+                        });
+                        return next;
+                      });
                       setBHtmlRaw('');
                       setBHtmlOpen(false);
-                      notify('ok', `✓ ${parseBulkList(result).length} capítulos importados desde el HTML.`);
+                      const withViewer = entries.filter((e) => !!e.viewerUrl).length;
+                      notify('ok', `✓ ${entries.length} capítulos importados desde el HTML${withViewer > 0 ? ` (${withViewer} con URL lectora)` : ''}.`);
                     }}
                   >
                     <i className="fas fa-file-import" /> Extraer y añadir a la lista
                   </button>
                   {bHtmlRaw.trim() && (
                     <span style={{ fontSize: '.8rem', color: 'var(--color-text-muted)' }}>
-                      {parseHtmlChapters(bHtmlRaw) ? `${parseBulkList(parseHtmlChapters(bHtmlRaw)).length} capítulos detectados` : 'Sin resultados'}
+                      {(() => {
+                        const entries = parseHtmlChapterEntries(bHtmlRaw);
+                        if (!entries.length) return 'Sin resultados';
+                        const withViewer = entries.filter((e) => !!e.viewerUrl).length;
+                        return `${entries.length} capítulos detectados${withViewer > 0 ? ` · ${withViewer} con URL lectora` : ''}`;
+                      })()}
                     </span>
                   )}
                 </div>
@@ -977,13 +1055,13 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           </div>
 
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label>Lista de capítulos * <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(formato: capítulo entero: carpeta)</span></label>
+            <label>Lista de capítulos * <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>(formato: capítulo entero: carpeta[: viewerUrl])</span></label>
             <textarea
               value={bList}
               onChange={(e) => setBList(e.target.value)}
               disabled={bRunning}
               rows={10}
-              placeholder={'28: 65076\n29: 66022\n30: 66571'}
+              placeholder={'28: 65076\n29: 66022: /capitulo/66022/comic-titulo\n30: 66571: https://olympusbiblioteca.com/capitulo/66571/comic-titulo'}
               style={{ fontFamily: 'monospace', fontSize: '.85rem' }}
             />
             {bList && !bRunning && (
@@ -1011,7 +1089,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             <button
               type="button"
               className="btn-primary"
-              onClick={() => { setBProgress([]); setBList(''); }}
+              onClick={() => { setBProgress([]); setBList(''); setBViewerByFolder({}); }}
               style={{ marginBottom: '1rem' }}
             >
               <i className="fas fa-redo" /> Nueva carga
