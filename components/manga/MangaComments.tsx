@@ -97,20 +97,20 @@ export default function MangaComments({
       </h2>
 
       {/* ── Formulario ── */}
-      {isLoggedIn ? (
+      {isLoggedIn && profile ? (
         <form className="manga-comments__form" onSubmit={submit}>
           {error && <p className="manga-comments__error">{error}</p>}
           <div className="manga-comments__fields">
             <div className="manga-comments__user-info">
               <Image
-                src={profile!.avatar}
+                src={profile.avatar}
                 alt="Tu avatar"
                 width={32}
                 height={32}
                 className="manga-comments__user-avatar"
                 unoptimized
               />
-              <span className="manga-comments__user-name">{profile!.username}</span>
+              <span className="manga-comments__user-name">{profile.username}</span>
             </div>
             <textarea
               className="manga-comments__textarea"

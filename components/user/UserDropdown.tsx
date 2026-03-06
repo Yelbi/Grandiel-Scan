@@ -32,7 +32,8 @@ export default function UserDropdown() {
     return () => document.removeEventListener('keydown', handler);
   }, [open]);
 
-  if (!isLoggedIn) {
+  // profile puede ser null brevemente mientras hasSession=true y loadProfile() aún carga
+  if (!isLoggedIn || !profile) {
     return (
       <Link href="/perfil" className="user-nav-btn" aria-label="Crear cuenta / Ingresar">
         <i className="fas fa-user-circle" aria-hidden="true" />
@@ -47,19 +48,19 @@ export default function UserDropdown() {
         type="button"
         className="user-nav-btn"
         onClick={() => setOpen((o) => !o)}
-        aria-label={`Menú de ${profile!.username}`}
+        aria-label={`Menú de ${profile.username}`}
         aria-expanded={open}
         aria-haspopup="menu"
       >
         <Image
-          src={profile!.avatar}
+          src={profile.avatar}
           alt="Tu avatar"
           width={28}
           height={28}
           className="user-avatar-small"
           unoptimized
         />
-        <span>{profile!.username}</span>
+        <span>{profile.username}</span>
         <i
           className={`fas fa-chevron-down user-dropdown__caret${open ? ' user-dropdown__caret--open' : ''}`}
           aria-hidden="true"

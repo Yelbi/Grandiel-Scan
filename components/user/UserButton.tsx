@@ -15,19 +15,19 @@ export default function UserButton() {
         type="button"
         className="user-nav-btn"
         onClick={() => setModalOpen(true)}
-        aria-label={isLoggedIn ? `Perfil de ${profile!.username}` : 'Crear cuenta / Ingresar'}
+        aria-label={isLoggedIn && profile ? `Perfil de ${profile.username}` : 'Crear cuenta / Ingresar'}
       >
-        {isLoggedIn ? (
+        {isLoggedIn && profile ? (
           <>
             <Image
-              src={profile!.avatar}
+              src={profile.avatar}
               alt="Tu avatar"
               width={28}
               height={28}
               className="user-avatar-small"
               unoptimized
             />
-            <span>{profile!.username}</span>
+            <span>{profile.username}</span>
           </>
         ) : (
           <>
