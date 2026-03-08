@@ -35,7 +35,7 @@ export default function SearchBar({ mangas }: SearchBarProps) {
         .slice(0, 8)
         .map((r) => r.manga);
       setResults(found);
-      setOpen(found.length > 0);
+      setOpen(true);
       setSelectedIndex(-1);
     }, 300);
   }, [mangas]);
@@ -117,10 +117,10 @@ export default function SearchBar({ mangas }: SearchBarProps) {
         ref={inputRef}
         type="text"
         id="inputSearch"
-        placeholder="¿Qué deseas buscar?"
+        placeholder="Título, género…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => results.length > 0 && setOpen(true)}
+        onFocus={() => open && setOpen(true)}
         onKeyDown={handleKeyDown}
         autoComplete="off"
         aria-autocomplete="list"
@@ -145,36 +145,50 @@ export default function SearchBar({ mangas }: SearchBarProps) {
       {/* Resultados */}
       {open && (
         <ul id="box-search" role="listbox">
-          {results.map((manga, i) => (
-            <li key={manga.id} role="option" aria-selected={i === selectedIndex}>
-              <Link
-                id={`search-result-${i}`}
-                href={`/manga/${manga.id}`}
-                className={i === selectedIndex ? 'search-result-active' : ''}
-                onClick={() => {
-                  setOpen(false);
-                  setQuery('');
-                  setMobileOpen(false);
-                  setSelectedIndex(-1);
-                }}
-              >
-                <div className="search-result-cover">
-                  <Image
-                    src={manga.image}
-                    alt=""
-                    width={40}
-                    height={56}
-                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                    unoptimized={manga.image.startsWith('/img/')}
-                  />
-                </div>
-                <div className="search-result-info">
-                  <span className="search-result-title">{manga.title}</span>
-                  <span className="search-result-type">{manga.type}</span>
-                </div>
-              </Link>
+          {results.length === 0 ? (
+            <li className="search-no-results" role="option" aria-selected={false}>
+              <i className="fas fa-search" aria-hidden="true" />
+              Sin resultados para &ldquo;{query}&rdquo;
             </li>
-          ))}
+          ) : (
+            results.map((manga, i) => (
+              <li key={manga.id} role="option" aria-selected={i === selectedIndex}>
+                <Link
+                  id={`search-result-${i}`}
+                  href={`/manga/${manga.id}`}
+                  className={i === selectedIndex ? 'search-result-active' : ''}
+                  onClick={() => {
+                    setOpen(false);
+                    setQuery('');
+                    setMobileOpen(false);
+                    setSelectedIndex(-1);
+                  }}
+                >
+                  <div className="search-result-cover">
+                    <Image
+                      src={manga.image}
+                      alt=""
+                      width={40}
+                      height={56}
+                      style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                      unoptimized={manga.image.startsWith('/img/')}
+                    />
+                  </div>
+                  <div className="search-result-info">
+                    <span className="search-result-title">{manga.title}</span>
+                    <div className="search-result-meta">
+                      <span className="search-result-type">{manga.type}</span>
+                      {manga.genres.length > 0 && (
+                        <span className="search-result-genres">
+                          {manga.genres.slice(0, 2).join(' · ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))
+          )}
         </ul>
       )}
     </div>

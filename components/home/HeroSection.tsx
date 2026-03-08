@@ -56,15 +56,25 @@ export default function HeroSection({
   const [phase, setPhase] = useState<Phase>('idle');
 
   useEffect(() => {
+    // Guardamos los inner timeouts para limpiarlos si el componente se desmonta
+    // durante una transición (evita setState sobre componente desmontado).
+    const pending: ReturnType<typeof setTimeout>[] = [];
+
     const timer = setInterval(() => {
       setPhase('out');
-      setTimeout(() => {
+      const t1 = setTimeout(() => {
         setWordIndex((i) => (i + 1) % WORDS.length);
         setPhase('in');
-        setTimeout(() => setPhase('idle'), GLITCH_IN_MS);
+        const t2 = setTimeout(() => setPhase('idle'), GLITCH_IN_MS);
+        pending.push(t2);
       }, GLITCH_OUT_MS);
+      pending.push(t1);
     }, INTERVAL_MS);
-    return () => clearInterval(timer);
+
+    return () => {
+      clearInterval(timer);
+      pending.forEach(clearTimeout);
+    };
   }, []);
 
   const accentClass = [

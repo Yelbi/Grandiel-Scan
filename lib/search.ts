@@ -43,7 +43,7 @@ export interface SearchResult {
 }
 
 /**
- * Busca mangas por título con fuzzy matching.
+ * Busca mangas por título y géneros con fuzzy matching.
  * Devuelve resultados ordenados por relevancia.
  */
 export function searchMangas(mangas: Manga[], query: string): SearchResult[] {
@@ -55,19 +55,37 @@ export function searchMangas(mangas: Manga[], query: string): SearchResult[] {
   for (const manga of mangas) {
     const normalizedTitle = normalizeText(manga.title);
 
-    // Coincidencia exacta al inicio → máxima prioridad
+    // Coincidencia exacta al inicio del título → máxima prioridad
     if (normalizedTitle.startsWith(normalizedQuery)) {
       results.push({ manga, score: 100 });
       continue;
     }
 
-    // Contiene el query
+    // Contiene el query en el título
     if (normalizedTitle.includes(normalizedQuery)) {
       results.push({ manga, score: 80 });
       continue;
     }
 
-    // Fuzzy matching: distancia Levenshtein
+    // Coincidencia exacta en género
+    const genreMatch = manga.genres.some(
+      (g) => normalizeText(g) === normalizedQuery,
+    );
+    if (genreMatch) {
+      results.push({ manga, score: 70 });
+      continue;
+    }
+
+    // El género contiene el query
+    const genreContains = manga.genres.some((g) =>
+      normalizeText(g).includes(normalizedQuery),
+    );
+    if (genreContains) {
+      results.push({ manga, score: 60 });
+      continue;
+    }
+
+    // Fuzzy matching sobre palabras del título
     const words = normalizedTitle.split(' ');
     for (const word of words) {
       const distance = levenshteinDistance(normalizedQuery, word);
@@ -75,23 +93,11 @@ export function searchMangas(mangas: Manga[], query: string): SearchResult[] {
       const similarity = 1 - distance / maxLen;
 
       if (similarity >= 0.7) {
-        results.push({ manga, score: Math.round(similarity * 60) });
+        results.push({ manga, score: Math.round(similarity * 55) });
         break;
       }
     }
   }
 
   return results.sort((a, b) => b.score - a.score);
-}
-
-// eslint-disable-next-line
-export function debounce<T extends (...args: any[]) => void>(
-  func: T,
-  wait: number,
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout>;
-  return function (...args: Parameters<T>) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
 }

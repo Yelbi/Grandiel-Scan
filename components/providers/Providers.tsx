@@ -395,7 +395,7 @@ function HistoryProvider({ children }: { children: ReactNode }) {
     if (profile) {
       supabase
         .from('reading_history')
-        .select('manga_id, chapter, page, updated_at, mangas(title)')
+        .select('manga_id, chapter, page, updated_at, mangas(title, image)')
         .eq('user_id', profile.id)
         .order('updated_at', { ascending: false })
         .limit(CONFIG.PAGINATION.MAX_HISTORY_ITEMS)
@@ -406,7 +406,8 @@ function HistoryProvider({ children }: { children: ReactNode }) {
               chapter:   r.chapter as number,
               page:      (r.page as number | null) ?? undefined,
               timestamp: new Date(r.updated_at as string).getTime(),
-              title:     ((r.mangas as unknown) as { title: string } | null)?.title ?? (r.manga_id as string),
+              title:     ((r.mangas as unknown) as { title: string; image: string } | null)?.title ?? (r.manga_id as string),
+              image:     ((r.mangas as unknown) as { title: string; image: string } | null)?.image,
             })));
           }
         });

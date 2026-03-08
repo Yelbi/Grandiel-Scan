@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export default function NavScrollObserver() {
   useEffect(() => {
-    const nav = document.querySelector('nav.alpha') as HTMLElement | null;
+    const nav = document.getElementById('main-nav') as HTMLElement | null;
     if (!nav) return;
 
     let lastScrollY = 0;

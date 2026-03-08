@@ -10,7 +10,7 @@ export default async function Navbar() {
   const mangas = await getAllMangas();
 
   return (
-    <nav className="alpha" role="navigation" aria-label="Navegación principal">
+    <nav id="main-nav" className="alpha" role="navigation" aria-label="Navegación principal">
       <NavScrollObserver />
 
       <div className="logo">

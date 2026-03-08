@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 3600; // ISR: revalidate every hour
+export const revalidate = 300; // ISR: revalidar cada 5 minutos
+
 import Link from 'next/link';
 import MangaCard from '@/components/manga/MangaCard';
 import ContinueReading from '@/components/manga/ContinueReading';
@@ -14,20 +15,41 @@ export const metadata: Metadata = {
     'Lee manhwas en español gratis. Descubre los mejores mangas y manhwas actualizados: Nano Machine, Maldita Reencarnación, Dungeon Reset y más.',
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Grandiel Scan',
+  url: 'https://grandielscan.com',
+  description: 'Lee manhwas, mangas y manhuas en español gratis.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://grandielscan.com/mangas?search={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default async function HomePage() {
   const [mangas, mostViewed] = await Promise.all([
     getAllMangas(),
     getMostViewed(3),
   ]);
 
-  const recent = [...mangas]
-    .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
-    .slice(0, 12);
+  // getAllMangas ya devuelve los mangas ordenados por lastUpdated DESC
+  const recent = mangas.slice(0, 12);
 
-  const heroCovers = mangas.filter((m) => m.image).slice(0, 18);
+  // Todas las portadas existen (campo notNull en DB)
+  const heroCovers = mangas.slice(0, 18);
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* ===== HERO ===== */}
       <HeroSection heroCovers={heroCovers} />
 
@@ -51,10 +73,10 @@ export default async function HomePage() {
 
       <div className="curva">
         {/* Continuar leyendo (client-side) */}
-        <ContinueReading mangas={mangas} />
+        <ContinueReading />
 
         {/* ===== MÁS VISTOS ===== */}
-        {mostViewed.length >= 3 && (
+        {mostViewed.length >= 1 && (
           <MostViewedPodium mangas={mostViewed} />
         )}
 

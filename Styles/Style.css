@@ -26,9 +26,6 @@
 @import url('download.css');
 @import url('podium.css');
 
-/* ===== FUENTES EXTERNAS ===== */
-@import url('https://fonts.googleapis.com/css?family=Raleway:200');
-
 /*
  * NOTA: Los archivos CSS modulares están separados para:
  * - Mejor organización del código

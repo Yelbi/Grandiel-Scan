@@ -3,7 +3,7 @@ import Image from 'next/image';
 import type { Manga } from '@/lib/types';
 
 interface Props {
-  mangas: Manga[]; // espera exactamente 3 en orden [1°, 2°, 3°]
+  mangas: Manga[]; // 1-3 mangas ordenados por vistas desc
 }
 
 function formatViews(v: number): string {
@@ -12,19 +12,30 @@ function formatViews(v: number): string {
   return v.toLocaleString('es-ES');
 }
 
+const LABELS = { 1: '1°', 2: '2°', 3: '3°' } as const;
+
 export default function MostViewedPodium({ mangas }: Props) {
-  if (mangas.length < 3) return null;
+  if (mangas.length === 0) return null;
 
   const [first, second, third] = mangas;
 
-  // Orden visual: bronce (izq) → oro (centro) → plata (der)
-  const slots = [
-    { manga: third,  rank: 3 as const },
-    { manga: first,  rank: 1 as const },
-    { manga: second, rank: 2 as const },
-  ];
-
-  const labels = { 1: '1°', 2: '2°', 3: '3°' };
+  // Orden visual según cuántos mangas haya:
+  // 3: bronce(izq) → oro(centro) → plata(der)
+  // 2: plata(izq) → oro(centro)
+  // 1: solo oro(centro)
+  const slots =
+    mangas.length >= 3
+      ? [
+          { manga: third,  rank: 3 as const },
+          { manga: first,  rank: 1 as const },
+          { manga: second, rank: 2 as const },
+        ]
+      : mangas.length === 2
+        ? [
+            { manga: second, rank: 2 as const },
+            { manga: first,  rank: 1 as const },
+          ]
+        : [{ manga: first, rank: 1 as const }];
 
   return (
     <section className="index-section podium-section" aria-label="Mangas más vistos">
@@ -38,12 +49,12 @@ export default function MostViewedPodium({ mangas }: Props) {
             key={manga.id}
             className={`podium__item podium__item--rank${rank}`}
             role="listitem"
-            aria-label={`${labels[rank]} lugar: ${manga.title}`}
+            aria-label={`${LABELS[rank]} lugar: ${manga.title}`}
           >
             {/* Tarjeta flotante sobre el podio */}
             <Link href={`/manga/${manga.id}`} className="podium__card">
 
-              {/* Espacio para icono — solo #1 muestra corona */}
+              {/* Solo #1 muestra corona */}
               <div className="podium__icon-slot">
                 {rank === 1 && (
                   <i className="fas fa-crown podium__crown" aria-hidden="true" />
@@ -73,9 +84,20 @@ export default function MostViewedPodium({ mangas }: Props) {
               </div>
             </Link>
 
+            {/* Botón "Leer ahora" → último capítulo */}
+            {manga.latestChapter > 0 && (
+              <Link
+                href={`/chapter/${manga.id}/${manga.latestChapter}`}
+                className="podium__read-btn"
+                aria-label={`Leer capítulo ${manga.latestChapter} de ${manga.title}`}
+              >
+                <i className="fas fa-book-open" aria-hidden="true" /> Leer ahora
+              </Link>
+            )}
+
             {/* Base del podio */}
             <div className="podium__base" aria-hidden="true">
-              <span className="podium__place">{labels[rank]}</span>
+              <span className="podium__place">{LABELS[rank]}</span>
             </div>
           </div>
         ))}

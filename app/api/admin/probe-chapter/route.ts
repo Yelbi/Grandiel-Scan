@@ -630,7 +630,7 @@ async function fetchDirectoryListing(url: string): Promise<string[]> {
       const baseHttp  = baseHttps.replace(/^https:\/\//, 'http://');
       for (const b of [baseHttps, baseHttp]) {
         const escaped = b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const absRe   = new RegExp(escaped + '([^"\'\\s>\\\\,)\\]\\r\\n]+)', 'gi');
+        const absRe   = new RegExp(escaped + '([^"\'\\s>\\\\,\\]\\r\\n]+)', 'gi');
         while ((m = absRe.exec(html)) !== null) {
           const f = normalizeFilename(m[1].replace(/[.,;)}\]'"\\]+$/, ''));
           if (f) files.push(f);
@@ -675,7 +675,7 @@ async function probeViewerPage(viewerUrl: string, base: string): Promise<string[
     for (const b of [baseHttps, baseHttp]) {
       const escaped = b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       // Buscar la base seguida de cualquier carácter de nombre de archivo
-      const re = new RegExp(escaped + '([^"\'\\s>\\\\,)\\]\\r\\n]+)', 'gi');
+      const re = new RegExp(escaped + '([^"\'\\s>\\\\,\\]\\r\\n]+)', 'gi');
       let m: RegExpExecArray | null;
       while ((m = re.exec(html)) !== null) {
         let raw = m[1];

@@ -145,6 +145,7 @@ export default function ChapterReader({
       chapter:   chapter.chapter,
       timestamp: Date.now(),
       title:     manga.title,
+      image:     manga.image,
       page:      restoredPage,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

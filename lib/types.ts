@@ -27,6 +27,7 @@ export interface HistoryEntry {
   page?: number;
   timestamp: number;
   title: string;
+  image?: string;
 }
 
 export interface ReaderSettings {

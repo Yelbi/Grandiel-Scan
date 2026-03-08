@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { db } from './db';
 import { mangas, chapters } from './db/schema';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
@@ -38,23 +39,28 @@ function toChapter(row: typeof chapters.$inferSelect): Chapter {
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 
-export async function getAllMangas(): Promise<Manga[]> {
-  try {
-    const rows = await db
-      .select()
-      .from(mangas)
-      .orderBy(desc(mangas.lastUpdated));
+/** Cross-request cache (ISR-aware). Revalidada via tag 'mangas' cuando el admin
+ *  actualiza datos. React.cache encima deduplica dentro del mismo render. */
+const _getAllMangas = unstable_cache(
+  async function _getAllMangas(): Promise<Manga[]> {
+    const rows = await db.select().from(mangas).orderBy(desc(mangas.lastUpdated));
     return rows.map((r) => toManga(r));
+  },
+  ['all-mangas'],
+  { tags: ['mangas'], revalidate: 300 },
+);
+
+export const getAllMangas = cache(async function getAllMangas(): Promise<Manga[]> {
+  try {
+    return await _getAllMangas();
   } catch (err) {
     console.error('[data] getAllMangas error:', err);
     return [];
   }
-}
+});
 
-/** Fetches manga + its chapter list in parallel (needed for prev/next nav).
- *  Wrapped in React.cache para deduplicar llamadas múltiples en el mismo render. */
-export const getMangaById = cache(async function getMangaById(id: string): Promise<Manga | null> {
-  try {
+const _getMangaById = unstable_cache(
+  async function _getMangaById(id: string): Promise<Manga | null> {
     const [mangaRows, chapterRows] = await Promise.all([
       db.select().from(mangas).where(eq(mangas.id, id)).limit(1),
       db
@@ -65,6 +71,15 @@ export const getMangaById = cache(async function getMangaById(id: string): Promi
     ]);
     if (!mangaRows[0]) return null;
     return toManga(mangaRows[0], chapterRows.map((c) => c.chapter));
+  },
+  ['manga-by-id'],
+  { tags: ['mangas'], revalidate: 300 },
+);
+
+/** Fetches manga + its chapter list in parallel (needed for prev/next nav). */
+export const getMangaById = cache(async function getMangaById(id: string): Promise<Manga | null> {
+  try {
+    return await _getMangaById(id);
   } catch (err) {
     console.error('[data] getMangaById error:', err);
     return null;
@@ -117,15 +132,19 @@ export async function getChaptersByManga(mangaId: string): Promise<Chapter[]> {
   }
 }
 
+const _getMostViewed = unstable_cache(
+  async function _getMostViewed(limit: number): Promise<Manga[]> {
+    const rows = await db.select().from(mangas).orderBy(desc(mangas.views)).limit(limit);
+    return rows.map((r) => toManga(r));
+  },
+  ['most-viewed'],
+  { tags: ['mangas'], revalidate: 600 },
+);
+
 /** Top N mangas by view count. */
 export async function getMostViewed(limit = 6): Promise<Manga[]> {
   try {
-    const rows = await db
-      .select()
-      .from(mangas)
-      .orderBy(desc(mangas.views))
-      .limit(limit);
-    return rows.map((r) => toManga(r));
+    return await _getMostViewed(limit);
   } catch (err) {
     console.error('[data] getMostViewed error:', err);
     return [];
