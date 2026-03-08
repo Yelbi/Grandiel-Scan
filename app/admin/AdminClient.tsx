@@ -695,7 +695,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     else {
       notify('ok', `✓ Manga eliminado (${json.removedChapters} capítulos borrados).`);
       setMangas((prev) => prev.filter((m) => m.id !== emId));
-      setEmId(''); setEmTitle(''); setEmImage(''); setEmDesc(''); setEmGenres('');
+      setEmId(''); setEmTitle(''); setEmImage(''); setEmDesc(''); setEmGenres([]);
     }
   }
 
