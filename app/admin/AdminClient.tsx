@@ -140,11 +140,13 @@ function parseBulkList(raw: string): Array<{ chapter: number; folderId: string; 
 }
 
 /* Extrae entradas capítulo/folder (y opcionalmente URL lectora) del HTML.
-   Soporta tres formatos:
+   Soporta cuatro formatos:
    1. /capitulo/{folderId}/comic-{slug}  → folderId es el ID real del CDN
    2. /manga/{mangaId}/capitulo/{num}    → (kumanga.com) usa el nro de capítulo como placeholder
    3. /capitulo/{folderId}/             → (ikigaimangas / Qwik) folderId es un Snowflake ID;
-                                          nro de capítulo viene del atributo alt de la imagen  */
+                                          nro de capítulo viene del atributo alt de la imagen
+   4. /capitulo/{folderId}/{word-slug}  → (nakamanga / NuevoVisor) slug de texto; nro de
+                                          capítulo viene del texto "Capítulo N" dentro del <a>  */
 function parseHtmlChapterEntries(html: string): HtmlChapterEntry[] {
   const entries: HtmlChapterEntry[] = [];
   const seen = new Set<string>();
@@ -176,6 +178,18 @@ function parseHtmlChapterEntries(html: string): HtmlChapterEntry[] {
   const re1 = /<a[^>]+href="([^"]*\/capitulo\/(\d+)\/comic-[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = re1.exec(html)) !== null) {
+    const viewerUrl = toViewerUrl(match[1]);
+    const folderId  = match[2];
+    const chapter   = chapterFromChunk(match[3]);
+    if (chapter !== null) pushEntry({ chapter, folderId, viewerUrl });
+  }
+  if (entries.length > 0) return entries;
+
+  // Formato 4: /capitulo/{folderId}/{word-slug}  (nakamanga / NuevoVisor)
+  // El slug es texto (ej. "novela-el-hijo-menor-..."), no "comic-XXX" y no termina en /.
+  // El nro de capítulo viene del texto "Capítulo N" dentro del <a>.
+  const re4 = /<a[^>]+href="([^"]*\/capitulo\/(\d+)\/[^"\/][^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  while ((match = re4.exec(html)) !== null) {
     const viewerUrl = toViewerUrl(match[1]);
     const folderId  = match[2];
     const chapter   = chapterFromChunk(match[3]);
