@@ -184,6 +184,44 @@
     color: var(--color-text-muted);
 }
 
+.form-group select,
+.form-group textarea {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--color-text, #fff);
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group select {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+}
+
+.form-group select option {
+    background: var(--color-bg-secondary, #1a1a2e);
+    color: var(--color-text, #fff);
+}
+
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+    border-color: var(--color-primary);
+}
+
+.form-group textarea::placeholder {
+    color: var(--color-text-muted);
+}
+
 .form-hint {
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);

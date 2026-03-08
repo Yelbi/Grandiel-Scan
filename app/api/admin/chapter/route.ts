@@ -7,7 +7,7 @@ import { notifyFavoriteUsers } from '@/lib/push';
 
 function normalizeChapter(value: unknown): number | null {
   const num = typeof value === 'number' ? value : Number(value);
-  if (!Number.isInteger(num) || num < 1) return null;
+  if (!isFinite(num) || num < 0) return null;
   return num;
 }
 

@@ -481,6 +481,7 @@ function normalizeFilename(raw: string): string | null {
    Soporta variantes URL-encoded y textos JS escapados:
    • 1%20-%20bb006670.webp
    • 1 - bb006670.webp
+   • 0%20-%2016771837972179439_Palo_de_madera_+99_Ep__37_0001.webp
    • https:\/\/...\/1 - bb006670.webp                                       ── */
 function extractStandaloneHashFiles(html: string): string[] {
   const sources = [
@@ -489,8 +490,8 @@ function extractStandaloneHashFiles(html: string): string[] {
   ];
 
   const patterns = [
-    /\b(\d{1,4}%20-%20[a-f0-9]{6,}\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
-    /\b(\d{1,4}(?:%20|\s)?-(?:%20|\s)?[a-f0-9]{6,}\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
+    /\b(\d{1,4}%20-%20[\w.%+\-]+\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
+    /\b(\d{1,4}(?:%20|\s)?-(?:%20|\s)?[\w.%+\-]+\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
   ];
 
   const found = new Set<string>();

@@ -2,6 +2,7 @@ import {
   pgTable,
   text,
   integer,
+  real,
   boolean,
   timestamp,
   primaryKey,
@@ -22,7 +23,7 @@ export const mangas = pgTable(
     status:        text('status').notNull().default('En Emision'),
     dateAdded:     text('date_added').notNull(),
     lastUpdated:   text('last_updated').notNull(),
-    latestChapter: integer('latest_chapter').notNull().default(0),
+    latestChapter: real('latest_chapter').notNull().default(0),
     featured:      boolean('featured').notNull().default(false),
     views:         integer('views').notNull().default(0),
   },
@@ -41,7 +42,7 @@ export const chapters = pgTable(
     mangaId: text('manga_id')
       .notNull()
       .references(() => mangas.id, { onDelete: 'cascade' }),
-    chapter: integer('chapter').notNull(),
+    chapter: real('chapter').notNull(),
     baseUrl: text('base_url'),
     pages:   text('pages').array().notNull().default([]),
   },
@@ -86,7 +87,7 @@ export const readingHistory = pgTable(
     mangaId:   text('manga_id')
       .notNull()
       .references(() => mangas.id, { onDelete: 'cascade' }),
-    chapter:   integer('chapter').notNull(),
+    chapter:   real('chapter').notNull(),
     page:      integer('page').notNull().default(1),
     title:     text('title').notNull().default(''),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -109,7 +110,7 @@ export const comments = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     text:      text('text').notNull(),
-    chapter:   integer('chapter'),
+    chapter:   real('chapter'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deleted:   boolean('deleted').notNull().default(false),

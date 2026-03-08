@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ChapterPage({ params }: Props) {
   const { mangaId, cap } = await params;
-  const capNum = parseInt(cap, 10);
+  const capNum = parseFloat(cap);
 
   if (isNaN(capNum)) notFound();
 
@@ -39,7 +39,7 @@ export default async function ChapterPage({ params }: Props) {
   if (!manga || !chapter) notFound();
 
   const allCaps = manga.chapters.sort((a, b) => a - b);
-  const idx = allCaps.indexOf(capNum);
+  const idx = allCaps.findIndex((c) => Math.abs(c - capNum) < 0.001);
   const prevCap = idx > 0 ? allCaps[idx - 1] : null;
   const nextCap = idx < allCaps.length - 1 ? allCaps[idx + 1] : null;
 

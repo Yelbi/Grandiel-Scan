@@ -114,9 +114,10 @@ export default function ChapterReader({
   const [mode, setMode] = useState<ReadingMode>('continuous');
   const [currentPage, setCurrentPage] = useState(0);
   const [brightness, setBrightness] = useState(100);
-  const [imgWidth, setImgWidth] = useState(100);
+  const [imgWidth, setImgWidth] = useState(75);
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   // Ref para tener siempre la página más reciente sin depender del closure
   const currentPageRef = useRef(0);
 
@@ -169,6 +170,19 @@ export default function ChapterReader({
     } catch {}
   }, []);
 
+  // Cargar ajustes de lectura guardados (brillo, anchura)
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(CONFIG.STORAGE_KEYS.READER_SETTINGS) ?? '{}'
+      ) as { brightness?: number; imgWidth?: number };
+      if (typeof saved.brightness === 'number' && saved.brightness >= 50 && saved.brightness <= 150)
+        setBrightness(saved.brightness);
+      if (typeof saved.imgWidth === 'number' && saved.imgWidth >= 30 && saved.imgWidth <= 100)
+        setImgWidth(saved.imgWidth);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (mode !== 'paginated') return;
     const handler = (e: KeyboardEvent) => {
@@ -180,6 +194,30 @@ export default function ChapterReader({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
+  }, [mode, pages.length]);
+
+  // Detectar página actual en modo continuo por scroll
+  useEffect(() => {
+    if (mode !== 'continuous') return;
+    const update = () => {
+      const els = pageRefs.current;
+      const mid = window.innerHeight / 2;
+      let closest = 0;
+      let closestDist = Infinity;
+      els.forEach((el, i) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const dist = Math.abs(rect.top + rect.height / 2 - mid);
+        if (dist < closestDist) { closestDist = dist; closest = i; }
+      });
+      if (closest !== currentPageRef.current) {
+        setCurrentPage(closest);
+        currentPageRef.current = closest;
+      }
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => window.removeEventListener('scroll', update);
   }, [mode, pages.length]);
 
   useEffect(() => {
@@ -195,8 +233,22 @@ export default function ChapterReader({
 
   const saveMode = useCallback((m: ReadingMode) => {
     setMode(m);
+    try { localStorage.setItem(CONFIG.STORAGE_KEYS.READING_MODE, m); } catch {}
+  }, []);
+
+  const saveBrightness = useCallback((val: number) => {
+    setBrightness(val);
     try {
-      localStorage.setItem(CONFIG.STORAGE_KEYS.READING_MODE, m);
+      const cur = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.READER_SETTINGS) ?? '{}');
+      localStorage.setItem(CONFIG.STORAGE_KEYS.READER_SETTINGS, JSON.stringify({ ...cur, brightness: val }));
+    } catch {}
+  }, []);
+
+  const saveImgWidth = useCallback((val: number) => {
+    setImgWidth(val);
+    try {
+      const cur = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.READER_SETTINGS) ?? '{}');
+      localStorage.setItem(CONFIG.STORAGE_KEYS.READER_SETTINGS, JSON.stringify({ ...cur, imgWidth: val }));
     } catch {}
   }, []);
 
@@ -219,7 +271,12 @@ export default function ChapterReader({
           <span className="reader-topbar__back-label">{manga.title}</span>
         </Link>
 
-        <span className="reader-topbar__chapter">Cap. {chapter.chapter}</span>
+        <span className="reader-topbar__chapter">
+          Cap. {chapter.chapter}
+          <span style={{ fontSize: '0.75em', opacity: 0.65, marginLeft: '0.5em' }}>
+            {currentPage + 1}/{pages.length}
+          </span>
+        </span>
 
         <div className="reader-topbar__controls">
           {/* Reading mode */}
@@ -284,18 +341,16 @@ export default function ChapterReader({
         </div>
       </div>
 
-      {/* Progress bar (paginated only) */}
-      {mode === 'paginated' && (
-        <div
-          className="reader-progress-bar"
-          role="progressbar"
-          aria-label="Progreso de lectura"
-          aria-valuenow={currentPage + 1}
-          aria-valuemax={pages.length}
-        >
-          <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
-        </div>
-      )}
+      {/* Progress bar (ambos modos) */}
+      <div
+        className="reader-progress-bar"
+        role="progressbar"
+        aria-label="Progreso de lectura"
+        aria-valuenow={currentPage + 1}
+        aria-valuemax={pages.length}
+      >
+        <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
+      </div>
 
       {/* Content */}
       <div className="reader-content">
@@ -337,7 +392,11 @@ export default function ChapterReader({
         ) : (
           <div className="dede">
             {pages.map((src, i) => (
-              <div key={src} style={{ display: 'flex', justifyContent: 'center' }}>
+              <div
+                key={src}
+                ref={(el) => { pageRefs.current[i] = el; }}
+                style={{ display: 'flex', justifyContent: 'center' }}
+              >
                 <Image
                   src={src}
                   alt={`Página ${i + 1}`}
@@ -406,7 +465,7 @@ export default function ChapterReader({
                 min={50}
                 max={150}
                 value={brightness}
-                onChange={(e) => setBrightness(Number(e.target.value))}
+                onChange={(e) => saveBrightness(Number(e.target.value))}
                 aria-label="Brillo de las páginas"
               />
             </div>
@@ -425,7 +484,7 @@ export default function ChapterReader({
                 min={30}
                 max={100}
                 value={imgWidth}
-                onChange={(e) => setImgWidth(Number(e.target.value))}
+                onChange={(e) => saveImgWidth(Number(e.target.value))}
                 aria-label="Anchura de las páginas"
               />
             </div>

@@ -47,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
         {/* FontAwesome */}
         <link
@@ -72,7 +72,7 @@ export default function RootLayout({
         />
         <link rel="shortcut icon" href="/img/logo.jpg" />
       </head>
-      <body className="fondo">
+      <body className="fondo" suppressHydrationWarning>
         <Providers>
           <a href="#main-content" className="skip-to-main">
             Saltar al contenido principal
