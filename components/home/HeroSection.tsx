@@ -111,6 +111,8 @@ export default function HeroSection({
                   alt=""
                   width={72}
                   height={104}
+                  loading="lazy"
+                  sizes="72px"
                   unoptimized={manga.image.startsWith('/img/')}
                   style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                 />

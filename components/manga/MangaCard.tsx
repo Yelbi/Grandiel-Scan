@@ -69,6 +69,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
               alt={manga.title}
               width={200}
               height={280}
+              sizes="(max-width: 480px) 140px, 200px"
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               loading="lazy"
               unoptimized={manga.image.startsWith('/img/')}

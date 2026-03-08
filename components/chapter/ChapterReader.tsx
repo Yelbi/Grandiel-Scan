@@ -403,7 +403,8 @@ export default function ChapterReader({
                   width={800}
                   height={1200}
                   style={imageStyle}
-                  loading={i < 3 ? 'eager' : 'lazy'}
+                  priority={i === 0}
+                  loading={i === 0 ? undefined : i < 3 ? 'eager' : 'lazy'}
                   unoptimized
                 />
               </div>

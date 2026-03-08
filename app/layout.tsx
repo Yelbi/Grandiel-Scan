@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import Providers from '@/components/providers/Providers';
@@ -49,11 +50,6 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* FontAwesome */}
-        <link
-          rel="stylesheet"
-          href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
-        />
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -83,6 +79,14 @@ export default function RootLayout({
           <SpeedInsights />
           <Analytics />
         </Providers>
+        {/* FontAwesome — inyectado de forma no bloqueante tras el contenido principal */}
+        <Script
+          id="fontawesome"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='https://use.fontawesome.com/releases/v5.6.3/css/all.css';document.head.appendChild(l);})();`,
+          }}
+        />
       </body>
     </html>
   );

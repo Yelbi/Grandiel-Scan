@@ -34,6 +34,7 @@ export default function MangaDetail({ manga }: MangaDetailProps) {
             alt={`Portada de ${manga.title}`}
             width={220}
             height={310}
+            sizes="220px"
             className="manga-cover-img manga-cover-glow"
             priority
             unoptimized={manga.image.startsWith('/img/')}
