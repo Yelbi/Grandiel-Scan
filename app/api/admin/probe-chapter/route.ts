@@ -490,8 +490,8 @@ function extractStandaloneHashFiles(html: string): string[] {
   ];
 
   const patterns = [
-    /\b(\d{1,4}%20-%20[\w.%+\-]+\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
-    /\b(\d{1,4}(?:%20|\s)?-(?:%20|\s)?[\w.%+\-]+\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
+    /\b(\d{1,4}%20-%20[\w.%+\-()+]+\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
+    /\b(\d{1,4}(?:%20|\s)?-(?:%20|\s)?[\w.%+\-()+]+\.(?:webp|jpg|jpeg|png|avif|gif))\b/gi,
   ];
 
   const found = new Set<string>();

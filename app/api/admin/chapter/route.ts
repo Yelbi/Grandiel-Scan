@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { chapters, mangas } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       .where(eq(mangas.id, mangaId))
       .limit(1);
 
-    if (mangaRows[0] && chapterValue >= mangaRows[0].latestChapter) {
+    if (mangaRows[0] && chapterValue > mangaRows[0].latestChapter) {
       await db
         .update(mangas)
         .set({
@@ -85,13 +85,16 @@ export async function POST(req: NextRequest) {
 
     revalidateManga(mangaId);
 
-    // Notificación push solo a usuarios que tienen este manga en favoritos
-    void notifyFavoriteUsers(mangaId, {
-      title: '¡Nuevo capítulo disponible!',
-      body:  `${mangaRows[0]?.title ?? mangaId} — Capítulo ${chapterValue}`,
-      url:   `/chapter/${mangaId}/${chapterValue}`,
-      icon:  '/img/logo.jpg',
-    });
+    // after() garantiza que la notificación se envíe después de retornar
+    // la respuesta, incluso en entornos serverless (Vercel)
+    after(() =>
+      notifyFavoriteUsers(mangaId, {
+        title: '¡Nuevo capítulo disponible!',
+        body:  `${mangaRows[0]?.title ?? mangaId} — Capítulo ${chapterValue}`,
+        url:   `/chapter/${mangaId}/${chapterValue}`,
+        icon:  '/img/logo.jpg',
+      }),
+    );
 
     return NextResponse.json({ ok: true, chapter });
   } catch (err) {
@@ -157,18 +160,23 @@ export async function DELETE(req: NextRequest) {
       .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)));
 
     // Recalcular latestChapter desde los capítulos restantes
-    const remaining = await db
-      .select({ chapter: chapters.chapter })
-      .from(chapters)
-      .where(eq(chapters.mangaId, mangaId))
-      .orderBy(desc(chapters.chapter))
-      .limit(1);
+    const [mangaRow, remaining] = await Promise.all([
+      db.select({ latestChapter: mangas.latestChapter })
+        .from(mangas).where(eq(mangas.id, mangaId)).limit(1),
+      db.select({ chapter: chapters.chapter })
+        .from(chapters).where(eq(chapters.mangaId, mangaId))
+        .orderBy(desc(chapters.chapter)).limit(1),
+    ]);
+
+    const newLatest = remaining[0]?.chapter ?? 0;
+    const latestChanged = mangaRow[0]?.latestChapter !== newLatest;
 
     await db
       .update(mangas)
       .set({
-        latestChapter: remaining[0]?.chapter ?? 0,
-        lastUpdated:   new Date().toISOString().split('T')[0],
+        latestChapter: newLatest,
+        // Solo actualizar lastUpdated si el capítulo más reciente cambia
+        ...(latestChanged && { lastUpdated: new Date().toISOString().split('T')[0] }),
       })
       .where(eq(mangas.id, mangaId));
 

@@ -8,10 +8,11 @@ const IMGUR_PLACEHOLDER = 'imgur.com/w33tpvZ';
 // Patrones estándar de primera página (nombre base sin extensión), en orden de probabilidad
 const STD_PATTERNS = ['1', '01', '001', '01_01', '1_01'] as const;
 
-let prefersGet = false;
+// Estado por request — se pasa como argumento para evitar race conditions entre requests concurrentes
+interface RequestState { prefersGet: boolean }
 
-async function quickExists(url: string): Promise<boolean> {
-  const method = prefersGet ? 'GET' : 'HEAD';
+async function quickExists(url: string, state: RequestState): Promise<boolean> {
+  const method = state.prefersGet ? 'GET' : 'HEAD';
   try {
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -28,8 +29,8 @@ async function quickExists(url: string): Promise<boolean> {
       if (res.url.includes(IMGUR_PLACEHOLDER)) return false;
       return true;
     }
-    if (!prefersGet && (res.status === 403 || res.status === 405)) {
-      prefersGet = true;
+    if (!state.prefersGet && (res.status === 403 || res.status === 405)) {
+      state.prefersGet = true;
       const r2 = await fetch(url, {
         method: 'GET',
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GrandielProbe/1.0)', Range: 'bytes=0-0' },
@@ -83,8 +84,7 @@ export async function POST(req: NextRequest) {
   const allFolders = Array.from({ length: end - start + 1 }, (_, k) => start + k);
   const total      = allFolders.length;
   const encoder    = new TextEncoder();
-
-  prefersGet = false;
+  const state: RequestState = { prefersGet: false };
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
           for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
             const chunk   = remaining.slice(i, i + BATCH_SIZE);
             const results = await Promise.all(
-              chunk.map((fid) => quickExists(`${base}/${fid}/${pattern}.${ext}`)),
+              chunk.map((fid) => quickExists(`${base}/${fid}/${pattern}.${ext}`, state)),
             );
             chunk.forEach((fid, k) => {
               if (results[k] && !foundSet.has(fid)) {

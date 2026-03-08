@@ -93,8 +93,12 @@ export async function POST(
 }
 
 /* ── DELETE — soft-delete de comentario propio ── */
-export async function DELETE(req: NextRequest) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: Params,
+) {
   try {
+    const { mangaId } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -103,14 +107,20 @@ export async function DELETE(req: NextRequest) {
     }
 
     const { commentId } = await req.json() as { commentId: number };
-    if (!commentId) {
+    if (commentId == null || typeof commentId !== 'number') {
       return NextResponse.json({ error: 'commentId requerido.' }, { status: 400 });
     }
 
     await db
       .update(comments)
       .set({ deleted: true })
-      .where(and(eq(comments.id, commentId), eq(comments.userId, user.id)));
+      .where(
+        and(
+          eq(comments.id, commentId),
+          eq(comments.userId, user.id),
+          eq(comments.mangaId, mangaId),
+        ),
+      );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

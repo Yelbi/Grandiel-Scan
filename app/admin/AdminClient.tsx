@@ -628,7 +628,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
     const id    = titleToId(mTitle);
     const today = new Date().toISOString().split('T')[0];
     const manga: Manga = {
-      id, title: mTitle.trim(), slug: mTitle.trim().toLowerCase(),
+      id, title: mTitle.trim(), slug: id,
       image: mImage.trim(), description: mDesc.trim(),
       genres: mGenres,
       type: mType, status: mStatus, chapters: [],
@@ -824,8 +824,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           <i className="fas fa-tools" /> Panel de Administración
         </h1>
         <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '.875rem' }}>
-          Solo disponible en <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 6px', borderRadius: 4 }}>npm run dev</code>.
-          Los cambios se guardan en <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 6px', borderRadius: 4 }}>public/data/</code> automáticamente.
+          Los cambios se guardan directamente en la base de datos (Supabase).
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { pushSubscriptions } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 
 /* ── POST — guardar suscripción push ── */
@@ -43,15 +43,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/* ── DELETE — eliminar suscripción push ── */
+/* ── DELETE — eliminar suscripción push (requiere autenticación) ── */
 export async function DELETE(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
+    }
+
     const { endpoint } = await req.json() as { endpoint: string };
     if (!endpoint) {
       return NextResponse.json({ error: 'endpoint requerido.' }, { status: 400 });
     }
 
-    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+    // Solo eliminar suscripciones que pertenecen al usuario autenticado
+    await db
+      .delete(pushSubscriptions)
+      .where(
+        and(
+          eq(pushSubscriptions.endpoint, endpoint),
+          eq(pushSubscriptions.userId, user.id),
+        ),
+      );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

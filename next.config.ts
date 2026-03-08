@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
         hostname: 'dashboard.olympusbiblioteca.com',
         pathname: '/storage/**',
       },
+      // Supabase Storage (portadas almacenadas en el proyecto Supabase)
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
 };

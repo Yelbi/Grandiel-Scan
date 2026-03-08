@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { db } from './db';
 import { mangas, chapters } from './db/schema';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
@@ -50,8 +51,9 @@ export async function getAllMangas(): Promise<Manga[]> {
   }
 }
 
-/** Fetches manga + its chapter list in parallel (needed for prev/next nav). */
-export async function getMangaById(id: string): Promise<Manga | null> {
+/** Fetches manga + its chapter list in parallel (needed for prev/next nav).
+ *  Wrapped in React.cache para deduplicar llamadas múltiples en el mismo render. */
+export const getMangaById = cache(async function getMangaById(id: string): Promise<Manga | null> {
   try {
     const [mangaRows, chapterRows] = await Promise.all([
       db.select().from(mangas).where(eq(mangas.id, id)).limit(1),
@@ -67,7 +69,7 @@ export async function getMangaById(id: string): Promise<Manga | null> {
     console.error('[data] getMangaById error:', err);
     return null;
   }
-}
+});
 
 /** Full chapter data — used for generateStaticParams and chapter pages. */
 export async function getAllChapters(): Promise<Chapter[]> {

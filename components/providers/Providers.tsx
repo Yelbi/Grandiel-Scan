@@ -70,6 +70,7 @@ export interface UserProfile {
   id: string;
   username: string;
   avatar: string;
+  email?: string; // email real enlazado opcionalmente
   createdAt: number;
 }
 
@@ -77,8 +78,9 @@ interface UserProfileContextValue {
   profile: UserProfile | null;
   isLoggedIn: boolean;
   loading: boolean;
-  register: (username: string, avatar: string, email: string) => Promise<{ error?: string }>;
-  login: (email: string) => Promise<{ error?: string }>;
+  register: (username: string, password: string, avatar: string) => Promise<{ error?: string }>;
+  login: (username: string, password: string) => Promise<{ error?: string }>;
+  linkEmail: (email: string) => Promise<{ error?: string }>;
   updateProfile: (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -89,6 +91,7 @@ const UserProfileContext = createContext<UserProfileContextValue>({
   loading:       true,
   register:      async () => ({}),
   login:         async () => ({}),
+  linkEmail:     async () => ({}),
   updateProfile: async () => {},
   logout:        async () => {},
 });
@@ -112,7 +115,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   ) => {
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, avatar, created_at')
+      .select('id, username, avatar, email, created_at')
       .eq('id', userId)
       .single();
 
@@ -121,6 +124,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
         id:        data.id,
         username:  data.username,
         avatar:    data.avatar,
+        email:     (data.email as string | null) ?? undefined,
         createdAt: new Date(data.created_at).getTime(),
       });
       return;
@@ -186,44 +190,72 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   }, [supabase, loadProfile]);
 
   /**
-   * Registra un usuario con email + enlace de confirmación (flujo PKCE).
-   * Supabase envía un email con un link que lleva a /api/auth/callback?code=...
-   * El server route intercambia el código por una sesión y redirige al perfil.
-   * El username y avatar se guardan en user_metadata y se usan en loadProfile().
+   * Registra un usuario con nombre de usuario + contraseña.
+   * El servidor crea el usuario en Supabase Auth con un email interno (UUID@auth.grandiel)
+   * y el perfil en la tabla users. Luego el cliente inicia sesión automáticamente.
    */
   const register = useCallback(
-    async (username: string, avatar: string, email: string): Promise<{ error?: string }> => {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password: crypto.randomUUID(),
-        options: {
-          data: { username, avatar },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-        },
+    async (username: string, password: string, avatar: string): Promise<{ error?: string }> => {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, avatar }),
       });
-      if (error) return { error: error.message };
+      const data = await res.json() as { error?: string; authEmail?: string };
+      if (!res.ok || data.error) return { error: data.error ?? 'Error al registrarse.' };
+
+      // Iniciar sesión automáticamente con las credenciales recién creadas
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email:    data.authEmail!,
+        password,
+      });
+      if (signInError) return { error: 'Cuenta creada, pero ocurrió un error al iniciar sesión. Intenta ingresar.' };
       return {};
     },
     [supabase],
   );
 
   /**
-   * Inicia sesión para usuarios existentes mediante magic link (OTP).
-   * No crea nuevos usuarios — solo envía el link si el email ya está registrado.
+   * Inicia sesión con nombre de usuario + contraseña.
+   * El servidor busca el email interno del usuario y el cliente autentica con Supabase.
    */
   const login = useCallback(
-    async (email: string): Promise<{ error?: string }> => {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-        },
+    async (username: string, password: string): Promise<{ error?: string }> => {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
       });
-      if (error) return { error: error.message };
+      const data = await res.json() as { error?: string; authEmail?: string };
+      if (!res.ok || data.error) return { error: 'Usuario o contraseña incorrectos.' };
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email:    data.authEmail!,
+        password,
+      });
+      if (signInError) return { error: 'Usuario o contraseña incorrectos.' };
       return {};
     },
     [supabase],
+  );
+
+  /**
+   * Enlaza un email real opcional a la cuenta del usuario.
+   * Solo se guarda en nuestra tabla users — no modifica el email de Supabase Auth.
+   */
+  const linkEmail = useCallback(
+    async (email: string): Promise<{ error?: string }> => {
+      if (!profile) return { error: 'No estás autenticado.' };
+      const trimmed = email.trim().toLowerCase();
+      const { error } = await supabase
+        .from('users')
+        .update({ email: trimmed })
+        .eq('id', profile.id);
+      if (error) return { error: error.message };
+      setProfile((prev) => (prev ? { ...prev, email: trimmed } : prev));
+      return {};
+    },
+    [profile, supabase],
   );
 
   const updateProfile = useCallback(
@@ -248,7 +280,7 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserProfileContext.Provider
-      value={{ profile, isLoggedIn: hasSession, loading, register, login, updateProfile, logout }}
+      value={{ profile, isLoggedIn: hasSession, loading, register, login, linkEmail, updateProfile, logout }}
     >
       {children}
     </UserProfileContext.Provider>
@@ -399,15 +431,18 @@ function HistoryProvider({ children }: { children: ReactNode }) {
     });
 
     if (profile) {
-      // Upsert: borrar la entrada anterior y crear una nueva
-      void supabase.from('reading_history').delete()
-        .eq('user_id', profile.id).eq('manga_id', entry.mangaId)
-        .then(() => supabase.from('reading_history').insert({
-          user_id:  profile.id,
-          manga_id: entry.mangaId,
-          chapter:  entry.chapter,
-          page:     entry.page ?? 1,
-        }));
+      // Upsert atómico: elimina la race condition del delete+insert previo.
+      // Requiere el uniqueIndex 'history_user_manga_unique' en (user_id, manga_id).
+      void supabase.from('reading_history').upsert(
+        {
+          user_id:    profile.id,
+          manga_id:   entry.mangaId,
+          chapter:    entry.chapter,
+          page:       entry.page ?? 1,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,manga_id' },
+      );
     }
   }, [profile, supabase]);
 

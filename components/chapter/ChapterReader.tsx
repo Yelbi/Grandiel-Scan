@@ -150,10 +150,9 @@ export default function ChapterReader({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manga.id, manga.title, chapter.chapter]); // addEntry es estable
 
-  // Guardar página en localStorage al cambiar (sólo modo paginado)
+  // Guardar página en localStorage al cambiar (ambos modos)
   useEffect(() => {
     currentPageRef.current = currentPage;
-    if (mode !== 'paginated') return;
     try {
       const map = JSON.parse(
         localStorage.getItem(CONFIG.STORAGE_KEYS.PROGRESS) ?? '{}'
@@ -161,7 +160,7 @@ export default function ChapterReader({
       map[progressKey] = currentPage;
       localStorage.setItem(CONFIG.STORAGE_KEYS.PROGRESS, JSON.stringify(map));
     } catch {}
-  }, [currentPage, mode, progressKey]);
+  }, [currentPage, progressKey]);
 
   useEffect(() => {
     try {

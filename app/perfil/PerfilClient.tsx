@@ -32,7 +32,7 @@ function relativeDate(timestamp: number): string {
 }
 
 export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
-  const { profile, isLoggedIn, loading, register, login, updateProfile, logout } = useUserProfile();
+  const { profile, isLoggedIn, loading, register, login, linkEmail, updateProfile, logout } = useUserProfile();
   const { favorites } = useFavoritesContext();
   const { history, clearHistory } = useHistoryContext();
 
@@ -45,17 +45,22 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   // Vista activa en el formulario de acceso
   const [authView, setAuthView] = useState<'register' | 'login'>('register');
 
-  const [regUsername, setRegUsername] = useState('');
-  const [regEmail, setRegEmail]       = useState('');
-  const [regAvatar, setRegAvatar]     = useState(AVATARS[0]);
-  const [regError, setRegError]       = useState('');
-  const [regSuccess, setRegSuccess]   = useState(false);
-  const [regLoading, setRegLoading]   = useState(false);
+  const [regUsername, setRegUsername]           = useState('');
+  const [regPassword, setRegPassword]           = useState('');
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
+  const [regAvatar, setRegAvatar]               = useState(AVATARS[0]);
+  const [regError, setRegError]                 = useState('');
+  const [regLoading, setRegLoading]             = useState(false);
 
-  const [loginEmail, setLoginEmail]     = useState('');
-  const [loginError, setLoginError]     = useState('');
-  const [loginSuccess, setLoginSuccess] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError]       = useState('');
+  const [loginLoading, setLoginLoading]   = useState(false);
+
+  const [linkEmailVal, setLinkEmailVal] = useState(profile?.email ?? '');
+  const [linkEmailErr, setLinkEmailErr] = useState('');
+  const [linkEmailOk, setLinkEmailOk]   = useState(false);
+  const [linkLoading, setLinkLoading]   = useState(false);
 
   // Si la sesión está activa pero el perfil no carga en 10s, mostrar error
   const [profileSetupFailed, setProfileSetupFailed] = useState(false);
@@ -117,34 +122,50 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
       setRegError('El nombre debe tener entre 3 y 20 caracteres.');
       return;
     }
-    if (!regEmail.trim()) {
-      setRegError('El email es obligatorio.');
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+      setRegError('Solo letras, números y guiones bajos (_).');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setRegError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (regPassword !== regPasswordConfirm) {
+      setRegError('Las contraseñas no coinciden.');
       return;
     }
     setRegLoading(true);
     setRegError('');
-    const result = await register(trimmed, regAvatar, regEmail.trim());
+    const result = await register(trimmed, regPassword, regAvatar);
     setRegLoading(false);
-    if (result.error) {
-      setRegError(result.error);
-    } else {
-      setRegSuccess(true);
-    }
+    if (result.error) setRegError(result.error);
+    // Si no hay error, isLoggedIn cambia y el componente muestra la vista autenticada
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const email = loginEmail.trim();
-    if (!email) { setLoginError('El email es obligatorio.'); return; }
+    if (!loginUsername.trim()) { setLoginError('El usuario es obligatorio.'); return; }
+    if (!loginPassword) { setLoginError('La contraseña es obligatoria.'); return; }
     setLoginLoading(true);
     setLoginError('');
-    const result = await login(email);
+    const result = await login(loginUsername.trim(), loginPassword);
     setLoginLoading(false);
-    if (result.error) {
-      setLoginError(result.error);
-    } else {
-      setLoginSuccess(true);
+    if (result.error) setLoginError(result.error);
+  };
+
+  const handleLinkEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = linkEmailVal.trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      setLinkEmailErr('Ingresa un email válido.');
+      return;
     }
+    setLinkLoading(true);
+    setLinkEmailErr('');
+    const result = await linkEmail(trimmed);
+    setLinkLoading(false);
+    if (result.error) setLinkEmailErr(result.error);
+    else setLinkEmailOk(true);
   };
 
   const favoriteMangas = mangas.filter((m) => favorites.includes(m.id));
@@ -158,28 +179,6 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     return (
       <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
         <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', opacity: 0.5 }} aria-label="Cargando..." />
-      </div>
-    );
-  }
-
-  /* ── Email enviado ── */
-  if (regSuccess || loginSuccess) {
-    const sentTo = regSuccess ? regEmail : loginEmail;
-    return (
-      <div className="curva">
-        <div className="perfil-guest-layout">
-          <div className="perfil-guest-form-card" style={{ textAlign: 'center' }}>
-            <i className="fas fa-envelope-open-text" style={{ fontSize: '3rem', color: 'var(--accent)', marginBottom: '1rem' }} aria-hidden="true" />
-            <h2 className="perfil-guest-form-card__title">¡Revisa tu email!</h2>
-            <p style={{ marginTop: '0.75rem', opacity: 0.8 }}>
-              Enviamos un enlace a <strong>{sentTo}</strong>.<br />
-              Haz clic en él para {regSuccess ? 'activar tu cuenta' : 'iniciar sesión'}.
-            </p>
-            <p style={{ marginTop: '1rem', fontSize: '0.85rem', opacity: 0.55 }}>
-              ¿No lo ves? Revisa la carpeta de spam.
-            </p>
-          </div>
-        </div>
       </div>
     );
   }
@@ -200,7 +199,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
             <p className="perfil-guest-benefits__sub">
               {authView === 'register'
                 ? 'Crea tu cuenta gratuita y desbloquea funciones exclusivas.'
-                : 'Ingresa tu email y te enviaremos un enlace para entrar.'}
+                : 'Ingresa tu usuario y contraseña para entrar.'}
             </p>
             {authView === 'register' && (
               <ul className="perfil-benefits-list">
@@ -261,18 +260,6 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
               <form className="user-form" onSubmit={handleRegister}>
                 {regError && <p className="perfil-form-error">{regError}</p>}
                 <div className="form-group">
-                  <label htmlFor="reg-email">Email</label>
-                  <input
-                    id="reg-email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                  />
-                </div>
-                <div className="form-group">
                   <label htmlFor="reg-username">Nombre de usuario</label>
                   <input
                     id="reg-username"
@@ -285,7 +272,33 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                     required
                     autoComplete="username"
                   />
-                  <span className="form-hint">3–20 caracteres</span>
+                  <span className="form-hint">3–20 caracteres, solo letras, números y _</span>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="reg-password">Contraseña</label>
+                  <input
+                    id="reg-password"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    minLength={6}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="reg-password-confirm">Confirmar contraseña</label>
+                  <input
+                    id="reg-password-confirm"
+                    type="password"
+                    placeholder="Repite tu contraseña"
+                    value={regPasswordConfirm}
+                    onChange={(e) => setRegPasswordConfirm(e.target.value)}
+                    minLength={6}
+                    required
+                    autoComplete="new-password"
+                  />
                 </div>
                 <div className="form-group">
                   <label>Elige tu avatar</label>
@@ -320,8 +333,8 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                 </div>
                 <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
                   {regLoading
-                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Enviando...</>
-                    : <><i className="fas fa-paper-plane" aria-hidden="true" /> Enviar enlace</>
+                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Creando cuenta...</>
+                    : <><i className="fas fa-user-plus" aria-hidden="true" /> Crear Cuenta</>
                   }
                 </button>
               </form>
@@ -332,24 +345,33 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
               <form className="user-form" onSubmit={handleLogin}>
                 {loginError && <p className="perfil-form-error">{loginError}</p>}
                 <div className="form-group">
-                  <label htmlFor="login-email">Email</label>
+                  <label htmlFor="login-username">Nombre de usuario</label>
                   <input
-                    id="login-email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    id="login-username"
+                    type="text"
+                    placeholder="Tu nombre de usuario"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                   />
                 </div>
-                <p style={{ fontSize: '0.85rem', opacity: 0.6, margin: '0 0 0.5rem' }}>
-                  Te enviaremos un enlace mágico para entrar sin contraseña.
-                </p>
+                <div className="form-group">
+                  <label htmlFor="login-password">Contraseña</label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    placeholder="Tu contraseña"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                </div>
                 <button type="submit" className="btn-primary user-submit-btn" disabled={loginLoading}>
                   {loginLoading
-                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Enviando...</>
-                    : <><i className="fas fa-sign-in-alt" aria-hidden="true" /> Enviar enlace</>
+                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Ingresando...</>
+                    : <><i className="fas fa-sign-in-alt" aria-hidden="true" /> Iniciar Sesión</>
                   }
                 </button>
               </form>
@@ -462,6 +484,17 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
               <i className="fas fa-sign-out-alt" aria-hidden="true" /> Salir
             </button>
           </div>
+
+          {/* Email enlazado */}
+          <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', opacity: 0.65 }}>
+            {profile.email ? (
+              <span><i className="fas fa-envelope" aria-hidden="true" /> {profile.email}</span>
+            ) : (
+              <span style={{ opacity: 0.5 }}>
+                <i className="fas fa-envelope" aria-hidden="true" /> Sin email enlazado
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -537,6 +570,49 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ── Enlazar email ── */}
+      {!profile.email && (
+        <div className="perfil-edit-card" style={{ marginTop: '1rem' }}>
+          <div className="perfil-edit-card__header">
+            <h2 className="perfil-edit-card__title">
+              <i className="fas fa-envelope" aria-hidden="true" /> Enlazar email <span style={{ fontSize: '0.75rem', opacity: 0.5, fontWeight: 400 }}>(opcional)</span>
+            </h2>
+          </div>
+          {linkEmailOk ? (
+            <p style={{ padding: '0.5rem 1.25rem 1rem', fontSize: '0.9rem', color: 'var(--accent)' }}>
+              <i className="fas fa-check-circle" aria-hidden="true" /> Email enlazado correctamente.
+            </p>
+          ) : (
+            <form className="user-form" style={{ padding: '0 1.25rem 1.25rem' }} onSubmit={handleLinkEmail}>
+              {linkEmailErr && <p className="perfil-form-error">{linkEmailErr}</p>}
+              <p style={{ fontSize: '0.83rem', opacity: 0.6, margin: '0 0 0.75rem' }}>
+                Asocia tu email a la cuenta para recuperación futura. No se usará para iniciar sesión.
+              </p>
+              <div className="form-group">
+                <label htmlFor="link-email">Correo electrónico</label>
+                <input
+                  id="link-email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={linkEmailVal}
+                  onChange={(e) => setLinkEmailVal(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn-primary" disabled={linkLoading}>
+                  {linkLoading
+                    ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Guardando...</>
+                    : <><i className="fas fa-link" aria-hidden="true" /> Enlazar</>
+                  }
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 

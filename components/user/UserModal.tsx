@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
@@ -14,74 +14,113 @@ const AVATARS = [
   '/img/avatars/avatar4.svg',
 ];
 
-type ModalView = 'register' | 'login' | 'profile' | 'edit';
+type ModalView = 'register' | 'login' | 'profile' | 'edit' | 'link-email';
 
 interface UserModalProps {
   onClose: () => void;
 }
 
 export default function UserModal({ onClose }: UserModalProps) {
-  const { profile, isLoggedIn, register, login, updateProfile, logout } = useUserProfile();
+  const { profile, isLoggedIn, register, login, linkEmail, updateProfile, logout } = useUserProfile();
   const { favorites } = useFavoritesContext();
   const { history } = useHistoryContext();
 
   const [view, setView] = useState<ModalView>(isLoggedIn ? 'profile' : 'register');
-  const [username, setUsername] = useState(profile?.username ?? '');
-  const [email, setEmail] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState(profile?.avatar ?? AVATARS[0]);
-  const [error, setError] = useState('');
-  const [regLoading, setRegLoading] = useState(false);
-  const [regSuccess, setRegSuccess] = useState(false);
 
-  const [loginEmail, setLoginEmail]     = useState('');
-  const [loginError, setLoginError]     = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
-
-  const validate = (name: string) => {
-    if (name.length < 3 || name.length > 20) {
-      setError('El nombre debe tener entre 3 y 20 caracteres.');
-      return false;
+  // Cambiar a perfil automáticamente al iniciar sesión
+  useEffect(() => {
+    if (isLoggedIn && profile && (view === 'register' || view === 'login')) {
+      setView('profile');
     }
-    setError('');
-    return true;
-  };
+  }, [isLoggedIn, profile, view]);
+
+  // ── Registro ──
+  const [regUsername, setRegUsername]           = useState('');
+  const [regPassword, setRegPassword]           = useState('');
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
+  const [regAvatar, setRegAvatar]               = useState(AVATARS[0]);
+  const [regError, setRegError]                 = useState('');
+  const [regLoading, setRegLoading]             = useState(false);
+
+  // ── Login ──
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError]       = useState('');
+  const [loginLoading, setLoginLoading]   = useState(false);
+
+  // ── Edit ──
+  const [editUsername, setEditUsername]   = useState('');
+  const [editAvatar, setEditAvatar]       = useState(AVATARS[0]);
+  const [editError, setEditError]         = useState('');
+
+  // ── Link email ──
+  const [linkEmailVal, setLinkEmailVal]   = useState('');
+  const [linkEmailErr, setLinkEmailErr]   = useState('');
+  const [linkEmailOk, setLinkEmailOk]     = useState(false);
+  const [linkLoading, setLinkLoading]     = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = username.trim();
-    if (!validate(trimmed)) return;
-    setRegLoading(true);
-    const result = await register(trimmed, selectedAvatar, email);
-    setRegLoading(false);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setRegSuccess(true);
+    const trimmed = regUsername.trim();
+    if (trimmed.length < 3 || trimmed.length > 20) {
+      setRegError('El nombre debe tener entre 3 y 20 caracteres.');
+      return;
     }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+      setRegError('Solo letras, números y guiones bajos (_).');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setRegError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (regPassword !== regPasswordConfirm) {
+      setRegError('Las contraseñas no coinciden.');
+      return;
+    }
+    setRegLoading(true);
+    setRegError('');
+    const result = await register(trimmed, regPassword, regAvatar);
+    setRegLoading(false);
+    if (result.error) setRegError(result.error);
+    // Si no hay error, isLoggedIn cambiará y el useEffect cambiará la vista a 'profile'
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedEmail = loginEmail.trim();
-    if (!trimmedEmail) { setLoginError('El email es obligatorio.'); return; }
+    if (!loginUsername.trim()) { setLoginError('El usuario es obligatorio.'); return; }
+    if (!loginPassword) { setLoginError('La contraseña es obligatoria.'); return; }
     setLoginLoading(true);
     setLoginError('');
-    const result = await login(trimmedEmail);
+    const result = await login(loginUsername.trim(), loginPassword);
     setLoginLoading(false);
-    if (result.error) {
-      setLoginError(result.error);
-    } else {
-      setLoginSuccess(true);
-    }
+    if (result.error) setLoginError(result.error);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = username.trim();
-    if (!validate(trimmed)) return;
-    updateProfile({ username: trimmed, avatar: selectedAvatar });
+    const trimmed = editUsername.trim();
+    if (trimmed.length < 3 || trimmed.length > 20) {
+      setEditError('El nombre debe tener entre 3 y 20 caracteres.');
+      return;
+    }
+    updateProfile({ username: trimmed, avatar: editAvatar });
     setView('profile');
+  };
+
+  const handleLinkEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = linkEmailVal.trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      setLinkEmailErr('Ingresa un email válido.');
+      return;
+    }
+    setLinkLoading(true);
+    setLinkEmailErr('');
+    const result = await linkEmail(trimmed);
+    setLinkLoading(false);
+    if (result.error) setLinkEmailErr(result.error);
+    else setLinkEmailOk(true);
   };
 
   const handleLogout = () => {
@@ -90,155 +129,150 @@ export default function UserModal({ onClose }: UserModalProps) {
   };
 
   const startEdit = () => {
-    setUsername(profile?.username ?? '');
-    setSelectedAvatar(profile?.avatar ?? AVATARS[0]);
-    setError('');
+    setEditUsername(profile?.username ?? '');
+    setEditAvatar(profile?.avatar ?? AVATARS[0]);
+    setEditError('');
     setView('edit');
   };
 
   return (
     <div id="user-modal-container" style={{ pointerEvents: 'auto' }}>
       {/* Overlay */}
-      <div
-        className="user-modal-overlay active"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="user-modal-overlay active" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div
-        className="user-modal active"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
-        <button className="user-modal-close" onClick={onClose} aria-label="Cerrar">
-          ×
-        </button>
+      <div className="user-modal active" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button className="user-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
 
         {/* ── REGISTRO / LOGIN ── */}
         {(view === 'register' || view === 'login') && (
           <>
-            {(regSuccess || loginSuccess) ? (
-              /* ── Email enviado ── */
-              <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-                <i className="fas fa-envelope-open-text" style={{ fontSize: '2.5rem', color: 'var(--accent)', marginBottom: '1rem' }} aria-hidden="true" />
-                <h2 id="modal-title" className="user-modal-title">¡Revisa tu email!</h2>
-                <p style={{ marginTop: '0.5rem', opacity: 0.8, fontSize: '0.9rem' }}>
-                  Enviamos un enlace a <strong>{regSuccess ? email : loginEmail}</strong>.<br />
-                  Haz clic en él para {regSuccess ? 'activar tu cuenta' : 'iniciar sesión'}.
-                </p>
-                <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', opacity: 0.55 }}>
-                  ¿No lo ves? Revisa la carpeta de spam.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Tabs */}
-                <div className="perfil-auth-tabs" style={{ marginBottom: '1rem' }}>
-                  <button
-                    type="button"
-                    className={`perfil-auth-tab${view === 'register' ? ' active' : ''}`}
-                    onClick={() => { setView('register'); setError(''); setLoginError(''); }}
-                  >
-                    Crear Cuenta
-                  </button>
-                  <button
-                    type="button"
-                    className={`perfil-auth-tab${view === 'login' ? ' active' : ''}`}
-                    onClick={() => { setView('login'); setError(''); setLoginError(''); }}
-                  >
-                    Iniciar Sesión
-                  </button>
+            {/* Tabs */}
+            <div className="perfil-auth-tabs" style={{ marginBottom: '1rem' }}>
+              <button
+                type="button"
+                className={`perfil-auth-tab${view === 'register' ? ' active' : ''}`}
+                onClick={() => { setView('register'); setRegError(''); setLoginError(''); }}
+              >
+                Crear Cuenta
+              </button>
+              <button
+                type="button"
+                className={`perfil-auth-tab${view === 'login' ? ' active' : ''}`}
+                onClick={() => { setView('login'); setRegError(''); setLoginError(''); }}
+              >
+                Iniciar Sesión
+              </button>
+            </div>
+
+            {/* ── Formulario de Registro ── */}
+            {view === 'register' && (
+              <form className="user-form" onSubmit={handleRegister}>
+                {regError && (
+                  <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                    {regError}
+                  </p>
+                )}
+                <div className="form-group">
+                  <label htmlFor="reg-username">Nombre de usuario</label>
+                  <input
+                    id="reg-username"
+                    type="text"
+                    placeholder="Ej: MangaLover99"
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    minLength={3}
+                    maxLength={20}
+                    required
+                    autoComplete="username"
+                  />
+                  <span className="form-hint">3–20 caracteres, solo letras, números y _</span>
                 </div>
+                <div className="form-group">
+                  <label htmlFor="reg-password">Contraseña</label>
+                  <input
+                    id="reg-password"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    minLength={6}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="reg-password-confirm">Confirmar contraseña</label>
+                  <input
+                    id="reg-password-confirm"
+                    type="password"
+                    placeholder="Repite tu contraseña"
+                    value={regPasswordConfirm}
+                    onChange={(e) => setRegPasswordConfirm(e.target.value)}
+                    minLength={6}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Avatar</label>
+                  <div className="avatar-selector">
+                    {AVATARS.map((av, i) => (
+                      <button
+                        key={av}
+                        type="button"
+                        className={`avatar-option${regAvatar === av ? ' selected' : ''}`}
+                        onClick={() => setRegAvatar(av)}
+                        aria-pressed={regAvatar === av}
+                        aria-label={`Avatar ${i + 1}`}
+                      >
+                        <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
+                  {regLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
+                </button>
+              </form>
+            )}
 
-                {/* ── Formulario de Registro ── */}
-                {view === 'register' && (
-                  <form className="user-form" onSubmit={handleRegister}>
-                    {error && (
-                      <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
-                        {error}
-                      </p>
-                    )}
-                    <div className="form-group">
-                      <label htmlFor="email-input">Correo electrónico</label>
-                      <input
-                        id="email-input"
-                        type="email"
-                        placeholder="tu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        autoComplete="email"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="username-input">Nombre de usuario</label>
-                      <input
-                        id="username-input"
-                        type="text"
-                        placeholder="Tu nombre de usuario"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        minLength={3}
-                        maxLength={20}
-                        required
-                        autoComplete="username"
-                      />
-                      <span className="form-hint">3–20 caracteres</span>
-                    </div>
-                    <div className="form-group">
-                      <label>Avatar</label>
-                      <div className="avatar-selector">
-                        {AVATARS.map((av, i) => (
-                          <button
-                            key={av}
-                            type="button"
-                            className={`avatar-option${selectedAvatar === av ? ' selected' : ''}`}
-                            onClick={() => setSelectedAvatar(av)}
-                            aria-pressed={selectedAvatar === av}
-                            aria-label={`Avatar ${i + 1}`}
-                          >
-                            <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
-                      {regLoading ? 'Enviando...' : 'Crear Cuenta'}
-                    </button>
-                  </form>
+            {/* ── Formulario de Login ── */}
+            {view === 'login' && (
+              <form className="user-form" onSubmit={handleLogin}>
+                {loginError && (
+                  <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                    {loginError}
+                  </p>
                 )}
-
-                {/* ── Formulario de Login ── */}
-                {view === 'login' && (
-                  <form className="user-form" onSubmit={handleLogin}>
-                    {loginError && (
-                      <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
-                        {loginError}
-                      </p>
-                    )}
-                    <div className="form-group">
-                      <label htmlFor="login-email-input">Correo electrónico</label>
-                      <input
-                        id="login-email-input"
-                        type="email"
-                        placeholder="tu@email.com"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
-                        autoComplete="email"
-                      />
-                    </div>
-                    <p style={{ fontSize: '0.82rem', opacity: 0.6, margin: '0 0 0.5rem' }}>
-                      Te enviaremos un enlace mágico para entrar sin contraseña.
-                    </p>
-                    <button type="submit" className="btn-primary user-submit-btn" disabled={loginLoading}>
-                      {loginLoading ? 'Enviando...' : 'Enviar enlace'}
-                    </button>
-                  </form>
-                )}
-              </>
+                <div className="form-group">
+                  <label htmlFor="login-username">Nombre de usuario</label>
+                  <input
+                    id="login-username"
+                    type="text"
+                    placeholder="Tu nombre de usuario"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    required
+                    autoComplete="username"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="login-password">Contraseña</label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    placeholder="Tu contraseña"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                </div>
+                <button type="submit" className="btn-primary user-submit-btn" disabled={loginLoading}>
+                  {loginLoading ? 'Ingresando...' : 'Iniciar Sesión'}
+                </button>
+              </form>
             )}
           </>
         )}
@@ -255,9 +289,7 @@ export default function UserModal({ onClose }: UserModalProps) {
                 className="user-avatar-large"
                 unoptimized
               />
-              <h2 id="modal-title" className="user-profile-name">
-                {profile.username}
-              </h2>
+              <h2 id="modal-title" className="user-profile-name">{profile.username}</h2>
               <p className="user-profile-since">
                 Usuario desde{' '}
                 {new Date(profile.createdAt).toLocaleDateString('es-ES', {
@@ -265,6 +297,19 @@ export default function UserModal({ onClose }: UserModalProps) {
                   month: 'long',
                 })}
               </p>
+              {profile.email ? (
+                <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.25rem' }}>
+                  <i className="fas fa-envelope" aria-hidden="true" /> {profile.email}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  style={{ fontSize: '0.8rem', opacity: 0.6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)', marginTop: '0.25rem', padding: 0 }}
+                  onClick={() => setView('link-email')}
+                >
+                  <i className="fas fa-link" aria-hidden="true" /> Enlazar email
+                </button>
+              )}
             </div>
 
             <div className="user-stats">
@@ -296,14 +341,11 @@ export default function UserModal({ onClose }: UserModalProps) {
         {/* ── EDITAR PERFIL ── */}
         {view === 'edit' && profile && (
           <>
-            <h2 id="modal-title" className="user-modal-title">
-              Editar Perfil
-            </h2>
-
+            <h2 id="modal-title" className="user-modal-title">Editar Perfil</h2>
             <form className="user-form" onSubmit={handleSaveEdit}>
-              {error && (
+              {editError && (
                 <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
-                  {error}
+                  {editError}
                 </p>
               )}
               <div className="form-group">
@@ -311,14 +353,13 @@ export default function UserModal({ onClose }: UserModalProps) {
                 <input
                   id="edit-username-input"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
                   minLength={3}
                   maxLength={20}
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label>Avatar</label>
                 <div className="avatar-selector">
@@ -326,9 +367,9 @@ export default function UserModal({ onClose }: UserModalProps) {
                     <button
                       key={av}
                       type="button"
-                      className={`avatar-option${selectedAvatar === av ? ' selected' : ''}`}
-                      onClick={() => setSelectedAvatar(av)}
-                      aria-pressed={selectedAvatar === av}
+                      className={`avatar-option${editAvatar === av ? ' selected' : ''}`}
+                      onClick={() => setEditAvatar(av)}
+                      aria-pressed={editAvatar === av}
                       aria-label={`Avatar ${i + 1}`}
                     >
                       <Image src={av} alt={`Avatar ${i + 1}`} width={56} height={56} unoptimized />
@@ -336,20 +377,60 @@ export default function UserModal({ onClose }: UserModalProps) {
                   ))}
                 </div>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setView('profile')}
-                >
+                <button type="button" className="btn-secondary" onClick={() => setView('profile')}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary">
-                  Guardar Cambios
-                </button>
+                <button type="submit" className="btn-primary">Guardar Cambios</button>
               </div>
             </form>
+          </>
+        )}
+
+        {/* ── ENLAZAR EMAIL ── */}
+        {view === 'link-email' && (
+          <>
+            <h2 id="modal-title" className="user-modal-title">Enlazar Email</h2>
+            <p style={{ fontSize: '0.85rem', opacity: 0.65, marginBottom: '1rem' }}>
+              Asocia tu email a la cuenta. No se usará para iniciar sesión.
+            </p>
+            {linkEmailOk ? (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <i className="fas fa-check-circle" style={{ fontSize: '2rem', color: 'var(--accent)', marginBottom: '0.75rem' }} aria-hidden="true" />
+                <p>Email enlazado correctamente.</p>
+                <button type="button" className="btn-secondary" style={{ marginTop: '1rem' }} onClick={() => setView('profile')}>
+                  Volver
+                </button>
+              </div>
+            ) : (
+              <form className="user-form" onSubmit={handleLinkEmail}>
+                {linkEmailErr && (
+                  <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                    {linkEmailErr}
+                  </p>
+                )}
+                <div className="form-group">
+                  <label htmlFor="link-email-input">Correo electrónico</label>
+                  <input
+                    id="link-email-input"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={linkEmailVal}
+                    onChange={(e) => setLinkEmailVal(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setView('profile')}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary" disabled={linkLoading}>
+                    {linkLoading ? 'Guardando...' : 'Enlazar'}
+                  </button>
+                </div>
+              </form>
+            )}
           </>
         )}
       </div>

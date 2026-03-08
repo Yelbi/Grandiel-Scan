@@ -8,6 +8,7 @@ import {
   primaryKey,
   serial,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 // ── Mangas ──────────────────────────────────────────────────────────────────
@@ -57,6 +58,10 @@ export const users = pgTable('users', {
   id:        text('id').primaryKey(), // = auth.users.id de Supabase
   username:  text('username').notNull(),
   avatar:    text('avatar').notNull(),
+  // Email interno (UUID@auth.grandiel) usado para autenticación — nunca cambia
+  authEmail: text('auth_email'),
+  // Email real opcional que el usuario puede enlazar a su cuenta
+  email:     text('email'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -94,7 +99,8 @@ export const readingHistory = pgTable(
   },
   (t) => [
     index('history_user_id_idx').on(t.userId),
-    index('history_user_manga_idx').on(t.userId, t.mangaId),
+    // UNIQUE para permitir upsert atómico sin race conditions
+    uniqueIndex('history_user_manga_unique').on(t.userId, t.mangaId),
   ],
 );
 
