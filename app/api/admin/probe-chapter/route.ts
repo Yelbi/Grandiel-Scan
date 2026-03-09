@@ -263,6 +263,50 @@ async function probePrefixedSubPartDeep(
   return [];
 }
 
+/* ── Patrón "prefix+part (N).webp": c-65-1%20(1).webp, c-65-1%20(2).webp …
+   Igual que probeParenPart pero con prefijo antepuesto al número de parte.
+   Ej: prefix="c-65-" → c-65-1%20(1).webp, c-65-2%20(1).webp …         ── */
+async function probePrefixedParenPart(
+  base: string, ext: string, prefix: string, session: Session,
+): Promise<string[]> {
+  const pages: string[] = [];
+  let partGaps = 0;
+
+  for (let part = 1; part <= MAX_PARTS; part++) {
+    const partPages: string[] = [];
+    let lastHit = -1;
+    let i = 1;
+
+    while (i <= PAREN_MAX_SCAN) {
+      const batchSize = Math.min(BATCH_SIZE, PAREN_MAX_SCAN - i + 1);
+      const batch = Array.from({ length: batchSize }, (_, k) =>
+        base + `${prefix}${part}%20(${i + k}).${ext}`,
+      );
+      const results = await probeBatch(batch, session);
+
+      for (let k = 0; k < results.length; k++) {
+        if (results[k]) {
+          partPages.push(`${prefix}${part}%20(${i + k}).${ext}`);
+          lastHit = i + k;
+        }
+      }
+
+      i += batchSize;
+      if (lastHit < 0 && i > PAREN_INIT_MISS) break;
+      if (lastHit >= 0 && i > lastHit + PAREN_TAIL_MISS) break;
+    }
+
+    if (partPages.length === 0) {
+      if (++partGaps >= MAX_PART_GAPS) break;
+      continue;
+    }
+    partGaps = 0;
+    pages.push(...partPages);
+  }
+
+  return pages;
+}
+
 /* ── Patrón "  (N).webp": %20%20(3).webp, %20%20(4).webp …
    Dos espacios seguidos de un número entre paréntesis.
    El número inicial puede no ser 1 (e.g. empieza en 3).
@@ -824,7 +868,10 @@ export async function POST(req: NextRequest) {
   // Chequeos de pares por prefijo: c-231-1-2.webp
   const pairPrefixChecks = prefixes.map((p) => `${p}1-2.${ext}`);
 
-  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks];
+  // Chequeos de paréntesis por prefijo: c-65-1%20(1).webp
+  const prefixParenChecks = prefixes.map((p) => `${p}1%20(1).${ext}`);
+
+  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks, ...prefixParenChecks];
 
   // Ejecutar listado de directorio y checks estándar en paralelo
   const [directoryFiles, allResults] = await Promise.all([
@@ -844,8 +891,9 @@ export async function POST(req: NextRequest) {
     hasSimple3, hasSimple2, hasZero, hasZero1,
     ...rest
   ] = allResults;
-  const prefixResults     = rest.slice(0, prefixVariants.length);
-  const pairPrefixResults = rest.slice(prefixVariants.length);
+  const prefixResults      = rest.slice(0, prefixVariants.length);
+  const pairPrefixResults  = rest.slice(prefixVariants.length, prefixVariants.length + prefixes.length);
+  const prefixParenResults = rest.slice(prefixVariants.length + prefixes.length);
   const hasDoubleSpaceParen = hasDsP1 || hasDsP3;
 
   /* ── 2. Evaluar en orden de especificidad ── */
@@ -972,6 +1020,16 @@ export async function POST(req: NextRequest) {
       const pages = await probePrefixedPair(base, ext, prefixes[i], session);
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `prefixed-pair(${prefixes[i]})`, count: pages.length });
+      }
+    }
+  }
+
+  // Patrón prefijo + paréntesis: c-65-1%20(1).webp, c-65-1%20(2).webp …
+  for (let i = 0; i < prefixes.length; i++) {
+    if (prefixParenResults[i]) {
+      const pages = await probePrefixedParenPart(base, ext, prefixes[i], session);
+      if (pages.length > 0) {
+        return NextResponse.json({ pages, pattern: `prefixed-paren(${prefixes[i]})`, count: pages.length });
       }
     }
   }
