@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import MangaCard from '@/components/manga/MangaCard';
 import type { Manga } from '@/lib/types';
 
 type Tab = 'actualizaciones' | 'nuevos';
 
-const MS_WEEK  = 7  * 24 * 60 * 60 * 1000;
-const MS_MONTH = 30 * 24 * 60 * 60 * 1000;
+const MS_DAY   = 86_400_000;
+const MS_WEEK  = 7  * MS_DAY;
+const MS_MONTH = 30 * MS_DAY;
 
 function relativeDate(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(diff / 86400000);
+  const days = Math.floor(diff / MS_DAY);
   if (days === 0) return 'Hoy';
   if (days === 1) return 'Ayer';
   if (days < 7)  return `Hace ${days} días`;
@@ -24,26 +25,95 @@ function relativeDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('es-ES');
 }
 
+function ActCard({ manga }: { manga: Manga }) {
+  const [error, setError] = useState(false);
+  const href = `/chapter/${manga.id}/${manga.latestChapter}`;
+
+  return (
+    <div className="manga-card product-item">
+      <Link href={href}>
+        <div className="manga-card-inner">
+          {!error ? (
+            <Image
+              src={manga.image}
+              alt={manga.title}
+              width={200}
+              height={280}
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              loading="lazy"
+              unoptimized={manga.image.startsWith('/img/')}
+              onError={() => setError(true)}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%', height: '100%', minHeight: '280px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--color-bg-secondary, #1a1a1a)',
+                color: 'var(--color-text-secondary, #b0b0b0)', fontSize: '2rem',
+              }}
+              aria-label={manga.title}
+            >
+              <i className="fas fa-book" aria-hidden="true" />
+            </div>
+          )}
+          {manga.latestChapter ? (
+            <div className="act-card__chapter">Cap. {manga.latestChapter}</div>
+          ) : null}
+        </div>
+        <h3 className="manga-card__title">{manga.title}</h3>
+        <div className="manga-meta">
+          <span className="manga-chapters">{relativeDate(manga.lastUpdated)}</span>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
 export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
   const [tab, setTab] = useState<Tab>('actualizaciones');
+  const now = Date.now();
 
   /* ─── Actualizaciones: ordenar por última actualización ─── */
-  const byUpdated = [...mangas].sort((a, b) =>
-    b.lastUpdated.localeCompare(a.lastUpdated),
+  const byUpdated = useMemo(
+    () => [...mangas].sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()),
+    [mangas],
+  );
+
+  const updatedToday = useMemo(
+    () => byUpdated.filter((m) => now - new Date(m.lastUpdated).getTime() < MS_DAY),
+    [byUpdated, now],
+  );
+  const updatedThisWeek = useMemo(
+    () => byUpdated.filter((m) => { const age = now - new Date(m.lastUpdated).getTime(); return age >= MS_DAY && age < MS_WEEK; }),
+    [byUpdated, now],
+  );
+  const updatedOlder = useMemo(
+    () => byUpdated.filter((m) => now - new Date(m.lastUpdated).getTime() >= MS_WEEK),
+    [byUpdated, now],
   );
 
   /* ─── Nuevos: ordenar y agrupar por fecha de añadido ─── */
-  const byAdded = [...mangas].sort((a, b) =>
-    b.dateAdded.localeCompare(a.dateAdded),
+  const byAdded = useMemo(
+    () => [...mangas].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()),
+    [mangas],
   );
-  const now = Date.now();
-  const thisWeek  = byAdded.filter((m) => now - new Date(m.dateAdded).getTime() < MS_WEEK);
-  const thisMonth = byAdded.filter((m) => {
-    const age = now - new Date(m.dateAdded).getTime();
-    return age >= MS_WEEK && age < MS_MONTH;
-  });
-  const older = byAdded.filter((m) => now - new Date(m.dateAdded).getTime() >= MS_MONTH);
-  const newCount = thisWeek.length + thisMonth.length;
+
+  const thisWeek = useMemo(
+    () => byAdded.filter((m) => now - new Date(m.dateAdded).getTime() < MS_WEEK),
+    [byAdded, now],
+  );
+  const thisMonth = useMemo(
+    () => byAdded.filter((m) => { const age = now - new Date(m.dateAdded).getTime(); return age >= MS_WEEK && age < MS_MONTH; }),
+    [byAdded, now],
+  );
+  const older = useMemo(
+    () => byAdded.filter((m) => now - new Date(m.dateAdded).getTime() >= MS_MONTH),
+    [byAdded, now],
+  );
+
+  const newCount    = thisWeek.length + thisMonth.length;
+  const recentCount = updatedToday.length + updatedThisWeek.length;
 
   return (
     <div className="curva">
@@ -63,128 +133,136 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
         <button
           role="tab"
           aria-selected={tab === 'actualizaciones'}
+          aria-controls="panel-actualizaciones"
           className={`novedades-tab${tab === 'actualizaciones' ? ' active' : ''}`}
           onClick={() => setTab('actualizaciones')}
         >
           <i className="fas fa-bell" aria-hidden="true" />
           Actualizaciones
-          <span className="novedades-tab__badge">{byUpdated.length}</span>
+          {recentCount > 0 && (
+            <span className="novedades-tab__badge">{recentCount}</span>
+          )}
         </button>
         <button
           role="tab"
           aria-selected={tab === 'nuevos'}
+          aria-controls="panel-nuevos"
           className={`novedades-tab${tab === 'nuevos' ? ' active' : ''}`}
           onClick={() => setTab('nuevos')}
         >
           <i className="fas fa-star" aria-hidden="true" />
           Nuevos
           {newCount > 0 && (
-            <span className="novedades-tab__badge novedades-tab__badge--accent">
-              {newCount}
-            </span>
+            <span className="novedades-tab__badge novedades-tab__badge--accent">{newCount}</span>
           )}
         </button>
       </div>
 
       {/* ══════════════ TAB: ACTUALIZACIONES ══════════════ */}
-      {tab === 'actualizaciones' && (
-        <ul className="history-list">
-          {byUpdated.map((manga) => (
-            <li key={manga.id} className="history-entry">
-              <div className="history-cover">
-                <Link href={`/manga/${manga.id}`}>
-                  <Image
-                    src={manga.image}
-                    alt={manga.title}
-                    width={60}
-                    height={80}
-                    style={{ objectFit: 'cover' }}
-                    loading="lazy"
-                    unoptimized={manga.image.startsWith('/img/')}
-                  />
-                </Link>
-              </div>
-              <div className="history-info">
-                <Link href={`/manga/${manga.id}`}>
-                  <strong>{manga.title}</strong>
-                </Link>
-                <p>
-                  Último cap.:{' '}
-                  <Link href={`/chapter/${manga.id}/${manga.latestChapter}`}>
-                    Cap. {manga.latestChapter}
-                  </Link>
-                </p>
-                <small>{relativeDate(manga.lastUpdated)}</small>
-              </div>
-              <Link
-                href={`/chapter/${manga.id}/${manga.latestChapter}`}
-                className="btn"
-              >
-                Leer
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div id="panel-actualizaciones" role="tabpanel" hidden={tab !== 'actualizaciones'}>
+        {byUpdated.length === 0 ? (
+          <p className="no-results">No hay actualizaciones disponibles.</p>
+        ) : (
+          <>
+            {updatedToday.length > 0 && (
+              <section className="nuevos-section">
+                <h2 className="nuevos-section__title">
+                  <i className="fas fa-fire" aria-hidden="true" /> Hoy
+                  <span className="nuevos-section__count">{updatedToday.length} títulos</span>
+                </h2>
+                <div className="mami">
+                  {updatedToday.map((m) => <ActCard key={m.id} manga={m} />)}
+                </div>
+              </section>
+            )}
+
+            {updatedThisWeek.length > 0 && (
+              <section className="nuevos-section">
+                <h2 className="nuevos-section__title">
+                  <i className="fas fa-calendar-week" aria-hidden="true" /> Esta semana
+                  <span className="nuevos-section__count">{updatedThisWeek.length} títulos</span>
+                </h2>
+                <div className="mami">
+                  {updatedThisWeek.map((m) => <ActCard key={m.id} manga={m} />)}
+                </div>
+              </section>
+            )}
+
+            {updatedOlder.length > 0 && (
+              <section className="nuevos-section nuevos-section--older">
+                <h2 className="nuevos-section__title">
+                  <i className="fas fa-history" aria-hidden="true" /> Anteriores
+                  <span className="nuevos-section__count">{updatedOlder.length} títulos</span>
+                </h2>
+                <div className="mami">
+                  {updatedOlder.map((m) => <ActCard key={m.id} manga={m} />)}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </div>
 
       {/* ══════════════ TAB: NUEVOS ══════════════ */}
-      {tab === 'nuevos' && (
-        <div>
-          {/* Sub-cabecera */}
-          <div className="nuevos-header">
-            <div className="nuevos-header__icon">
-              <i className="fas fa-star" aria-hidden="true" />
-            </div>
-            <div className="nuevos-header__text">
-              <h2 className="nuevos-header__title">Nuevos Mangas</h2>
-              <p className="nuevos-header__subtitle">
-                {newCount > 0
-                  ? `${newCount} título${newCount !== 1 ? 's' : ''} añadido${newCount !== 1 ? 's' : ''} en los últimos 30 días`
-                  : 'Todos los mangas ordenados por fecha de incorporación'}
-              </p>
-            </div>
-            {newCount > 0 && (
-              <span className="nuevos-header__badge">{newCount} nuevos</span>
-            )}
+      <div id="panel-nuevos" role="tabpanel" hidden={tab !== 'nuevos'}>
+        {/* Sub-cabecera */}
+        <div className="nuevos-header">
+          <div className="nuevos-header__icon">
+            <i className="fas fa-star" aria-hidden="true" />
           </div>
-
-          {thisWeek.length > 0 && (
-            <section className="nuevos-section">
-              <h2 className="nuevos-section__title">
-                <i className="fas fa-fire" aria-hidden="true" /> Esta semana
-                <span className="nuevos-section__count">{thisWeek.length} títulos</span>
-              </h2>
-              <div className="mami">
-                {thisWeek.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
-              </div>
-            </section>
-          )}
-
-          {thisMonth.length > 0 && (
-            <section className="nuevos-section">
-              <h2 className="nuevos-section__title">
-                <i className="fas fa-calendar-alt" aria-hidden="true" /> Este mes
-                <span className="nuevos-section__count">{thisMonth.length} títulos</span>
-              </h2>
-              <div className="mami">
-                {thisMonth.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
-              </div>
-            </section>
-          )}
-
-          {older.length > 0 && (
-            <section className="nuevos-section nuevos-section--older">
-              <h2 className="nuevos-section__title">
-                <i className="fas fa-history" aria-hidden="true" /> Anteriores
-                <span className="nuevos-section__count">{older.length} títulos</span>
-              </h2>
-              <div className="mami">
-                {older.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
-              </div>
-            </section>
+          <div className="nuevos-header__text">
+            <h2 className="nuevos-header__title">Nuevos Mangas</h2>
+            <p className="nuevos-header__subtitle">
+              {newCount > 0
+                ? `${newCount} título${newCount !== 1 ? 's' : ''} añadido${newCount !== 1 ? 's' : ''} en los últimos 30 días`
+                : 'Todos los mangas ordenados por fecha de incorporación'}
+            </p>
+          </div>
+          {newCount > 0 && (
+            <span className="nuevos-header__badge">{newCount} nuevos</span>
           )}
         </div>
-      )}
+
+        {thisWeek.length > 0 && (
+          <section className="nuevos-section">
+            <h2 className="nuevos-section__title">
+              <i className="fas fa-fire" aria-hidden="true" /> Esta semana
+              <span className="nuevos-section__count">{thisWeek.length} títulos</span>
+            </h2>
+            <div className="mami">
+              {thisWeek.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
+            </div>
+          </section>
+        )}
+
+        {thisMonth.length > 0 && (
+          <section className="nuevos-section">
+            <h2 className="nuevos-section__title">
+              <i className="fas fa-calendar-alt" aria-hidden="true" /> Este mes
+              <span className="nuevos-section__count">{thisMonth.length} títulos</span>
+            </h2>
+            <div className="mami">
+              {thisMonth.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
+            </div>
+          </section>
+        )}
+
+        {older.length > 0 && (
+          <section className="nuevos-section nuevos-section--older">
+            <h2 className="nuevos-section__title">
+              <i className="fas fa-history" aria-hidden="true" /> Anteriores
+              <span className="nuevos-section__count">{older.length} títulos</span>
+            </h2>
+            <div className="mami">
+              {older.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
+            </div>
+          </section>
+        )}
+
+        {byAdded.length === 0 && (
+          <p className="no-results">No hay mangas en el catálogo todavía.</p>
+        )}
+      </div>
 
     </div>
   );

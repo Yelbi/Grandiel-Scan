@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Manga } from '@/lib/types';
+import { ALLOWED_GENRES } from '@/lib/config';
 
 /* ─── helpers ──────────────────────────────────────── */
 function titleToId(title: string): string {
@@ -37,17 +38,6 @@ function buildViewerUrl(template: string, folderId: string, chapter: number): st
     .replace(/\{chapter\}/g, String(chapter));
 }
 
-const GENRES = [
-  'Acción', 'Apocalíptico', 'Artes Marciales', 'Aventura', 'Bender',
-  'Ciencia Ficción', 'Comedia', 'Demonios', 'Deporte', 'Drama',
-  'Familia', 'Fantasía', 'Gore', 'Harem', 'Harem Inverso',
-  'Histórico', 'Horror', 'Isekai', 'Josei', 'Magia',
-  'Mecha', 'Militar', 'Misterio', 'Psicológico', 'Realidad Virtual',
-  'Recuentos de la vida', 'Reencarnación', 'Regresion', 'Romance', 'Seinen',
-  'Shonen', 'Shoujo', 'Sistema', 'Supernatural', 'Supervivencia',
-  'Tragedia', 'Transmigración', 'Vida Escolar',
-];
-
 function GenrePicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const toggle = (genre: string) =>
     onChange(value.includes(genre) ? value.filter((g) => g !== genre) : [...value, genre]);
@@ -55,7 +45,7 @@ function GenrePicker({ value, onChange }: { value: string[]; onChange: (v: strin
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {GENRES.map((g) => {
+        {ALLOWED_GENRES.map((g) => {
           const active = value.includes(g);
           return (
             <button

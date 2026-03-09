@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 1800; // ISR: revalidate every 30 minutes
+export const revalidate = 300; // ISR: revalidate every 5 minutes
 import { getAllMangas } from '@/lib/data';
 import NovedadesClient from './NovedadesClient';
 

@@ -22,11 +22,13 @@ export default function MangaComments({
 }) {
   const { profile, isLoggedIn } = useUserProfile();
 
-  const [comments, setComments]     = useState<Comment[]>([]);
-  const [text, setText]             = useState('');
-  const [error, setError]           = useState('');
-  const [loading, setLoading]       = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [comments, setComments]       = useState<Comment[]>([]);
+  const [text, setText]               = useState('');
+  const [error, setError]             = useState('');
+  const [fetchError, setFetchError]   = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [submitting, setSubmitting]   = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   const apiUrl = chapterNum !== undefined
     ? `/api/comments/${mangaId}?chapter=${chapterNum}`
@@ -35,9 +37,14 @@ export default function MangaComments({
   const fetchComments = useCallback(async () => {
     try {
       const res = await fetch(apiUrl);
-      if (res.ok) setComments(await res.json() as Comment[]);
+      if (res.ok) {
+        setComments(await res.json() as Comment[]);
+        setFetchError(false);
+      } else {
+        setFetchError(true);
+      }
     } catch {
-      // fallo silencioso — los comentarios son opcionales
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -73,8 +80,6 @@ export default function MangaComments({
   };
 
   const deleteComment = async (commentId: number) => {
-    if (!confirm('¿Eliminar este comentario?')) return;
-
     const res = await fetch(`/api/comments/${mangaId}`, {
       method:  'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -84,6 +89,7 @@ export default function MangaComments({
     if (res.ok) {
       setComments((prev) => prev.filter((c) => c.id !== commentId));
     }
+    setConfirmDelete(null);
   };
 
   return (
@@ -145,9 +151,16 @@ export default function MangaComments({
 
       {/* ── Lista ── */}
       {loading ? (
-        <p className="manga-comments__empty">
+        <p className="manga-comments__empty" role="status">
           <i className="fas fa-spinner fa-spin" aria-hidden="true" /> Cargando comentarios...
         </p>
+      ) : fetchError ? (
+        <div className="manga-comments__fetch-error">
+          <p><i className="fas fa-exclamation-circle" aria-hidden="true" /> No se pudieron cargar los comentarios.</p>
+          <button className="manga-comments__retry" onClick={() => { setLoading(true); void fetchComments(); }}>
+            <i className="fas fa-redo" aria-hidden="true" /> Reintentar
+          </button>
+        </div>
       ) : comments.length === 0 ? (
         <p className="manga-comments__empty">
           <i className="far fa-comment-dots" aria-hidden="true" /> Sé el primero en comentar.
@@ -177,14 +190,33 @@ export default function MangaComments({
                     })}
                   </time>
                   {profile?.id === c.userId && (
-                    <button
-                      className="manga-comment__delete"
-                      onClick={() => void deleteComment(c.id)}
-                      title="Eliminar comentario"
-                      aria-label="Eliminar comentario"
-                    >
-                      <i className="fas fa-trash-alt" aria-hidden="true" />
-                    </button>
+                    confirmDelete === c.id ? (
+                      <span className="manga-comment__confirm-delete">
+                        <button
+                          className="manga-comment__confirm-yes"
+                          onClick={() => void deleteComment(c.id)}
+                          aria-label="Confirmar eliminación"
+                        >
+                          <i className="fas fa-check" aria-hidden="true" /> Eliminar
+                        </button>
+                        <button
+                          className="manga-comment__confirm-no"
+                          onClick={() => setConfirmDelete(null)}
+                          aria-label="Cancelar"
+                        >
+                          <i className="fas fa-times" aria-hidden="true" /> Cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        className="manga-comment__delete"
+                        onClick={() => setConfirmDelete(c.id)}
+                        title="Eliminar comentario"
+                        aria-label="Eliminar comentario"
+                      >
+                        <i className="fas fa-trash-alt" aria-hidden="true" />
+                      </button>
+                    )
                   )}
                 </div>
                 <p className="manga-comment__text">{c.text}</p>

@@ -30,13 +30,5 @@ export interface HistoryEntry {
   image?: string;
 }
 
-export interface ReaderSettings {
-  zoom: number;
-  brightness: number;
-  contrast: number;
-  fitMode: 'width' | 'height' | 'original';
-  backgroundColor: string;
-}
-
 export type ReadingMode = 'paginated' | 'continuous';
 export type SortOrder = 'title-asc' | 'title-desc' | 'date-desc' | 'date-asc';

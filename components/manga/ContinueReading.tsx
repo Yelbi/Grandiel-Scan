@@ -6,9 +6,21 @@ import { useState } from 'react';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import type { HistoryEntry } from '@/lib/types';
 
-function ContinueReadingCard({ entry }: { entry: HistoryEntry }) {
+interface ContinueReadingProps {
+  /** Mapa id→imagen de todos los mangas para enriquecer entradas antiguas sin imagen. */
+  mangaImages?: Record<string, string>;
+}
+
+function ContinueReadingCard({
+  entry,
+  mangaImages,
+}: {
+  entry: HistoryEntry;
+  mangaImages?: Record<string, string>;
+}) {
   const [imgError, setImgError] = useState(false);
-  const image = entry.image;
+  // Usar la imagen del entry; si no existe (entrada antigua), buscarla en mangaImages
+  const image = entry.image ?? mangaImages?.[entry.mangaId];
 
   return (
     <div className="manga-card product-item">
@@ -67,21 +79,19 @@ function ContinueReadingCard({ entry }: { entry: HistoryEntry }) {
   );
 }
 
-export default function ContinueReading() {
+export default function ContinueReading({ mangaImages }: ContinueReadingProps) {
   const { history } = useHistoryContext();
 
   if (history.length === 0) return null;
 
   const items = history.slice(0, 6);
 
-  if (items.length === 0) return null;
-
   return (
     <section className="continue-reading-container index-section" aria-label="Continuar leyendo">
       <h2 className="section-title">Continuar Leyendo</h2>
       <div className="mami">
         {items.map((entry) => (
-          <ContinueReadingCard key={entry.mangaId} entry={entry} />
+          <ContinueReadingCard key={entry.mangaId} entry={entry} mangaImages={mangaImages} />
         ))}
       </div>
     </section>

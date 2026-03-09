@@ -1,6 +1,6 @@
 /**
- * reader.css - Estilos del Modo de Lectura Mejorado
- * Grandiel Scan - Fase 6.2 Características Avanzadas
+ * reader.css - Estilos del lector de capítulos
+ * Grandiel Scan
  */
 
 /* ===== PANEL DE CONTROLES ===== */
@@ -123,232 +123,6 @@
     border: none;
 }
 
-/* ===== BOTONES ===== */
-.reader-btn {
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 6px;
-    color: var(--color-text, #fff);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.reader-btn:hover {
-    background: rgba(255, 0, 0, 0.3);
-}
-
-.reader-btn:focus {
-    outline: 2px solid var(--color-primary, #ff0000);
-    outline-offset: 2px;
-}
-
-/* ===== BOTONES DE AJUSTE ===== */
-.reader-fit-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-.reader-fit-btn {
-    flex: 1;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: #888;
-    font-size: 11px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s ease;
-}
-
-.reader-fit-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--color-text, #fff);
-}
-
-.reader-fit-btn.active {
-    background: rgba(255, 0, 0, 0.2);
-    border-color: var(--color-primary, #ff0000);
-    color: var(--color-primary, #ff0000);
-}
-
-.reader-fit-btn:focus {
-    outline: 2px solid var(--color-primary, #ff0000);
-    outline-offset: 2px;
-}
-
-/* ===== BOTONES DE FONDO ===== */
-.reader-bg-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-.reader-bg-btn {
-    width: 32px;
-    height: 32px;
-    border: 2px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.reader-bg-btn:hover {
-    transform: scale(1.1);
-}
-
-.reader-bg-btn.active {
-    border-color: var(--color-primary, #ff0000);
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
-}
-
-.reader-bg-btn:focus {
-    outline: 2px solid var(--color-primary, #ff0000);
-    outline-offset: 2px;
-}
-
-/* ===== ACCIONES ===== */
-.reader-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.reader-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px;
-    background: var(--color-primary, #ff0000);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.reader-action-btn:hover {
-    background: #cc0000;
-}
-
-.reader-action-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #888;
-}
-
-.reader-action-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--color-text, #fff);
-}
-
-.reader-action-btn:focus {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-}
-
-/* ===== PANEL DE AYUDA ===== */
-.reader-help-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s ease;
-}
-
-.reader-help-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.reader-help-panel {
-    position: relative;
-    background: #1B2631;
-    border-radius: 16px;
-    padding: 32px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
-}
-
-.reader-help-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.reader-help-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--color-text, #fff);
-}
-
-.reader-help-panel h3 {
-    color: var(--color-text, #fff);
-    font-size: 18px;
-    margin: 0 0 24px 0;
-    text-align: center;
-}
-
-.reader-shortcuts {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.reader-shortcut {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.reader-shortcut kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 32px;
-    padding: 4px 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    color: var(--color-text, #fff);
-    font-family: monospace;
-    font-size: 12px;
-}
-
-.reader-shortcut span {
-    color: #888;
-    font-size: 13px;
-}
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .reader-controls {
@@ -379,40 +153,6 @@
     .reader-controls-panel.active {
         transform: translateY(0);
     }
-
-    .reader-help-panel {
-        margin: 16px;
-        padding: 24px;
-    }
-}
-
-@media (max-width: 480px) {
-    .reader-fit-buttons {
-        flex-wrap: wrap;
-    }
-
-    .reader-fit-btn {
-        flex: 1 1 calc(33% - 8px);
-        min-width: 0;
-    }
-
-    .reader-shortcut {
-        flex-wrap: wrap;
-    }
-
-    .reader-shortcut kbd {
-        font-size: 11px;
-        min-width: 28px;
-    }
-}
-
-/* ===== FULLSCREEN MODE ===== */
-:fullscreen .reader-controls {
-    z-index: 10001;
-}
-
-:fullscreen #chapter-images {
-    min-height: 100vh;
 }
 
 /* ===== READER WRAPPER ===== */
@@ -554,6 +294,11 @@
   padding: var(--spacing-lg, 24px) var(--spacing-md, 16px) var(--spacing-2xl, 48px);
 }
 
+/* Brillo aplicado desde CSS variable — evita repaints por cada imagen */
+.reader-content img {
+  filter: brightness(var(--reader-brightness, 100%));
+}
+
 /* ===== PAGE NAVIGATION ===== */
 .reader-page-nav {
   display: flex;
@@ -674,13 +419,66 @@
   color: #fff;
 }
 
+/* ===== PAGE ERROR FALLBACK ===== */
+.reader-page-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted, #666);
+  font-size: var(--font-size-sm, 0.875rem);
+  min-height: 200px;
+}
+
+.reader-page-error i {
+  font-size: 2rem;
+  color: var(--color-text-muted, #666);
+}
+
+.reader-page-error__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  color: var(--color-text, #fff);
+  font-size: var(--font-size-xs, 0.75rem);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.reader-page-error__retry:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ===== EMPTY CHAPTER ===== */
+.reader-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 60vh;
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-secondary, #b0b0b0);
+}
+
+.reader-empty i {
+  font-size: 3rem;
+  color: var(--color-text-muted, #666);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .reader-topbar {
     padding: 0 var(--spacing-sm, 8px);
     height: 48px;
     gap: 4px;
-    /* Safe area iOS en landscape */
     padding-left: max(var(--spacing-sm, 8px), env(safe-area-inset-left));
     padding-right: max(var(--spacing-sm, 8px), env(safe-area-inset-right));
   }
@@ -689,14 +487,12 @@
     display: none;
   }
 
-  /* Aumentar touch targets a 44px en móvil */
   .reader-mode-btn,
   .reader-topbar__nav {
     width: 44px;
     height: 44px;
   }
 
-  /* Selector de capítulo más compacto */
   .reader-chapter-select {
     height: 36px;
     max-width: 90px;
@@ -705,12 +501,10 @@
 
   .reader-content {
     padding: var(--spacing-md, 16px) var(--spacing-sm, 8px) var(--spacing-xl, 32px);
-    /* Safe area lateral en landscape */
     padding-left: max(var(--spacing-sm, 8px), env(safe-area-inset-left));
     padding-right: max(var(--spacing-sm, 8px), env(safe-area-inset-right));
   }
 
-  /* Botones de página más grandes */
   .reader-page-btn {
     width: 52px;
     height: 52px;
@@ -721,7 +515,6 @@
     font-size: 0.8rem;
   }
 
-  /* Safe area inferior para iPhone con home bar */
   .reader-chapter-nav {
     padding-bottom: max(var(--spacing-xl, 32px), env(safe-area-inset-bottom));
   }
@@ -736,15 +529,8 @@
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     font-size: 0.75rem;
   }
-
-  /* Ocultar texto en botones de capítulo inferior en pantallas muy pequeñas */
-  .reader-chapter-btn--home span,
-  .reader-chapter-btn i ~ * {
-    display: none;
-  }
 }
 
-/* Safe area en modo landscape iOS */
 @media (max-height: 500px) and (orientation: landscape) {
   .reader-topbar {
     height: 40px;
@@ -760,4 +546,9 @@
 /* Cuando el navbar se oculta, el reader topbar sube al top */
 body.nav-hidden .reader-topbar {
   top: 0;
+}
+
+/* Fullscreen */
+:fullscreen .reader-controls {
+  z-index: 10001;
 }

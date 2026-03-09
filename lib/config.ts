@@ -3,29 +3,26 @@ export const CONFIG = {
     THEME: 'grandiel-theme',
     FAVORITES: 'grandiel-favorites',
     HISTORY: 'grandiel-history',
-    SEARCH_HISTORY: 'grandiel-search-history',
-    SEEN_CHAPTERS: 'grandiel-seen-chapters',
-    USER_PROFILE: 'grandiel-user-profile',
     READING_MODE: 'grandiel-reading-mode',
     READER_SETTINGS: 'grandiel-reader-settings',
     PROGRESS: 'grandiel-progress',
-    FILTERS: 'grandiel-filters',
-    PREFERENCES: 'grandiel-preferences',
   },
   PAGINATION: {
     ITEMS_PER_PAGE: 36,
     MAX_HISTORY_ITEMS: 100,
-    MAX_SEARCH_HISTORY: 20,
   },
 } as const;
 
-export const EVENTS = {
-  THEME_CHANGE: 'grandiel:theme-change',
-  SEARCH_UPDATE: 'grandiel:search-update',
-  FILTER_UPDATE: 'grandiel:filter-update',
-  DATA_LOADED: 'grandiel:data-loaded',
-  FAVORITE_TOGGLE: 'grandiel:favorite-toggle',
-  HISTORY_UPDATE: 'grandiel:history-update',
-  READING_MODE_CHANGE: 'grandiel:reading-mode-change',
-  NEW_CHAPTER_AVAILABLE: 'grandiel:new-chapter-available',
-} as const;
+/** Géneros válidos. Cualquier valor fuera de esta lista se filtra de la UI. */
+export const ALLOWED_GENRES = [
+  'Acción', 'Apocalíptico', 'Artes Marciales', 'Aventura', 'Bender',
+  'Ciencia Ficción', 'Comedia', 'Demonios', 'Deporte', 'Drama',
+  'Familia', 'Fantasía', 'Gore', 'Harem', 'Harem Inverso',
+  'Histórico', 'Horror', 'Isekai', 'Josei', 'Magia',
+  'Mecha', 'Militar', 'Misterio', 'Psicológico', 'Realidad Virtual',
+  'Recuentos de la vida', 'Reencarnación', 'Regresion', 'Romance', 'Seinen',
+  'Shonen', 'Shoujo', 'Sistema', 'Supernatural', 'Supervivencia',
+  'Tragedia', 'Transmigración', 'Vida Escolar',
+] as const;
+
+export type Genre = typeof ALLOWED_GENRES[number];

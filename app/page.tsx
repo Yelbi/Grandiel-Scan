@@ -73,7 +73,7 @@ export default async function HomePage() {
 
       <div className="curva">
         {/* Continuar leyendo (client-side) */}
-        <ContinueReading />
+        <ContinueReading mangaImages={Object.fromEntries(mangas.map((m) => [m.id, m.image]))} />
 
         {/* ===== MÁS VISTOS ===== */}
         {mostViewed.length >= 1 && (

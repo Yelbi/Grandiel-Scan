@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -95,6 +95,49 @@ function IcoArrowsH() {
   );
 }
 
+/* ─── Page image with error fallback ─── */
+function PageImage({
+  src,
+  alt,
+  style,
+  priority,
+  loading,
+}: {
+  src: string;
+  alt: string;
+  style: React.CSSProperties;
+  priority?: boolean;
+  loading?: 'lazy' | 'eager';
+}) {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return (
+      <div className="reader-page-error" style={style}>
+        <i className="fas fa-exclamation-circle" aria-hidden="true" />
+        <span>No se pudo cargar la página</span>
+        <button className="reader-page-error__retry" onClick={() => setError(false)}>
+          <i className="fas fa-redo" aria-hidden="true" /> Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={800}
+      height={1200}
+      style={style}
+      priority={priority}
+      loading={loading}
+      unoptimized
+      onError={() => setError(true)}
+    />
+  );
+}
+
 /* ─── Main component ─── */
 interface ChapterReaderProps {
   manga: Manga;
@@ -111,19 +154,37 @@ export default function ChapterReader({
 }: ChapterReaderProps) {
   const router = useRouter();
   const { addEntry } = useHistoryContext();
-  const [mode, setMode] = useState<ReadingMode>('continuous');
-  const [currentPage, setCurrentPage] = useState(0);
-  const [brightness, setBrightness] = useState(100);
-  const [imgWidth, setImgWidth] = useState(75);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
-  // Ref para tener siempre la página más reciente sin depender del closure
-  const currentPageRef = useRef(0);
 
-  const pages = chapter.pages.map((p) => resolvePageUrl(chapter, p));
-  const sortedChapters = [...manga.chapters].sort((a, b) => a - b);
+  const [mode, setMode]           = useState<ReadingMode>('continuous');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [brightness, setBrightness]   = useState(100);
+  const [imgWidth, setImgWidth]       = useState(75);
+  const [panelOpen, setPanelOpen]     = useState(false);
+
+  const panelRef         = useRef<HTMLDivElement>(null);
+  const pageRefs         = useRef<(HTMLDivElement | null)[]>([]);
+  const currentPageRef   = useRef(0);
+  const touchStartX      = useRef(0);
+  const touchStartY      = useRef(0);
+  const pendingScrollPage = useRef<number | null>(null);
+
+  const pages = useMemo(
+    () => chapter.pages.map((p) => resolvePageUrl(chapter, p)),
+    [chapter],
+  );
+
+  const sortedChapters = useMemo(
+    () => [...manga.chapters].sort((a, b) => a - b),
+    [manga.chapters],
+  );
+
   const progressKey = `${manga.id}/${chapter.chapter}`;
+
+  // imageStyle no incluye brightness — va como CSS variable en el wrapper
+  const imageStyle = useMemo<React.CSSProperties>(
+    () => ({ maxWidth: `${imgWidth}%`, height: 'auto', margin: '0 auto', display: 'block' }),
+    [imgWidth],
+  );
 
   // Restaurar página guardada y registrar en historial
   useEffect(() => {
@@ -149,9 +210,9 @@ export default function ChapterReader({
       page:      restoredPage,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manga.id, manga.title, chapter.chapter]); // addEntry es estable
+  }, [manga.id, manga.title, chapter.chapter]);
 
-  // Guardar página en localStorage al cambiar (ambos modos)
+  // Guardar página en localStorage al cambiar
   useEffect(() => {
     currentPageRef.current = currentPage;
     try {
@@ -163,6 +224,7 @@ export default function ChapterReader({
     } catch {}
   }, [currentPage, progressKey]);
 
+  // Restaurar modo de lectura
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.READING_MODE);
@@ -170,7 +232,7 @@ export default function ChapterReader({
     } catch {}
   }, []);
 
-  // Cargar ajustes de lectura guardados (brillo, anchura)
+  // Restaurar ajustes (brillo, anchura)
   useEffect(() => {
     try {
       const saved = JSON.parse(
@@ -183,6 +245,7 @@ export default function ChapterReader({
     } catch {}
   }, []);
 
+  // Navegación por teclado (solo modo paginado)
   useEffect(() => {
     if (mode !== 'paginated') return;
     const handler = (e: KeyboardEvent) => {
@@ -196,30 +259,45 @@ export default function ChapterReader({
     return () => window.removeEventListener('keydown', handler);
   }, [mode, pages.length]);
 
-  // Detectar página actual en modo continuo por scroll
+  // IntersectionObserver para detectar página visible en modo continuo
   useEffect(() => {
     if (mode !== 'continuous') return;
-    const update = () => {
-      const els = pageRefs.current;
-      const mid = window.innerHeight / 2;
-      let closest = 0;
-      let closestDist = Infinity;
-      els.forEach((el, i) => {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const dist = Math.abs(rect.top + rect.height / 2 - mid);
-        if (dist < closestDist) { closestDist = dist; closest = i; }
-      });
-      if (closest !== currentPageRef.current) {
-        setCurrentPage(closest);
-        currentPageRef.current = closest;
-      }
-    };
-    window.addEventListener('scroll', update, { passive: true });
-    update();
-    return () => window.removeEventListener('scroll', update);
+
+    const ratios = new Map<number, number>();
+    const observers: IntersectionObserver[] = [];
+
+    pageRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          ratios.set(i, entry.intersectionRatio);
+          let best = 0, bestRatio = -1;
+          ratios.forEach((r, idx) => { if (r > bestRatio) { bestRatio = r; best = idx; } });
+          if (best !== currentPageRef.current) {
+            setCurrentPage(best);
+            currentPageRef.current = best;
+          }
+        },
+        { threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0] },
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach((obs) => obs.disconnect());
   }, [mode, pages.length]);
 
+  // Al cambiar a modo continuo, hacer scroll a la página actual
+  useEffect(() => {
+    if (mode !== 'continuous' || pendingScrollPage.current === null) return;
+    const targetPage = pendingScrollPage.current;
+    pendingScrollPage.current = null;
+    requestAnimationFrame(() => {
+      pageRefs.current[targetPage]?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    });
+  }, [mode]);
+
+  // Cerrar panel al click fuera
   useEffect(() => {
     if (!panelOpen) return;
     const handler = (e: MouseEvent) => {
@@ -232,6 +310,7 @@ export default function ChapterReader({
   }, [panelOpen]);
 
   const saveMode = useCallback((m: ReadingMode) => {
+    if (m === 'continuous') pendingScrollPage.current = currentPageRef.current;
     setMode(m);
     try { localStorage.setItem(CONFIG.STORAGE_KEYS.READING_MODE, m); } catch {}
   }, []);
@@ -252,15 +331,35 @@ export default function ChapterReader({
     } catch {}
   }, []);
 
+  // Touch/swipe para modo paginado
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (Math.abs(dx) > 50 && dy < 80) {
+      if (dx < 0) setCurrentPage((p) => Math.min(p + 1, pages.length - 1));
+      else        setCurrentPage((p) => Math.max(p - 1, 0));
+    }
+  }, [pages.length]);
+
   const progress = pages.length > 1 ? (currentPage / (pages.length - 1)) * 100 : 100;
 
-  const imageStyle: React.CSSProperties = {
-    filter: brightness !== 100 ? `brightness(${brightness}%)` : undefined,
-    maxWidth: `${imgWidth}%`,
-    height: 'auto',
-    margin: '0 auto',
-    display: 'block',
-  };
+  // Guard: capítulo sin páginas
+  if (pages.length === 0) {
+    return (
+      <div className="reader-wrapper">
+        <div className="reader-empty">
+          <i className="fas fa-file-slash" aria-hidden="true" />
+          <p>Este capítulo no tiene páginas disponibles.</p>
+          <Link href={`/manga/${manga.id}`} className="btn">Volver al manga</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="reader-wrapper">
@@ -284,6 +383,7 @@ export default function ChapterReader({
             className={`reader-mode-btn${mode === 'paginated' ? ' active' : ''}`}
             onClick={() => saveMode('paginated')}
             title="Modo paginado"
+            aria-label="Modo paginado"
             aria-pressed={mode === 'paginated'}
             suppressHydrationWarning
           >
@@ -293,6 +393,7 @@ export default function ChapterReader({
             className={`reader-mode-btn${mode === 'continuous' ? ' active' : ''}`}
             onClick={() => saveMode('continuous')}
             title="Modo continuo"
+            aria-label="Modo continuo"
             aria-pressed={mode === 'continuous'}
             suppressHydrationWarning
           >
@@ -310,38 +411,36 @@ export default function ChapterReader({
             suppressHydrationWarning
           >
             {sortedChapters.map((cap) => (
-              <option key={cap} value={cap}>
-                Cap. {cap}
-              </option>
+              <option key={cap} value={cap}>Cap. {cap}</option>
             ))}
           </select>
 
           <div className="reader-topbar__divider" />
 
-          {/* Prev/Next chapter nav */}
+          {/* Prev/Next chapter */}
           {prevCap !== null ? (
-            <Link href={`/chapter/${manga.id}/${prevCap}`} className="reader-topbar__nav" title={`Cap. ${prevCap}`}>
+            <Link href={`/chapter/${manga.id}/${prevCap}`} className="reader-topbar__nav" title={`Cap. ${prevCap}`} aria-label={`Capítulo anterior: ${prevCap}`}>
               <IcoChevronLeft />
             </Link>
           ) : (
-            <span className="reader-topbar__nav reader-topbar__nav--disabled" aria-disabled="true">
+            <span className="reader-topbar__nav reader-topbar__nav--disabled" aria-disabled="true" aria-label="No hay capítulo anterior">
               <IcoChevronLeft />
             </span>
           )}
 
           {nextCap !== null ? (
-            <Link href={`/chapter/${manga.id}/${nextCap}`} className="reader-topbar__nav" title={`Cap. ${nextCap}`}>
+            <Link href={`/chapter/${manga.id}/${nextCap}`} className="reader-topbar__nav" title={`Cap. ${nextCap}`} aria-label={`Capítulo siguiente: ${nextCap}`}>
               <IcoChevronRight />
             </Link>
           ) : (
-            <span className="reader-topbar__nav reader-topbar__nav--disabled" aria-disabled="true">
+            <span className="reader-topbar__nav reader-topbar__nav--disabled" aria-disabled="true" aria-label="No hay capítulo siguiente">
               <IcoChevronRight />
             </span>
           )}
         </div>
       </div>
 
-      {/* Progress bar (ambos modos) */}
+      {/* Progress bar */}
       <div
         className="reader-progress-bar"
         role="progressbar"
@@ -352,20 +451,25 @@ export default function ChapterReader({
         <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {/* Content */}
-      <div className="reader-content">
+      {/* Content — brightness aplicado como CSS variable en el wrapper */}
+      <div
+        className="reader-content"
+        style={brightness !== 100 ? { '--reader-brightness': `${brightness}%` } as React.CSSProperties : undefined}
+      >
         {mode === 'paginated' ? (
           <>
-            <div className="dede" style={{ display: 'flex', justifyContent: 'center' }}>
-              <Image
+            <div
+              className="dede"
+              style={{ display: 'flex', justifyContent: 'center' }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <PageImage
                 key={pages[currentPage]}
                 src={pages[currentPage]}
                 alt={`Página ${currentPage + 1} de ${pages.length}`}
-                width={800}
-                height={1200}
                 style={imageStyle}
                 priority={currentPage === 0}
-                unoptimized
               />
             </div>
 
@@ -397,15 +501,12 @@ export default function ChapterReader({
                 ref={(el) => { pageRefs.current[i] = el; }}
                 style={{ display: 'flex', justifyContent: 'center' }}
               >
-                <Image
+                <PageImage
                   src={src}
                   alt={`Página ${i + 1}`}
-                  width={800}
-                  height={1200}
                   style={imageStyle}
                   priority={i === 0}
                   loading={i === 0 ? undefined : i < 3 ? 'eager' : 'lazy'}
-                  unoptimized
                 />
               </div>
             ))}
@@ -435,7 +536,7 @@ export default function ChapterReader({
           )}
         </div>
 
-        {/* Comments for this chapter */}
+        {/* Comentarios del capítulo */}
         <MangaComments mangaId={manga.id} chapterNum={chapter.chapter} />
       </div>
 

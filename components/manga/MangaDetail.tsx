@@ -2,26 +2,41 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
+import { useUserProfile } from '@/components/providers/UserProfileProvider';
 import MangaComments from './MangaComments';
 import type { Manga } from '@/lib/types';
 
-interface MangaDetailProps {
-  manga: Manga;
-}
-
-export default function MangaDetail({ manga }: MangaDetailProps) {
+export default function MangaDetail({ manga }: { manga: Manga }) {
   const { isFavorite, toggle } = useFavoritesContext();
   const { getLastRead } = useHistoryContext();
+  const { profile } = useUserProfile();
+
   const fav = isFavorite(manga.id);
   const lastRead = getLastRead(manga.id);
   const lastReadChapter = lastRead?.chapter ?? null;
+  const [showLoginHint, setShowLoginHint] = useState(false);
 
   const statusClass =
     manga.status === 'Finalizado' ? 'manga-badge--done' : 'manga-badge--ongoing';
 
   const firstChapter = manga.chapters[0];
+
+  const chaptersDesc = useMemo(
+    () => [...manga.chapters].reverse(),
+    [manga.chapters],
+  );
+
+  const handleFavorite = () => {
+    if (!profile) {
+      setShowLoginHint(true);
+      setTimeout(() => setShowLoginHint(false), 2500);
+      return;
+    }
+    toggle(manga.id);
+  };
 
   return (
     <div className="curva">
@@ -50,7 +65,7 @@ export default function MangaDetail({ manga }: MangaDetailProps) {
             <span className={`manga-badge ${statusClass}`}>{manga.status}</span>
           </div>
 
-          {/* Géneros — mismo estilo que filtros de galería */}
+          {/* Géneros */}
           <div className="manga-genres">
             {manga.genres.map((genre) => (
               <Link
@@ -74,7 +89,7 @@ export default function MangaDetail({ manga }: MangaDetailProps) {
             </span>
           </div>
 
-          {/* Descripción dentro del header para llenar el espacio */}
+          {/* Descripción */}
           <p className="manga-header__description">{manga.description}</p>
 
           {/* Botones de acción */}
@@ -95,14 +110,21 @@ export default function MangaDetail({ manga }: MangaDetailProps) {
                 <i className="fas fa-redo" aria-hidden="true" /> Continuar · Cap. {lastReadChapter}
               </Link>
             )}
-            <button
-              className={`manga-fav-btn${fav ? ' manga-fav-btn--active' : ''}`}
-              onClick={() => toggle(manga.id)}
-              aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-            >
-              <i className={fav ? 'fas fa-heart' : 'far fa-heart'} />
-              {fav ? ' En Favoritos' : ' Favoritos'}
-            </button>
+            <div className="favorite-btn-wrapper">
+              <button
+                className={`manga-fav-btn${fav ? ' manga-fav-btn--active' : ''}`}
+                onClick={handleFavorite}
+                aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+              >
+                <i className={fav ? 'fas fa-heart' : 'far fa-heart'} />
+                {fav ? ' En Favoritos' : ' Favoritos'}
+              </button>
+              {showLoginHint && (
+                <span className="favorite-login-hint" role="alert">
+                  Inicia sesión para guardar favoritos
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -116,11 +138,14 @@ export default function MangaDetail({ manga }: MangaDetailProps) {
           </div>
           <div className="chapters-scroll">
             <section className="capitulos" aria-label="Lista de capítulos">
-              {[...manga.chapters].reverse().map((cap) => {
+              {chaptersDesc.map((cap) => {
                 const isLastRead = lastReadChapter !== null && cap === lastReadChapter;
                 return (
                   <div key={cap} className={`cap${isLastRead ? ' cap--last-read' : ''}`}>
-                    <Link href={`/chapter/${manga.id}/${cap}`}>
+                    <Link
+                      href={`/chapter/${manga.id}/${cap}`}
+                      aria-label={`Capítulo ${cap}${isLastRead ? ' — último leído' : ''}`}
+                    >
                       Capítulo {cap}
                       {isLastRead && (
                         <span className="chapter-badge">Último leído</span>

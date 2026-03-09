@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import ChapterReader from '@/components/chapter/ChapterReader';
 import { getChapter, getMangaById } from '@/lib/data';
 
-export const revalidate = 86400; // ISR: revalidate every 24 hours (chapters rarely change)
+export const revalidate = 3600; // ISR: revalidate every hour
 export const dynamicParams = true; // render on-demand, then cache
 
 interface Props {

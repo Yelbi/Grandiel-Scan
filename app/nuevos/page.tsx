@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 
 export default function NuevosPage() {
-  redirect('/actualizaciones');
+  permanentRedirect('/actualizaciones');
 }
+
+export const dynamic = 'force-static';

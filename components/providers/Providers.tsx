@@ -401,14 +401,19 @@ function HistoryProvider({ children }: { children: ReactNode }) {
         .limit(CONFIG.PAGINATION.MAX_HISTORY_ITEMS)
         .then(({ data }) => {
           if (data) {
-            setHistory(data.map((r) => ({
-              mangaId:   r.manga_id as string,
-              chapter:   r.chapter as number,
-              page:      (r.page as number | null) ?? undefined,
-              timestamp: new Date(r.updated_at as string).getTime(),
-              title:     ((r.mangas as unknown) as { title: string; image: string } | null)?.title ?? (r.manga_id as string),
-              image:     ((r.mangas as unknown) as { title: string; image: string } | null)?.image,
-            })));
+            setHistory(data.map((r) => {
+              // PostgREST puede devolver el join como objeto o array según la relación
+              const raw = r.mangas as unknown;
+              const manga = (Array.isArray(raw) ? raw[0] : raw) as { title: string; image: string } | null;
+              return {
+                mangaId:   r.manga_id as string,
+                chapter:   r.chapter as number,
+                page:      (r.page as number | null) ?? undefined,
+                timestamp: new Date(r.updated_at as string).getTime(),
+                title:     manga?.title ?? (r.manga_id as string),
+                image:     manga?.image ?? undefined,
+              };
+            }));
           }
         });
     } else {

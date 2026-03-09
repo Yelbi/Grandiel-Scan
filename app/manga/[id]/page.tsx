@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { after } from 'next/server';
 
-export const revalidate = 3600; // ISR: revalidate every hour
+export const revalidate = 600; // ISR: revalidate every 10 minutes
 export const dynamicParams = true; // render on-demand, then cache
 import { notFound } from 'next/navigation';
 import MangaDetail from '@/components/manga/MangaDetail';
