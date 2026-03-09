@@ -93,26 +93,36 @@ async function probeSimple(
 
 /* ── Sondea páginas dentro de una parte (en lotes) ───── */
 async function probePagesOfPart(
-  base: string, ext: string, partPrefix: string, session: Session,
+  base: string, ext: string, partPrefix: string, session: Session, pagePad = 2,
 ): Promise<string[]> {
   const pages: string[] = [];
   let page = 1;
   while (page <= MAX_PER_PART) {
     const batchSize = Math.min(BATCH_SIZE, MAX_PER_PART - page + 1);
     const batch     = Array.from({ length: batchSize }, (_, k) => {
-      const pg = String(page + k).padStart(2, '0');
+      const pg = String(page + k).padStart(pagePad, '0');
       return base + `${partPrefix}_${pg}.${ext}`;
     });
     const results = await probeBatch(batch, session);
     let stop = false;
     for (let k = 0; k < results.length; k++) {
       if (!results[k]) { stop = true; break; }
-      pages.push(`${partPrefix}_${String(page + k).padStart(2, '0')}.${ext}`);
+      pages.push(`${partPrefix}_${String(page + k).padStart(pagePad, '0')}.${ext}`);
     }
     if (stop) break;
     page += batchSize;
   }
   return pages;
+}
+
+/* ── Patrón stockage.manga-scantrad.io: 0001_001.jpg ────────────────────
+   4 dígitos para el capítulo + 3 dígitos para la página.
+   Ej: capítulo 2 → 0002_001.jpg, 0002_002.jpg …                        ── */
+async function probeChapPage4x3(
+  base: string, ext: string, chapNum: number, session: Session,
+): Promise<string[]> {
+  const prefix = String(chapNum).padStart(4, '0');
+  return probePagesOfPart(base, ext, prefix, session, 3);
 }
 
 /* ── Patrón subparte: 01_01.webp / 1_01.webp ────────────
@@ -785,18 +795,19 @@ export async function POST(req: NextRequest) {
   const prefixes = extractPrefixes(base); // ["c-743-", "c-58812-", "743-", "58812-"]
 
   const standardChecks = [
-    `01_01.${ext}`,      // subpart-padded
-    `01_01-1.${ext}`,    // subpart-dash (primera página con sufijo -1)
-    `1_01.${ext}`,       // subpart-nopad
-    `1%20(1).${ext}`,    // paren-part
-    `%20%20(1).${ext}`,  // double-space-paren starting at 1
-    `%20%20(3).${ext}`,  // double-space-paren starting at 3 (common case)
-    `1CL_01.${ext}`,     // cl-subpart
-    `01%20copia.${ext}`, // copia-pages: 01 copia.webp
-    `001.${ext}`,        // simple-3digit
-    `01.${ext}`,         // simple-2digit
-    `0.${ext}`,          // zero-indexed
-    `1.${ext}`,          // simple-1digit / zero-indexed validator
+    `01_01.${ext}`,       // subpart-padded
+    `01_01-1.${ext}`,     // subpart-dash (primera página con sufijo -1)
+    `1_01.${ext}`,        // subpart-nopad
+    `0001_001.${ext}`,    // stockage-style: 4-digit-chap + 3-digit-page (manga-scantrad.io)
+    `1%20(1).${ext}`,     // paren-part
+    `%20%20(1).${ext}`,   // double-space-paren starting at 1
+    `%20%20(3).${ext}`,   // double-space-paren starting at 3 (common case)
+    `1CL_01.${ext}`,      // cl-subpart
+    `01%20copia.${ext}`,  // copia-pages: 01 copia.webp
+    `001.${ext}`,         // simple-3digit
+    `01.${ext}`,          // simple-2digit
+    `0.${ext}`,           // zero-indexed
+    `1.${ext}`,           // simple-1digit / zero-indexed validator
   ];
 
   // Chequeos de prefijos: para cada prefijo se prueban dos variantes de padding
@@ -828,7 +839,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [
-    hasSubPad, hasSubDash, hasSubNoPad, hasParen, hasDsP1, hasDsP3, hasCLSubPart,
+    hasSubPad, hasSubDash, hasSubNoPad, hasChapPage4x3, hasParen, hasDsP1, hasDsP3, hasCLSubPart,
     hasCopiaPage,
     hasSimple3, hasSimple2, hasZero, hasZero1,
     ...rest
@@ -855,6 +866,14 @@ export async function POST(req: NextRequest) {
   if (hasSubNoPad) {
     const pages = await probeSubPart(base, ext, 1, session);
     return NextResponse.json({ pages, pattern: 'subpart-nopad', count: pages.length });
+  }
+
+  // Stockage-style: 0001_001.jpg (capítulo 1 detectado, sin chapterHint)
+  if (hasChapPage4x3) {
+    const pages = await probeChapPage4x3(base, ext, 1, session);
+    if (pages.length > 0) {
+      return NextResponse.json({ pages, pattern: 'chap4x3(1)', count: pages.length });
+    }
   }
 
   // CL-subpart: 1CL_01.webp, 2CL_01.webp …
@@ -898,6 +917,15 @@ export async function POST(req: NextRequest) {
   // Prefijo dinámico con chapterHint: c-743-54_01.webp / 3_1_01.webp / 3_01_01.webp
   if (chapterHint != null && !isNaN(Number(chapterHint))) {
     const chNum = Math.floor(Number(chapterHint));
+
+    // Stockage-style con chapterHint: 0002_001.jpg (4-digit chap + 3-digit page)
+    const chNumPad = String(chNum).padStart(4, '0');
+    if (!hasChapPage4x3 && await exists(base + `${chNumPad}_001.${ext}`, session)) {
+      const pages = await probeChapPage4x3(base, ext, chNum, session);
+      if (pages.length > 0) {
+        return NextResponse.json({ pages, pattern: `chap4x3(${chNum})`, count: pages.length });
+      }
+    }
 
     // Chapter-subpart: detectar variante unpadded (3_1_01) y padded (3_01_01) en paralelo
     const [hasChUnpad, hasChPad] = await Promise.all([

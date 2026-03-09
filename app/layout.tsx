@@ -57,6 +57,9 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        {/* Manga image CDNs */}
+        <link rel="preconnect" href="https://dashboard.olympusscans.com" />
+        <link rel="preconnect" href="https://dashboard.olympusbiblioteca.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600;700&family=Coming+Soon&display=swap"
           rel="stylesheet"

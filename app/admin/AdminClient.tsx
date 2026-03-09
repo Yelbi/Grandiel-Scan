@@ -157,7 +157,7 @@ function parseHtmlChapterEntries(html: string): HtmlChapterEntry[] {
   }
 
   function chapterFromChunk(chunk: string): number | null {
-    const match = /Cap[ií]tulo(?:&nbsp;|\s)+(\d+(?:[.,]\d+)?)/i.exec(chunk);
+    const match = /(?:Cap[ií]tulo|Chapitre|Chapter)(?:&nbsp;|\s)+(\d+(?:[.,]\d+)?)/i.exec(chunk);
     if (!match) return null;
     const raw = match[1].replace(',', '.');
     const chapter = Number(raw);
@@ -208,6 +208,20 @@ function parseHtmlChapterEntries(html: string): HtmlChapterEntry[] {
       if (isFinite(chapter) && chapter >= 0) {
         pushEntry({ chapter, folderId, viewerUrl });
       }
+    }
+  }
+  if (entries.length > 0) return entries;
+
+  // Formato 5: /chapitre-{num}/  (manga-scantrad.io / WP-Manga francés)
+  // La URL termina en "chapitre-N/" o "chapitre-N-M/" (ej: chapitre-82-5 → 82.5).
+  // El folderId se usa el nro de capítulo como placeholder (el hash real está en el CDN).
+  const re5 = /<a[^>]+href="([^"]*\/chapitre-([\d]+(?:-[\d]+)?)\/)"[^>]*>/gi;
+  while ((match = re5.exec(html)) !== null) {
+    const viewerUrl = toViewerUrl(match[1]);
+    const chapStr   = match[2].replace(/-(\d+)$/, '.$1'); // "82-5" → "82.5"
+    const chapter   = Number(chapStr);
+    if (isFinite(chapter) && chapter >= 0) {
+      pushEntry({ chapter, folderId: String(chapter), viewerUrl });
     }
   }
   if (entries.length > 0) return entries;

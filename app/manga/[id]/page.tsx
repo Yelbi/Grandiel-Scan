@@ -5,14 +5,15 @@ export const revalidate = 600; // ISR: revalidate every 10 minutes
 export const dynamicParams = true; // render on-demand, then cache
 import { notFound } from 'next/navigation';
 import MangaDetail from '@/components/manga/MangaDetail';
-import { getMangaById, incrementViews } from '@/lib/data';
+import { getAllMangas, getMangaById, incrementViews } from '@/lib/data';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 export async function generateStaticParams() {
-  return [];
+  const mangas = await getAllMangas();
+  return mangas.map((m) => ({ id: m.id }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

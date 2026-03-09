@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ChapterReader from '@/components/chapter/ChapterReader';
-import { getChapter, getMangaById } from '@/lib/data';
+import { getAllMangas, getChapter, getMangaById } from '@/lib/data';
 
 export const revalidate = 3600; // ISR: revalidate every hour
 export const dynamicParams = true; // render on-demand, then cache
@@ -11,7 +11,10 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  return [];
+  const mangas = await getAllMangas();
+  return mangas
+    .filter((m) => m.latestChapter != null)
+    .map((m) => ({ mangaId: m.id, cap: String(m.latestChapter) }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

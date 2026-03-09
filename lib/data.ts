@@ -100,11 +100,8 @@ export async function getAllChapters(): Promise<Chapter[]> {
   }
 }
 
-export async function getChapter(
-  mangaId: string,
-  cap: number,
-): Promise<Chapter | null> {
-  try {
+const _getChapter = unstable_cache(
+  async function _getChapter(mangaId: string, cap: number): Promise<Chapter | null> {
     const rows = await db
       .select()
       .from(chapters)
@@ -112,11 +109,22 @@ export async function getChapter(
       .limit(1);
     if (!rows[0]) return null;
     return toChapter(rows[0]);
+  },
+  ['chapter-by-id'],
+  { tags: ['chapters'], revalidate: 3600 },
+);
+
+export const getChapter = cache(async function getChapter(
+  mangaId: string,
+  cap: number,
+): Promise<Chapter | null> {
+  try {
+    return await _getChapter(mangaId, cap);
   } catch (err) {
     console.error('[data] getChapter error:', err);
     return null;
   }
-}
+});
 
 export async function getChaptersByManga(mangaId: string): Promise<Chapter[]> {
   try {
