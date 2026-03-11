@@ -196,11 +196,11 @@ async function probePrefixedSubPart(
    Algoritmo: barrido adaptativo que rastrea el último hit y
    para solo cuando hay PAREN_TAIL_MISS misses seguidos al final.
    Almacena filenames URL-encoded: "1%20(28).webp".      ── */
-async function probeParenPart(base: string, ext: string, session: Session): Promise<string[]> {
+async function probeParenPart(base: string, ext: string, session: Session, startPart = 1): Promise<string[]> {
   const pages: string[] = [];
   let partGaps = 0;
 
-  for (let part = 1; part <= MAX_PARTS; part++) {
+  for (let part = startPart; part <= MAX_PARTS; part++) {
     const partPages: string[] = [];
     let lastHit = -1;
     let i       = 1;
@@ -865,6 +865,7 @@ export async function POST(req: NextRequest) {
     `1_01.${ext}`,        // subpart-nopad
     `0001_001.${ext}`,    // stockage-style: 4-digit-chap + 3-digit-page (manga-scantrad.io)
     `1%20(1).${ext}`,     // paren-part
+    `0%20(1).${ext}`,     // zero-paren-part: 0 (1).webp, 0 (2).webp …
     `%20%20(1).${ext}`,   // double-space-paren starting at 1
     `%20%20(3).${ext}`,   // double-space-paren starting at 3 (common case)
     `1CL_01.${ext}`,      // cl-subpart
@@ -911,7 +912,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [
-    hasSubPad, hasSubDash, hasSubNoPad, hasChapPage4x3, hasParen, hasDsP1, hasDsP3, hasCLSubPart,
+    hasSubPad, hasSubDash, hasSubNoPad, hasChapPage4x3, hasParen, hasZeroParen, hasDsP1, hasDsP3, hasCLSubPart,
     hasCopiaPage,
     hasSimple3, hasSimple2, hasZero, hasZero1,
     ...rest
@@ -954,6 +955,12 @@ export async function POST(req: NextRequest) {
   if (hasCLSubPart) {
     const pages = await probeCLSubPart(base, ext, session);
     return NextResponse.json({ pages, pattern: 'cl-subpart', count: pages.length });
+  }
+
+  // Patrón "0 (N).webp": 0 (1).webp → almacenado como 0%20(1).webp (parte cero-indexada)
+  if (hasZeroParen) {
+    const pages = await probeParenPart(base, ext, session, 0);
+    return NextResponse.json({ pages, pattern: 'zero-paren-part', count: pages.length });
   }
 
   // Patrón "N (M).webp": 1 (1).webp → almacenado como 1%20(1).webp
