@@ -583,8 +583,6 @@ mark.search-highlight {
 
 .favorite-btn-wrapper {
   opacity: 0;
-  right: var(--spacing-xs);
-  top: var(--spacing-xs);
   transition: opacity var(--transition-fast);
 }
 
