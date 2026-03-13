@@ -263,16 +263,17 @@ async function probePrefixedSubPartDeep(
   return [];
 }
 
-/* ── Patrón "prefix+part (N).webp": c-65-1%20(1).webp, c-65-1%20(2).webp …
+/* ── Patrón "prefix+part (N).webp": c-65-1%20(1).webp, c-65-3%20(2).webp …
    Igual que probeParenPart pero con prefijo antepuesto al número de parte.
-   Ej: prefix="c-65-" → c-65-1%20(1).webp, c-65-2%20(1).webp …         ── */
+   Ej: prefix="c-65-", startPart=3 → c-65-3%20(1).webp, c-65-4%20(1).webp …
+   startPart permite comenzar desde la parte correcta cuando la parte 1 no existe. ── */
 async function probePrefixedParenPart(
-  base: string, ext: string, prefix: string, session: Session,
+  base: string, ext: string, prefix: string, session: Session, startPart = 1,
 ): Promise<string[]> {
   const pages: string[] = [];
   let partGaps = 0;
 
-  for (let part = 1; part <= MAX_PARTS; part++) {
+  for (let part = startPart; part <= MAX_PARTS + startPart - 1; part++) {
     const partPages: string[] = [];
     let lastHit = -1;
     let i = 1;
@@ -305,6 +306,26 @@ async function probePrefixedParenPart(
   }
 
   return pages;
+}
+
+/* ── Scan profundo para prefixed-paren cuando la parte 1 no existe ──────
+   Sondea en lotes qué número de parte tiene ${prefix}N%20(1).webp.
+   Ej: si c-65-1 falla pero c-65-3 existe, retorna pages desde parte 3. ── */
+async function probePrefixedParenPartDeep(
+  base: string, ext: string, prefix: string, session: Session,
+): Promise<string[]> {
+  for (let i = 1; i < MAX_CHAPTER_NUM; i += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, MAX_CHAPTER_NUM - i);
+    const partNums = Array.from({ length: count }, (_, k) => i + k);
+    const batch    = partNums.map((part) => base + `${prefix}${part}%20(1).${ext}`);
+    const results  = await probeBatch(batch, session);
+    for (let k = 0; k < results.length; k++) {
+      if (results[k]) {
+        return probePrefixedParenPart(base, ext, prefix, session, partNums[k]);
+      }
+    }
+  }
+  return [];
 }
 
 /* ── Patrón "  (N).webp": %20%20(3).webp, %20%20(4).webp …
@@ -940,7 +961,7 @@ export async function POST(req: NextRequest) {
   // Chequeos de pares por prefijo: c-231-1-2.webp
   const pairPrefixChecks = prefixes.map((p) => `${p}1-2.${ext}`);
 
-  // Chequeos de paréntesis por prefijo: c-65-1%20(1).webp
+  // Chequeos de paréntesis por prefijo: c-65-1%20(1).webp y c-65-{chap}%20(1).webp
   const prefixParenChecks = prefixes.map((p) => `${p}1%20(1).${ext}`);
 
   const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks, ...prefixParenChecks];
@@ -973,9 +994,10 @@ export async function POST(req: NextRequest) {
     hasSimple3, has002, has003, hasSimple2, has02, hasZero, hasZero1,
     ...rest
   ] = allResults;
-  const prefixResults      = rest.slice(0, prefixVariants.length);
-  const pairPrefixResults  = rest.slice(prefixVariants.length, prefixVariants.length + prefixes.length);
-  const prefixParenResults = rest.slice(prefixVariants.length + prefixes.length);
+  const prefixResults             = rest.slice(0, prefixVariants.length);
+  const pairPrefixResults         = rest.slice(prefixVariants.length, prefixVariants.length + prefixes.length);
+  const prefixParenResults        = rest.slice(prefixVariants.length + prefixes.length, prefixVariants.length + prefixes.length * 2);
+  const prefixParenChapterResults = rest.slice(prefixVariants.length + prefixes.length * 2);
   const hasDoubleSpaceParen = hasDsP1 || hasDsP3;
 
   /* ── 2. Evaluar en orden de especificidad ── */
@@ -1112,12 +1134,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Patrón prefijo + paréntesis: c-65-1%20(1).webp, c-65-1%20(2).webp …
+  // Patrón prefijo + paréntesis: c-65-1%20(1).webp / c-65-3%20(1).webp …
+  // Quick check parte 1
   for (let i = 0; i < prefixes.length; i++) {
     if (prefixParenResults[i]) {
-      const pages = await probePrefixedParenPart(base, ext, prefixes[i], session);
+      const pages = await probePrefixedParenPart(base, ext, prefixes[i], session, 1);
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `prefixed-paren(${prefixes[i]})`, count: pages.length });
+      }
+    }
+  }
+  // Quick check con chapterHint como número de parte
+  if (chapterHintNum != null && chapterHintNum > 1) {
+    for (let i = 0; i < prefixes.length; i++) {
+      if (prefixParenChapterResults[i]) {
+        const pages = await probePrefixedParenPart(base, ext, prefixes[i], session, chapterHintNum);
+        if (pages.length > 0) {
+          return NextResponse.json({ pages, pattern: `prefixed-paren(${prefixes[i]})`, count: pages.length });
+        }
       }
     }
   }
