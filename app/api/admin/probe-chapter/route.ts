@@ -1145,6 +1145,7 @@ export async function POST(req: NextRequest) {
     }
   }
   // Quick check con chapterHint como número de parte
+  const chapterHintNum = (chapterHint != null && !isNaN(Number(chapterHint))) ? Math.floor(Number(chapterHint)) : null;
   if (chapterHintNum != null && chapterHintNum > 1) {
     for (let i = 0; i < prefixes.length; i++) {
       if (prefixParenChapterResults[i]) {
