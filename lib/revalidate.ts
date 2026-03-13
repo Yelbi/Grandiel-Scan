@@ -12,8 +12,3 @@ export function revalidateManga(mangaId: string) {
   revalidatePath(`/manga/${mangaId}`);
 }
 
-/** Purges the entire site cache (use sparingly). */
-export function revalidateAll() {
-  revalidateTag('mangas');
-  revalidatePath('/', 'layout');
-}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
@@ -12,14 +12,18 @@ export default function MangaDetailActions({ manga }: { manga: Manga }) {
   const { getLastRead } = useHistoryContext();
   const { profile } = useUserProfile();
   const [showLoginHint, setShowLoginHint] = useState(false);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fav = isFavorite(manga.id);
   const lastReadChapter = getLastRead(manga.id)?.chapter ?? null;
 
+  useEffect(() => () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); }, []);
+
   const handleFavorite = () => {
     if (!profile) {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
       setShowLoginHint(true);
-      setTimeout(() => setShowLoginHint(false), 2500);
+      hintTimerRef.current = setTimeout(() => setShowLoginHint(false), 2500);
       return;
     }
     toggle(manga.id);

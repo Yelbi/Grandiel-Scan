@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import MangaCard from '@/components/manga/MangaCard';
 import PushSubscribeButton from '@/components/PushSubscribeButton';
+import FeedbackForm from '@/components/FeedbackForm';
+import { relativeDateTime } from '@/lib/utils';
 import type { Manga } from '@/lib/types';
 
 const AVATARS = [
@@ -17,19 +19,9 @@ const AVATARS = [
   '/img/avatars/avatar4.svg',
 ];
 
-type Tab = 'favoritos' | 'historial';
+const MAX_AVATAR_BYTES = 1 * 1024 * 1024; // 1 MB
 
-function relativeDate(timestamp: number): string {
-  const diff = Date.now() - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return 'Hace un momento';
-  if (minutes < 60) return `Hace ${minutes} min`;
-  if (hours < 24) return `Hace ${hours} hora${hours !== 1 ? 's' : ''}`;
-  if (days === 1) return 'Ayer';
-  return `Hace ${days} días`;
-}
+type Tab = 'favoritos' | 'historial' | 'sugerencias';
 
 export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const { profile, isLoggedIn, loading, register, login, linkEmail, updateProfile, logout } = useUserProfile();
@@ -41,23 +33,25 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const [editUsername, setEditUsername] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [editError, setEditError] = useState('');
+  const [editAvatarError, setEditAvatarError] = useState('');
 
-  // Vista activa en el formulario de acceso
   const [authView, setAuthView] = useState<'register' | 'login'>('register');
 
-  const [regUsername, setRegUsername]           = useState('');
-  const [regPassword, setRegPassword]           = useState('');
+  const [regUsername, setRegUsername]               = useState('');
+  const [regPassword, setRegPassword]               = useState('');
   const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
-  const [regAvatar, setRegAvatar]               = useState(AVATARS[0]);
-  const [regError, setRegError]                 = useState('');
-  const [regLoading, setRegLoading]             = useState(false);
+  const [regAvatar, setRegAvatar]                   = useState(AVATARS[0]);
+  const [regError, setRegError]                     = useState('');
+  const [regAvatarError, setRegAvatarError]         = useState('');
+  const [regLoading, setRegLoading]                 = useState(false);
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError]       = useState('');
   const [loginLoading, setLoginLoading]   = useState(false);
 
-  const [linkEmailVal, setLinkEmailVal] = useState(profile?.email ?? '');
+  // linkEmailVal empieza vacío — profile no existe aún en el primer render
+  const [linkEmailVal, setLinkEmailVal] = useState('');
   const [linkEmailErr, setLinkEmailErr] = useState('');
   const [linkEmailOk, setLinkEmailOk]   = useState(false);
   const [linkLoading, setLinkLoading]   = useState(false);
@@ -70,14 +64,16 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     return () => clearTimeout(t);
   }, [isLoggedIn, profile, loading]);
 
-  const regFileRef = useRef<HTMLInputElement>(null);
+  const regFileRef  = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
-  const MAX_AVATAR_BYTES = 1 * 1024 * 1024; // 1 MB
-
-  const readAvatarFile = (file: File, onLoad: (dataUrl: string) => void) => {
+  const readAvatarFile = (
+    file: File,
+    onLoad: (dataUrl: string) => void,
+    onError: (msg: string) => void,
+  ) => {
     if (file.size > MAX_AVATAR_BYTES) {
-      alert('La imagen no puede superar 1 MB. Elige una foto más pequeña.');
+      onError('La imagen no puede superar 1 MB. Elige una foto más pequeña.');
       return;
     }
     const reader = new FileReader();
@@ -88,23 +84,32 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   const handleRegPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    readAvatarFile(file, setRegAvatar);
+    readAvatarFile(
+      file,
+      (url) => { setRegAvatar(url); setRegAvatarError(''); },
+      setRegAvatarError,
+    );
   };
 
   const handleEditPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    readAvatarFile(file, setEditAvatar);
+    readAvatarFile(
+      file,
+      (url) => { setEditAvatar(url); setEditAvatarError(''); },
+      setEditAvatarError,
+    );
   };
 
   const startEdit = () => {
     setEditUsername(profile!.username);
     setEditAvatar(profile!.avatar);
     setEditError('');
+    setEditAvatarError('');
     setEditing(true);
   };
 
-  const saveEdit = async (e: React.FormEvent) => {
+  const saveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = editUsername.trim();
     if (trimmed.length < 3 || trimmed.length > 20) {
@@ -115,7 +120,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     setEditing(false);
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = regUsername.trim();
     if (trimmed.length < 3 || trimmed.length > 20) {
@@ -139,10 +144,9 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     const result = await register(trimmed, regPassword, regAvatar);
     setRegLoading(false);
     if (result.error) setRegError(result.error);
-    // Si no hay error, isLoggedIn cambia y el componente muestra la vista autenticada
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!loginUsername.trim()) { setLoginError('El usuario es obligatorio.'); return; }
     if (!loginPassword) { setLoginError('La contraseña es obligatoria.'); return; }
@@ -153,7 +157,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     if (result.error) setLoginError(result.error);
   };
 
-  const handleLinkEmail = async (e: React.FormEvent) => {
+  const handleLinkEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = linkEmailVal.trim();
     if (!trimmed || !trimmed.includes('@')) {
@@ -168,17 +172,36 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
     else setLinkEmailOk(true);
   };
 
-  const favoriteMangas = mangas.filter((m) => favorites.includes(m.id));
-  const historyItems = history.map((entry) => ({
-    entry,
-    manga: mangas.find((m) => m.id === entry.mangaId),
-  }));
+  const favoriteMangas = useMemo(
+    () => mangas.filter((m) => favorites.includes(m.id)),
+    [mangas, favorites],
+  );
+
+  const historyItems = useMemo(
+    () => history.map((entry) => ({
+      entry,
+      manga: mangas.find((m) => m.id === entry.mangaId),
+    })),
+    [history, mangas],
+  );
 
   /* ─────────────────── LOADING ─────────────────── */
   if (loading) {
     return (
-      <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-        <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', opacity: 0.5 }} aria-label="Cargando..." />
+      <div className="curva" aria-hidden="true">
+        <div className="perfil-banner">
+          <div className="perfil-banner__body">
+            <div className="skeleton-cover" style={{ width: 100, height: 100, borderRadius: '50%', flexShrink: 0 }} />
+            <div className="perfil-banner__info" style={{ gap: '0.75rem' }}>
+              <div className="skeleton-line" style={{ width: 160, height: 22 }} />
+              <div className="skeleton-line" style={{ width: 120, height: 14 }} />
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <div className="skeleton-line" style={{ width: 64, height: 48, borderRadius: '8px' }} />
+                <div className="skeleton-line" style={{ width: 64, height: 48, borderRadius: '8px' }} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -330,6 +353,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                     </button>
                     <input ref={regFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleRegPhoto} />
                   </div>
+                  {regAvatarError && <p className="perfil-form-error" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>{regAvatarError}</p>}
                 </div>
                 <button type="submit" className="btn-primary user-submit-btn" disabled={regLoading}>
                   {regLoading
@@ -383,7 +407,6 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
   }
 
   /* ─────────────────── LOGGED-IN VIEW ─────────────────── */
-  // Autenticado pero el perfil aún se está creando/cargando desde la BD
   if (isLoggedIn && !profile) {
     if (profileSetupFailed) {
       return (
@@ -404,9 +427,16 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
       );
     }
     return (
-      <div className="curva" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-        <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', opacity: 0.5 }} aria-label="Configurando perfil..." />
-        <p style={{ marginTop: '1rem', opacity: 0.6 }}>Configurando tu perfil...</p>
+      <div className="curva" aria-hidden="true">
+        <div className="perfil-banner">
+          <div className="perfil-banner__body">
+            <div className="skeleton-cover" style={{ width: 100, height: 100, borderRadius: '50%', flexShrink: 0 }} />
+            <div className="perfil-banner__info" style={{ gap: '0.75rem' }}>
+              <div className="skeleton-line" style={{ width: 160, height: 22 }} />
+              <div className="skeleton-line" style={{ width: 120, height: 14 }} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -559,6 +589,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                   </button>
                   <input ref={editFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditPhoto} />
                 </div>
+                {editAvatarError && <p className="perfil-form-error" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>{editAvatarError}</p>}
               </div>
             </div>
             <div className="form-actions">
@@ -635,6 +666,12 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
           {history.length > 0 && (
             <span className="perfil-tab__count">{history.length}</span>
           )}
+        </button>
+        <button
+          className={`perfil-tab${tab === 'sugerencias' ? ' active' : ''}`}
+          onClick={() => setTab('sugerencias')}
+        >
+          <i className="fas fa-comment-alt" aria-hidden="true" /> Sugerencias
         </button>
       </div>
 
@@ -724,20 +761,38 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                         )}
                       </span>
                       <span className="perfil-history-item__time">
-                        <i className="fas fa-clock" aria-hidden="true" /> {relativeDate(entry.timestamp)}
+                        <i className="fas fa-clock" aria-hidden="true" /> {relativeDateTime(entry.timestamp)}
                       </span>
                     </div>
                     <Link
                       href={`/chapter/${entry.mangaId}/${entry.chapter}`}
                       className="perfil-history-item__btn"
                     >
-                      <i className="fas fa-play" aria-hidden="true" /> Continuar
+                      <i className="fas fa-play" aria-hidden="true" /> <span>Continuar</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Sugerencias / Quejas ── */}
+      {tab === 'sugerencias' && (
+        <div className="perfil-section">
+          <div className="perfil-feedback-card">
+            <div className="perfil-feedback-card__header">
+              <h2 className="perfil-feedback-card__title">
+                <i className="fas fa-comment-alt" aria-hidden="true" /> Quejas y sugerencias
+              </h2>
+              <p className="perfil-feedback-card__sub">
+                ¿Tienes una idea, encontraste un problema o quieres decirnos algo?
+                Escríbenos y lo tendremos en cuenta.
+              </p>
+            </div>
+            <FeedbackForm />
+          </div>
         </div>
       )}
     </div>

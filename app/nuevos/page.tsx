@@ -4,4 +4,3 @@ export default function NuevosPage() {
   permanentRedirect('/actualizaciones');
 }
 
-export const dynamic = 'force-static';

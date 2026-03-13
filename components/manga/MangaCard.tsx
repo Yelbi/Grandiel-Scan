@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
 import type { Manga } from '@/lib/types';
@@ -19,29 +19,36 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
   const { isFavorite, toggle } = useFavoritesContext();
   const { profile } = useUserProfile();
   const fav = isFavorite(manga.id);
-  const [isNew, setIsNew] = useState(false);
-  const [isHot, setIsHot] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [showLoginHint, setShowLoginHint] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Calcular badges en un único effect
-  useEffect(() => {
-    const now = Date.now();
-    if (manga.dateAdded)   setIsNew(now - new Date(manga.dateAdded).getTime()   < DAYS_NEW * 864e5);
-    if (manga.lastUpdated) setIsHot(now - new Date(manga.lastUpdated).getTime() < DAYS_HOT * 864e5);
-  }, [manga.dateAdded, manga.lastUpdated]);
+  // Badges sin setState — evita render extra al montar
+  const isNew = useMemo(() => {
+    if (!manga.dateAdded) return false;
+    return Date.now() - new Date(manga.dateAdded).getTime() < DAYS_NEW * 864e5;
+  }, [manga.dateAdded]);
+
+  const isHot = useMemo(() => {
+    if (!manga.lastUpdated) return false;
+    return Date.now() - new Date(manga.lastUpdated).getTime() < DAYS_HOT * 864e5;
+  }, [manga.lastUpdated]);
 
   useEffect(() => {
     const img = imgRef.current;
     if (img && img.complete && img.naturalWidth === 0) setImgError(true);
   }, []);
 
+  // Limpia el timer al desmontar
+  useEffect(() => () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); }, []);
+
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!profile) {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
       setShowLoginHint(true);
-      setTimeout(() => setShowLoginHint(false), 2500);
+      hintTimerRef.current = setTimeout(() => setShowLoginHint(false), 2500);
       return;
     }
     toggle(manga.id);
