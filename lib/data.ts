@@ -126,19 +126,27 @@ export const getChapter = cache(async function getChapter(
   }
 });
 
-export async function getChaptersByManga(mangaId: string): Promise<Chapter[]> {
-  try {
+const _getChaptersByManga = unstable_cache(
+  async function _getChaptersByManga(mangaId: string): Promise<Chapter[]> {
     const rows = await db
       .select()
       .from(chapters)
       .where(eq(chapters.mangaId, mangaId))
       .orderBy(asc(chapters.chapter));
     return rows.map(toChapter);
+  },
+  ['chapters-by-manga'],
+  { tags: ['chapters'], revalidate: 3600 },
+);
+
+export const getChaptersByManga = cache(async function getChaptersByManga(mangaId: string): Promise<Chapter[]> {
+  try {
+    return await _getChaptersByManga(mangaId);
   } catch (err) {
     console.error('[data] getChaptersByManga error:', err);
     return [];
   }
-}
+});
 
 const _getMostViewed = unstable_cache(
   async function _getMostViewed(limit: number): Promise<Manga[]> {

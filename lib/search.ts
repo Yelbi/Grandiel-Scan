@@ -67,20 +67,17 @@ export function searchMangas(mangas: Manga[], query: string): SearchResult[] {
       continue;
     }
 
+    // Normalizar géneros una sola vez por manga
+    const normalizedGenres = manga.genres.map(normalizeText);
+
     // Coincidencia exacta en género
-    const genreMatch = manga.genres.some(
-      (g) => normalizeText(g) === normalizedQuery,
-    );
-    if (genreMatch) {
+    if (normalizedGenres.some((g) => g === normalizedQuery)) {
       results.push({ manga, score: 70 });
       continue;
     }
 
     // El género contiene el query
-    const genreContains = manga.genres.some((g) =>
-      normalizeText(g).includes(normalizedQuery),
-    );
-    if (genreContains) {
+    if (normalizedGenres.some((g) => g.includes(normalizedQuery))) {
       results.push({ manga, score: 60 });
       continue;
     }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import MangaComments from '@/components/manga/MangaComments';
+import ReportChapterButton from '@/components/chapter/ReportChapterButton';
 import type { Chapter, Manga, ReadingMode } from '@/lib/types';
 import { resolvePageUrl } from '@/lib/utils';
 import { CONFIG } from '@/lib/config';
@@ -437,6 +438,15 @@ export default function ChapterReader({
               <IcoChevronRight />
             </span>
           )}
+
+          <div className="reader-topbar__divider" />
+
+          {/* Reportar capítulo */}
+          <ReportChapterButton
+            mangaId={manga.id}
+            chapter={chapter.chapter}
+            mangaTitle={manga.title}
+          />
         </div>
       </div>
 

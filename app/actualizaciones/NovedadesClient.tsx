@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import MangaCard from '@/components/manga/MangaCard';
 import type { Manga } from '@/lib/types';
 
@@ -25,7 +25,7 @@ function relativeDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('es-ES');
 }
 
-function ActCard({ manga }: { manga: Manga }) {
+const ActCard = memo(function ActCard({ manga }: { manga: Manga }) {
   const [error, setError] = useState(false);
   const href = `/chapter/${manga.id}/${manga.latestChapter}`;
 
@@ -68,49 +68,34 @@ function ActCard({ manga }: { manga: Manga }) {
       </Link>
     </div>
   );
-}
+});
 
 export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
   const [tab, setTab] = useState<Tab>('actualizaciones');
-  const now = Date.now();
 
-  /* ─── Actualizaciones: ordenar por última actualización ─── */
-  const byUpdated = useMemo(
-    () => [...mangas].sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()),
-    [mangas],
-  );
+  /* ─── Actualizaciones: ordenar y agrupar en un único memo ─── */
+  const [byUpdated, updatedToday, updatedThisWeek, updatedOlder] = useMemo(() => {
+    const now = Date.now();
+    const sorted = [...mangas].sort(
+      (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
+    );
+    const today  = sorted.filter((m) => now - new Date(m.lastUpdated).getTime() < MS_DAY);
+    const week   = sorted.filter((m) => { const age = now - new Date(m.lastUpdated).getTime(); return age >= MS_DAY && age < MS_WEEK; });
+    const older  = sorted.filter((m) => now - new Date(m.lastUpdated).getTime() >= MS_WEEK);
+    return [sorted, today, week, older] as const;
+  }, [mangas]);
 
-  const updatedToday = useMemo(
-    () => byUpdated.filter((m) => now - new Date(m.lastUpdated).getTime() < MS_DAY),
-    [byUpdated, now],
-  );
-  const updatedThisWeek = useMemo(
-    () => byUpdated.filter((m) => { const age = now - new Date(m.lastUpdated).getTime(); return age >= MS_DAY && age < MS_WEEK; }),
-    [byUpdated, now],
-  );
-  const updatedOlder = useMemo(
-    () => byUpdated.filter((m) => now - new Date(m.lastUpdated).getTime() >= MS_WEEK),
-    [byUpdated, now],
-  );
-
-  /* ─── Nuevos: ordenar y agrupar por fecha de añadido ─── */
-  const byAdded = useMemo(
-    () => [...mangas].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()),
-    [mangas],
-  );
-
-  const thisWeek = useMemo(
-    () => byAdded.filter((m) => now - new Date(m.dateAdded).getTime() < MS_WEEK),
-    [byAdded, now],
-  );
-  const thisMonth = useMemo(
-    () => byAdded.filter((m) => { const age = now - new Date(m.dateAdded).getTime(); return age >= MS_WEEK && age < MS_MONTH; }),
-    [byAdded, now],
-  );
-  const older = useMemo(
-    () => byAdded.filter((m) => now - new Date(m.dateAdded).getTime() >= MS_MONTH),
-    [byAdded, now],
-  );
+  /* ─── Nuevos: ordenar y agrupar en un único memo ─── */
+  const [byAdded, thisWeek, thisMonth, older] = useMemo(() => {
+    const now = Date.now();
+    const sorted = [...mangas].sort(
+      (a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime(),
+    );
+    const week  = sorted.filter((m) => now - new Date(m.dateAdded).getTime() < MS_WEEK);
+    const month = sorted.filter((m) => { const age = now - new Date(m.dateAdded).getTime(); return age >= MS_WEEK && age < MS_MONTH; });
+    const old   = sorted.filter((m) => now - new Date(m.dateAdded).getTime() >= MS_MONTH);
+    return [sorted, week, month, old] as const;
+  }, [mangas]);
 
   const newCount    = thisWeek.length + thisMonth.length;
   const recentCount = updatedToday.length + updatedThisWeek.length;

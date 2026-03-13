@@ -3,20 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
+import { relativeDateTime } from '@/lib/utils';
 import type { Manga } from '@/lib/types';
-
-function relativeDate(timestamp: number): string {
-  const diff = Date.now() - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'Hace un momento';
-  if (minutes < 60) return `Hace ${minutes} min`;
-  if (hours < 24) return `Hace ${hours} hora${hours !== 1 ? 's' : ''}`;
-  if (days === 1) return 'Ayer';
-  return `Hace ${days} días`;
-}
 
 export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
   const { history, clearHistory } = useHistoryContext();
@@ -71,7 +59,7 @@ export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
                   <strong>{entry.title}</strong>
                 </Link>
                 <p>Capítulo {entry.chapter}</p>
-                <small>{relativeDate(entry.timestamp)}</small>
+                <small>{relativeDateTime(entry.timestamp)}</small>
               </div>
               <Link
                 href={`/chapter/${entry.mangaId}/${entry.chapter}`}

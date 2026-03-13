@@ -138,6 +138,30 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// ── Reportes (capítulos + feedback general) ───────────────────────────────────
+export const reports = pgTable(
+  'reports',
+  {
+    id:          serial('id').primaryKey(),
+    // 'chapter' = reporte de capítulo  |  'suggestion' = sugerencia  |  'complaint' = queja
+    type:        text('type').notNull(),
+    userId:      text('user_id').references(() => users.id, { onDelete: 'set null' }),
+    // Solo para type='chapter'
+    mangaId:     text('manga_id'),
+    chapter:     real('chapter'),
+    reason:      text('reason'),
+    description: text('description'),
+    // 'pending' | 'resolved'
+    status:      text('status').notNull().default('pending'),
+    createdAt:   timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    index('reports_type_idx').on(t.type),
+    index('reports_status_idx').on(t.status),
+    index('reports_user_id_idx').on(t.userId),
+  ],
+);
+
 // ── Tipos inferidos ──────────────────────────────────────────────────────────
 export type MangaRow           = typeof mangas.$inferSelect;
 export type MangaInsert        = typeof mangas.$inferInsert;
@@ -146,3 +170,5 @@ export type ChapterInsert      = typeof chapters.$inferInsert;
 export type UserRow            = typeof users.$inferSelect;
 export type CommentRow         = typeof comments.$inferSelect;
 export type ReadingHistoryRow  = typeof readingHistory.$inferSelect;
+export type ReportRow          = typeof reports.$inferSelect;
+export type ReportInsert       = typeof reports.$inferInsert;

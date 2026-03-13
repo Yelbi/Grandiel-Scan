@@ -509,6 +509,26 @@ async function probeCopiaPages(base: string, ext: string, session: Session): Pro
   return pages;
 }
 
+/* ── Encuentra el primer índice de página simple que existe ─────────────
+   Recorre [from, to] en lotes y devuelve el primer índice donde existe
+   un archivo {padded}.ext. Usado para detectar offsets de inicio no
+   estándar (ej: 010.webp, 020.webp …).                                ── */
+async function findSimpleStart(
+  base: string, ext: string, from: number, to: number, pad: number, session: Session,
+): Promise<number | null> {
+  for (let i = from; i <= to; i += BATCH_SIZE) {
+    const count   = Math.min(BATCH_SIZE, to - i + 1);
+    const batch   = Array.from({ length: count }, (_, k) =>
+      base + String(i + k).padStart(pad, '0') + '.' + ext,
+    );
+    const results = await probeBatch(batch, session);
+    for (let k = 0; k < results.length; k++) {
+      if (results[k]) return i + k;
+    }
+  }
+  return null;
+}
+
 /* ── Scan profundo para chapter-subpart sin chapterHint ─────────────────
    Prueba en lotes qué número de capítulo tiene N_1_01 o N_01_01.webp.  ── */
 async function probeChapterSubPartDeep(base: string, ext: string, session: Session): Promise<string[]> {
@@ -528,14 +548,39 @@ async function probeChapterSubPartDeep(base: string, ext: string, session: Sessi
   return [];
 }
 
+/* ── Extrae la clave de ordenación de un filename decodificado ───────────
+   Para patrones simples (004.webp) usa el número directamente.
+   Para subpart ({part}_{page}.ext, ej: 01_03.webp, 1_10.webp) usa el
+   número de página (último segmento numérico) para que el orden refleje
+   la lectura real cuando hay patrones mezclados (01_03 → 3, 004 → 4,
+   1_10 → 10).
+   Para hash ({N} - {hash}.ext) usa el número de página inicial.           ── */
+function extractSortKey(decoded: string): number {
+  // Subpart: uno o más bloques {digits_} seguidos de {digits} → usar el último número
+  // Cubre: 01_03.webp, 1_10.webp, 3_01_05.webp, etc.
+  // No cubre subpart-dash (01_01-1.webp) intencionalmente — el guion rompe el patrón.
+  const subpart = /^(?:\d+_)+(\d+)\.[a-z0-9]+$/i.exec(decoded);
+  if (subpart) return parseInt(subpart[1], 10);
+
+  // Hash: {N} - {algo}.ext → usar N
+  const hash = /^(\d+)\s*[-–]\s*\S+\.[a-z0-9]+$/i.exec(decoded);
+  if (hash) return parseInt(hash[1], 10);
+
+  // Default: número inicial del string
+  const n = parseInt(decoded, 10);
+  return isNaN(n) ? Infinity : n;
+}
+
 /* ── Ordena filenames URL-encoded numéricamente ─────────── */
 function sortImageFiles(files: Iterable<string>): string[] {
   const unique = [...new Set(files)];
   unique.sort((a, b) => {
-    const na = parseInt(decodeURIComponent(a), 10);
-    const nb = parseInt(decodeURIComponent(b), 10);
-    if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
-    return decodeURIComponent(a).localeCompare(decodeURIComponent(b));
+    const da = decodeURIComponent(a);
+    const db = decodeURIComponent(b);
+    const na = extractSortKey(da);
+    const nb = extractSortKey(db);
+    if (na !== nb) return na - nb;
+    return da.localeCompare(db);
   });
   return unique;
 }
@@ -643,11 +688,8 @@ async function probeDirectoryListing(base: string): Promise<string[]> {
     }
   }
 
-  for (const url of urls) {
-    const result = await fetchDirectoryListing(url);
-    if (result.length > 0) return result;
-  }
-  return [];
+  const results = await Promise.all([...urls].map(fetchDirectoryListing));
+  return results.find((r) => r.length > 0) ?? [];
 }
 
 async function fetchDirectoryListing(url: string): Promise<string[]> {
@@ -828,6 +870,32 @@ function buildViewerCandidates(viewerUrl: string, baseUrl: string): string[] {
   return [...out];
 }
 
+/* ── Auto-construye la URL del visor a partir de la URL del CDN ──────────
+   Soporta media.ikigaimangas.cloud:
+     CDN:    https://media.ikigaimangas.cloud/series/{seriesId}/{chapterId}/
+     Visor:  https://ikigaimangas.com/capitulo/{chapterId}/
+   Devuelve null si la URL no coincide con ningún patrón conocido.          ── */
+function tryBuildAutoViewerUrl(baseUrl: string): string | null {
+  try {
+    const url      = new URL(baseUrl);
+    const hostname = url.hostname.toLowerCase();
+
+    // media.ikigaimangas.cloud → ikigaimangas.com/capitulo/{chapterId}/
+    if (hostname === 'media.ikigaimangas.cloud') {
+      const segments = url.pathname.split('/').filter(Boolean);
+      // Ruta esperada: /series/{seriesId}/{chapterId}
+      if (segments.length >= 3 && segments[0] === 'series') {
+        const chapterId = segments[2];
+        return `https://ikigaimangas.com/capitulo/${chapterId}/`;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /* ── Handler ─────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
   if (process.env.NODE_ENV !== 'development') {
@@ -871,7 +939,10 @@ export async function POST(req: NextRequest) {
     `1CL_01.${ext}`,      // cl-subpart
     `01%20copia.${ext}`,  // copia-pages: 01 copia.webp
     `001.${ext}`,         // simple-3digit
+    `002.${ext}`,         // simple-3digit-from-002 (ikigaimangas: portada nombrada + páginas desde 002)
+    `003.${ext}`,         // simple-3digit-from-003 (ikigaimangas: portada 0.webp + páginas desde 003)
     `01.${ext}`,          // simple-2digit
+    `02.${ext}`,          // simple-2digit-from-02 (ikigaimangas: portada nombrada + páginas 2-digit desde 02)
     `0.${ext}`,           // zero-indexed
     `1.${ext}`,           // simple-1digit / zero-indexed validator
   ];
@@ -892,18 +963,24 @@ export async function POST(req: NextRequest) {
 
   // Chequeos de paréntesis por prefijo: c-65-1%20(1).webp y c-65-{chap}%20(1).webp
   const prefixParenChecks = prefixes.map((p) => `${p}1%20(1).${ext}`);
-  const chapterHintNum = chapterHint != null && !isNaN(Number(chapterHint)) ? Math.floor(Number(chapterHint)) : null;
-  const prefixParenChapterChecks = (chapterHintNum != null && chapterHintNum > 1)
-    ? prefixes.map((p) => `${p}${chapterHintNum}%20(1).${ext}`)
-    : [];
 
-  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks, ...prefixParenChecks, ...prefixParenChapterChecks];
+  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks, ...prefixParenChecks];
 
-  // Ejecutar listado de directorio y checks estándar en paralelo
-  const [directoryFiles, allResults] = await Promise.all([
-    probeDirectoryListing(base),
+  // Para CDNs conocidos (ej: ikigaimangas) construimos la URL del visor automáticamente
+  // y la ejecutamos en paralelo con los checks estándar. También omitimos el listado de
+  // directorio para ese CDN (no lo soporta), evitando hasta 5-6 s de espera en vano.
+  const autoViewerUrl = tryBuildAutoViewerUrl(base);
+
+  const [autoViewerPages, directoryFiles, allResults] = await Promise.all([
+    autoViewerUrl ? probeViewerPage(autoViewerUrl, base) : Promise.resolve([] as string[]),
+    autoViewerUrl ? Promise.resolve([] as string[]) : probeDirectoryListing(base),
     Promise.all(allChecks.map((f) => exists(base + f, session))),
   ]);
+
+  // Auto-viewer de CDN conocido: cubre portadas con nombre descriptivo + páginas desde 002
+  if (autoViewerPages.length > 0) {
+    return NextResponse.json({ pages: autoViewerPages, pattern: 'auto-viewer', count: autoViewerPages.length });
+  }
 
   // Listado de directorio tiene prioridad: cubre patrones con hash impredecible
   // (ej: "1 - a2404c67.webp", "2 - 4b129cdb.webp" …)
@@ -914,7 +991,7 @@ export async function POST(req: NextRequest) {
   const [
     hasSubPad, hasSubDash, hasSubNoPad, hasChapPage4x3, hasParen, hasZeroParen, hasDsP1, hasDsP3, hasCLSubPart,
     hasCopiaPage,
-    hasSimple3, hasSimple2, hasZero, hasZero1,
+    hasSimple3, has002, has003, hasSimple2, has02, hasZero, hasZero1,
     ...rest
   ] = allResults;
   const prefixResults             = rest.slice(0, prefixVariants.length);
@@ -1087,23 +1164,17 @@ export async function POST(req: NextRequest) {
 
   // Scan profundo: busca en lote cualquier número de parte (capítulos 4+)
   // Resuelve el caso c-743-54_01.webp cuando no se proporcionó chapterHint.
-  for (const { prefix, padPart } of prefixVariants) {
-    const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart, session);
-    if (pages.length > 0) {
-      return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
+  // Se omite para CDNs conocidos (ej: ikigaimangas) donde estos patrones no existen,
+  // evitando cientos de peticiones secuenciales innecesarias antes de llegar a simple-3digit.
+  if (!autoViewerUrl) {
+    for (const { prefix, padPart } of prefixVariants) {
+      const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart, session);
+      if (pages.length > 0) {
+        return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
+      }
     }
-  }
 
-  // Scan profundo prefixed-paren: busca qué número de parte tiene ${prefix}N%20(1).webp
-  for (const prefix of prefixes) {
-    const pages = await probePrefixedParenPartDeep(base, ext, prefix, session);
-    if (pages.length > 0) {
-      return NextResponse.json({ pages, pattern: `prefixed-paren(${prefix})`, count: pages.length });
-    }
-  }
-
-  // Scan profundo chapter-subpart sin chapterHint: N_1_01.webp / N_01_01.webp
-  {
+    // Scan profundo chapter-subpart sin chapterHint: N_1_01.webp / N_01_01.webp
     const contentPages = await probeChapterSubPartDeep(base, ext, session);
     if (contentPages.length > 0) {
       const coverPages = hasZero1 ? await probeSimple(base, ext, 1, 1, 0, session) : [];
@@ -1118,10 +1189,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pages, pattern: 'simple-3digit', count: pages.length });
   }
 
+  // Patrón ikigaimangas fallback: páginas desde 002.webp (sin 001.webp).
+  // La portada usa nombre descriptivo (ej: 00_portada_blue_lock.webp) y no es
+  // detectable sin visor. Se recogen las páginas numeradas desde 002 en adelante.
+  if (has002 && !hasSimple3) {
+    const pages = await probeSimple(base, ext, 2, 3, 2, session);
+    if (pages.length > 0) {
+      return NextResponse.json({ pages, pattern: 'simple-3digit-from-002', count: pages.length });
+    }
+  }
+
+  // Patrón ikigaimangas fallback: portada 0.webp + páginas desde 003.webp (sin 001 ni 002).
+  if (has003 && !hasSimple3 && !has002) {
+    const portada = hasZero ? [`0.${ext}`] : [];
+    const pages = await probeSimple(base, ext, 3, 3, 2, session);
+    if (pages.length > 0) {
+      return NextResponse.json({ pages: [...portada, ...pages], pattern: 'simple-3digit-from-003', count: portada.length + pages.length });
+    }
+  }
+
+  // Patrón ikigaimangas fallback genérico: portada 0.webp + páginas 3-digit desde offset
+  // desconocido (ej: 010.webp, 020.webp …). Solo se activa para CDNs conocidos donde el
+  // auto-viewer falló y los checks estándar (001-003) no encontraron nada.
+  if (autoViewerUrl && !hasSimple3 && !has002 && !has003) {
+    const portada = hasZero ? [`0.${ext}`] : [];
+    // Buscar primer archivo 3-digit desde 004 hasta 100 (001-003 ya probados arriba)
+    const start = await findSimpleStart(base, ext, 4, 100, 3, session);
+    if (start !== null) {
+      const pages = await probeSimple(base, ext, start, 3, 2, session);
+      if (pages.length > 0) {
+        return NextResponse.json({
+          pages: [...portada, ...pages],
+          pattern: `simple-3digit-from-${String(start).padStart(3, '0')}`,
+          count: portada.length + pages.length,
+        });
+      }
+    }
+  }
+
   // Simple 2 dígitos: 01.webp
+  // Para CDNs conocidos (ikigaimangas) se usa mayor tolerancia a huecos porque
+  // los capítulos pueden tener páginas saltadas (ej: 01, gap de 5, 07, 08 …).
   if (hasSimple2) {
-    const pages = await probeSimple(base, ext, 1, 2, 2, session);
+    const pages = await probeSimple(base, ext, 1, 2, autoViewerUrl ? 10 : 2, session);
     return NextResponse.json({ pages, pattern: 'simple-2digit', count: pages.length });
+  }
+
+  // Patrón ikigaimangas fallback: páginas 2-digit desde 02.webp (sin 01.webp).
+  // La portada usa nombre descriptivo y no es detectable sin visor.
+  if (has02 && !hasSimple2) {
+    const pages = await probeSimple(base, ext, 2, 2, 2, session);
+    if (pages.length > 0) {
+      return NextResponse.json({ pages, pattern: 'simple-2digit-from-02', count: pages.length });
+    }
   }
 
   // Zero-indexed: 0.webp (requiere que 1.webp también exista para evitar falsos positivos)
