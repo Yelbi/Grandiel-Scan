@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const REASONS: { value: string; label: string }[] = [
   { value: 'incomplete',     label: 'Páginas incompletas' },
@@ -90,8 +91,8 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
         </svg>
       </button>
 
-      {/* Modal */}
-      {open && (
+      {/* Modal — portal para escapar del stacking context del reader-topbar */}
+      {open && createPortal(
         <div
           className="report-overlay"
           role="dialog"
@@ -197,7 +198,8 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
