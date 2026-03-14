@@ -79,7 +79,7 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
     <>
       {/* Botón en la topbar */}
       <button
-        className="reader-mode-btn"
+        className="reader-mode-btn reader-topbar__report"
         onClick={handleOpen}
         title="Reportar problema con este capítulo"
         aria-label="Reportar problema"

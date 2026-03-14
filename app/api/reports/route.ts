@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { reports } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
-import type { ReportInsert } from '@/lib/db/schema';
 
 const CHAPTER_REASONS = [
   'incomplete',
@@ -54,19 +53,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Motivo de reporte inválido.' }, { status: 400 });
       }
 
-      const values: ReportInsert = {
-        type: 'chapter',
-        mangaId: mangaId.trim(),
-        chapter: chapterNum,
+      await db.insert(reports).values({
+        type:        'chapter',
+        mangaId:     mangaId.trim(),
+        chapter:     chapterNum,
         reason,
-      };
-      // Solo incluir campos opcionales si tienen valor — evita FK violation con string vacío
-      if (userId) values.userId = userId;
-      if (typeof description === 'string' && description.trim().length > 0) {
-        values.description = description.trim().slice(0, 500);
-      }
-
-      await db.insert(reports).values(values);
+        userId:      userId ?? null,
+        description: (typeof description === 'string' && description.trim().length > 0)
+          ? description.trim().slice(0, 500)
+          : null,
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -80,18 +76,22 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const values: ReportInsert = {
-        type: type as string,
+      await db.insert(reports).values({
+        type:        type as string,
         description: desc,
-      };
-      if (userId) values.userId = userId;
-
-      await db.insert(reports).values(values);
+        userId:      userId ?? null,
+      });
       return NextResponse.json({ ok: true });
     }
 
     return NextResponse.json({ error: 'Tipo de reporte inválido.' }, { status: 400 });
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    // Drizzle envuelve el error real de PostgreSQL en err.cause
+    const cause = err instanceof Error
+      ? (err as Error & { cause?: Error }).cause
+      : undefined;
+    const message = cause instanceof Error ? cause.message : (err as Error).message;
+    console.error('[reports] Error:', message, err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

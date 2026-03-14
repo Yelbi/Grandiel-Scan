@@ -95,6 +95,26 @@ function IcoArrowsH() {
     </svg>
   );
 }
+function IcoFullscreen() {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  );
+}
+function IcoFullscreenExit() {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="4 14 10 14 10 20" />
+      <polyline points="20 10 14 10 14 4" />
+      <line x1="10" y1="14" x2="3" y2="21" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+    </svg>
+  );
+}
 
 /* ─── Page image with error fallback ─── */
 function PageImage({
@@ -161,6 +181,8 @@ export default function ChapterReader({
   const [brightness, setBrightness]   = useState(100);
   const [imgWidth, setImgWidth]       = useState(75);
   const [panelOpen, setPanelOpen]     = useState(false);
+  const [uiVisible, setUiVisible]     = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const panelRef         = useRef<HTMLDivElement>(null);
   const pageRefs         = useRef<(HTMLDivElement | null)[]>([]);
@@ -243,6 +265,8 @@ export default function ChapterReader({
         setBrightness(saved.brightness);
       if (typeof saved.imgWidth === 'number' && saved.imgWidth >= 30 && saved.imgWidth <= 100)
         setImgWidth(saved.imgWidth);
+      else if (window.matchMedia('(max-width: 768px)').matches)
+        setImgWidth(100);
     } catch {}
   }, []);
 
@@ -310,6 +334,13 @@ export default function ChapterReader({
     return () => document.removeEventListener('mousedown', handler);
   }, [panelOpen]);
 
+  // Sincronizar estado con cambios de pantalla completa
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
   const saveMode = useCallback((m: ReadingMode) => {
     if (m === 'continuous') pendingScrollPage.current = currentPageRef.current;
     setMode(m);
@@ -329,6 +360,25 @@ export default function ChapterReader({
     try {
       const cur = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.READER_SETTINGS) ?? '{}');
       localStorage.setItem(CONFIG.STORAGE_KEYS.READER_SETTINGS, JSON.stringify({ ...cur, imgWidth: val }));
+    } catch {}
+  }, []);
+
+  const toggleUi = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('a, button, input, select')) return;
+    setUiVisible((v) => {
+      if (v) setPanelOpen(false);
+      return !v;
+    });
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
     } catch {}
   }, []);
 
@@ -363,7 +413,7 @@ export default function ChapterReader({
   }
 
   return (
-    <div className="reader-wrapper">
+    <div className={`reader-wrapper${uiVisible ? ' reader-ui-visible' : ''}`}>
       {/* Sticky topbar */}
       <div className="reader-topbar">
         <Link href={`/manga/${manga.id}`} className="reader-topbar__back">
@@ -465,6 +515,7 @@ export default function ChapterReader({
       <div
         className="reader-content"
         style={brightness !== 100 ? { '--reader-brightness': `${brightness}%` } as React.CSSProperties : undefined}
+        onClick={toggleUi}
       >
         {mode === 'paginated' ? (
           <>
@@ -600,6 +651,18 @@ export default function ChapterReader({
                 aria-label="Anchura de las páginas"
               />
             </div>
+          </div>
+
+          {/* Pantalla completa */}
+          <div className="reader-control-group">
+            <button
+              className="reader-fullscreen-btn"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            >
+              {isFullscreen ? <IcoFullscreenExit /> : <IcoFullscreen />}
+              {isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            </button>
           </div>
         </div>
       </div>

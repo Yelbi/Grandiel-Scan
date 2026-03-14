@@ -4262,3 +4262,84 @@ mark.search-highlight {
     padding: var(--spacing-lg, 24px);
   }
 }
+
+/* ============================================================
+   MOBILE IMPROVEMENTS — Accesibilidad táctil y pantallas pequeñas
+   ============================================================ */
+
+/* ── Objetivo táctil mínimo para botones de ordenamiento ── */
+.filter-sort-btn {
+  min-height: 44px;
+}
+
+/* ── Dispositivos táctiles: mostrar elementos interactivos sin hover ── */
+@media (hover: none) {
+  /* Botón de favoritos siempre visible en táctil */
+  .favorite-btn-wrapper,
+  .favorite-btn {
+    opacity: 1;
+  }
+
+  /* Botón de borrar comentario siempre visible en táctil */
+  .manga-comment__delete {
+    opacity: 1;
+  }
+}
+
+/* ── Pantallas muy pequeñas (<480px): refinamientos adicionales ── */
+@media (max-width: 480px) {
+  /* Botones de acción del manga (Leer/Favorito) → ancho completo */
+  .manga-action-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .manga-quick-actions {
+    gap: var(--spacing-xs);
+  }
+
+  /* Lista de capítulos: reducir altura máxima en pantallas pequeñas */
+  .chapters-scroll {
+    max-height: 260px;
+  }
+
+  /* Formulario de comentarios: apilar footer verticalmente */
+  .manga-comments__form-footer {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-xs);
+  }
+
+  /* Perfil — estadísticas: compactas y centradas */
+  .perfil-banner__stat-sep {
+    display: none;
+  }
+
+  .perfil-banner__stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+  }
+
+  .perfil-stat-btn {
+    min-width: 72px;
+  }
+
+  /* Portada del manga en página de detalle: más compacta */
+  .manga-cover-img {
+    max-width: 150px;
+  }
+
+  /* Historial en perfil: portada reducida */
+  .perfil-history-item__cover {
+    width: 56px;
+    height: 78px;
+  }
+
+  /* Catálogo: header en columna en pantallas muy pequeñas */
+  .catalog-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

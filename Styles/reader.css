@@ -477,26 +477,42 @@
 @media (max-width: 768px) {
   .reader-topbar {
     padding: 0 var(--spacing-sm, 8px);
-    height: 48px;
-    gap: 4px;
+    height: 52px;
+    gap: 6px;
     padding-left: max(var(--spacing-sm, 8px), env(safe-area-inset-left));
     padding-right: max(var(--spacing-sm, 8px), env(safe-area-inset-right));
   }
 
+  /* Ocultar etiqueta del botón volver */
   .reader-topbar__back-label {
     display: none;
   }
 
-  .reader-mode-btn,
-  .reader-topbar__nav {
-    width: 44px;
+  /* Asegurar botón volver con objetivo táctil mínimo */
+  .reader-topbar__back {
+    min-width: 44px;
     height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .reader-chapter-select {
-    height: 36px;
-    max-width: 90px;
-    font-size: 0.8rem;
+  /* Ocultar botones de modo de lectura (se mantiene el de reportar) */
+  .reader-mode-btn:not(.reader-topbar__report) {
+    display: none;
+  }
+
+  /* Ocultar selector de capítulo y divisores */
+  .reader-chapter-select,
+  .reader-topbar__divider {
+    display: none;
+  }
+
+  /* Ajustar nav prev/next y botón reportar */
+  .reader-topbar__nav,
+  .reader-topbar__report {
+    width: 44px;
+    height: 44px;
   }
 
   .reader-content {
@@ -551,4 +567,41 @@ body.nav-hidden .reader-topbar {
 /* Fullscreen */
 :fullscreen .reader-controls {
   z-index: 10001;
+}
+
+/* ===== BOTÓN PANTALLA COMPLETA ===== */
+.reader-fullscreen-btn {
+  width: 100%;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--color-text, #fff);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reader-fullscreen-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== TAP PARA MOSTRAR/OCULTAR UI EN MÓVIL ===== */
+@media (max-width: 768px) {
+  .reader-topbar,
+  .reader-controls {
+    transition: opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .reader-ui-visible .reader-topbar,
+  .reader-ui-visible .reader-controls {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
