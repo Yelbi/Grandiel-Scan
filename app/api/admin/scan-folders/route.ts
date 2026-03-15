@@ -6,7 +6,7 @@ const MAX_RANGE         = 100_000;
 const IMGUR_PLACEHOLDER = 'imgur.com/w33tpvZ';
 
 // Patrones estándar de primera página (nombre base sin extensión), en orden de probabilidad
-const STD_PATTERNS = ['1', '01', '001', '01_01', '1_01'] as const;
+const STD_PATTERNS = ['1', '01', '001', '01_01', '1_01', '1%20(1)'] as const;
 
 // Estado por request — se pasa como argumento para evitar race conditions entre requests concurrentes
 interface RequestState { prefersGet: boolean }

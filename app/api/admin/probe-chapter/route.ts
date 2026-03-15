@@ -18,6 +18,15 @@ interface Session {
 
 const IMG_EXTS = new Set(['webp', 'jpg', 'jpeg', 'png', 'avif', 'gif']);
 
+/* ── Hosts para los que se omite el sondeo de directorio ────────────────
+   Estos CDNs no exponen listados reales: responden con HTML de la web app
+   que puede contener referencias parciales a imágenes y causar early-return
+   incompleto antes de que la detección por patrón se ejecute.           ── */
+const NO_DIR_LISTING_HOSTS = new Set([
+  'dashboard.olympusbiblioteca.com',
+  'dashboard.olympusscans.com',
+]);
+
 const IMGUR_PLACEHOLDER = 'imgur.com/w33tpvZ';
 
 async function tryFetch(url: string, method: 'HEAD' | 'GET'): Promise<[number, string]> {
@@ -945,6 +954,8 @@ export async function POST(req: NextRequest) {
     `02.${ext}`,          // simple-2digit-from-02 (ikigaimangas: portada nombrada + páginas 2-digit desde 02)
     `0.${ext}`,           // zero-indexed
     `1.${ext}`,           // simple-1digit / zero-indexed validator
+    `0_1.${ext}`,         // zero-part subpart: portada 0_1.webp (complemento de paren-part)
+    `0000.${ext}`,        // simple 4-dígito zero-indexado: 0000.webp (portada junto a paren-part)
   ];
 
   // Chequeos de prefijos: para cada prefijo se prueban dos variantes de padding
@@ -970,10 +981,13 @@ export async function POST(req: NextRequest) {
   // y la ejecutamos en paralelo con los checks estándar. También omitimos el listado de
   // directorio para ese CDN (no lo soporta), evitando hasta 5-6 s de espera en vano.
   const autoViewerUrl = tryBuildAutoViewerUrl(base);
+  const skipDirListing = !!autoViewerUrl || (() => {
+    try { return NO_DIR_LISTING_HOSTS.has(new URL(base).hostname.toLowerCase()); } catch { return false; }
+  })();
 
   const [autoViewerPages, directoryFiles, allResults] = await Promise.all([
     autoViewerUrl ? probeViewerPage(autoViewerUrl, base) : Promise.resolve([] as string[]),
-    autoViewerUrl ? Promise.resolve([] as string[]) : probeDirectoryListing(base),
+    skipDirListing ? Promise.resolve([] as string[]) : probeDirectoryListing(base),
     Promise.all(allChecks.map((f) => exists(base + f, session))),
   ]);
 
@@ -992,6 +1006,7 @@ export async function POST(req: NextRequest) {
     hasSubPad, hasSubDash, hasSubNoPad, hasChapPage4x3, hasParen, hasZeroParen, hasDsP1, hasDsP3, hasCLSubPart,
     hasCopiaPage,
     hasSimple3, has002, has003, hasSimple2, has02, hasZero, hasZero1,
+    hasZeroSubpart, hasSimple4DigitZero,
     ...rest
   ] = allResults;
   const prefixResults             = rest.slice(0, prefixVariants.length);
@@ -1041,8 +1056,16 @@ export async function POST(req: NextRequest) {
   }
 
   // Patrón "N (M).webp": 1 (1).webp → almacenado como 1%20(1).webp
+  // Puede ir acompañado de portadas en formatos 0_1.webp y/o 0000.webp.
   if (hasParen) {
-    const pages = await probeParenPart(base, ext, session);
+    const coverPages: string[] = [];
+    if (hasSimple4DigitZero) coverPages.push(`0000.${ext}`);
+    if (hasZeroSubpart) {
+      const zeroPart = await probePagesOfPart(base, ext, '0', session, 1);
+      coverPages.push(...zeroPart);
+    }
+    const mainPages = await probeParenPart(base, ext, session);
+    const pages = coverPages.length > 0 ? sortImageFiles([...coverPages, ...mainPages]) : mainPages;
     return NextResponse.json({ pages, pattern: 'paren-part', count: pages.length });
   }
 

@@ -6,6 +6,15 @@ import { ilike } from 'drizzle-orm';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
+  // Verificar vars de entorno requeridas
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[register] Faltan variables de entorno: NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
+    return NextResponse.json(
+      { error: 'Configuración del servidor incompleta. Contacta al administrador.' },
+      { status: 500 },
+    );
+  }
+
   try {
     const { username, password, avatar } = await req.json() as {
       username?: string;
@@ -66,25 +75,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Crear perfil en la base de datos
+    // Crear perfil en la base de datos.
+    // Se usa upsert porque Supabase puede tener un trigger que inserta en public.users
+    // automáticamente al crear el auth user — en ese caso hacemos update en lugar de insert.
     try {
-      await db.insert(users).values({
+      const profileValues = {
         id:        authData.user.id,
         username:  trimmed,
         avatar:    avatar ?? '/img/avatars/avatar1.svg',
         authEmail,
-      });
-    } catch {
+      };
+      await db
+        .insert(users)
+        .values(profileValues)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            username:  profileValues.username,
+            avatar:    profileValues.avatar,
+            authEmail: profileValues.authEmail,
+          },
+        });
+    } catch (dbErr) {
       // Rollback: borrar el usuario de auth si falla la inserción en DB
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json(
-        { error: 'Error al guardar el perfil. Intenta de nuevo.' },
-        { status: 500 },
-      );
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id).catch(() => {});
+      const cause = dbErr instanceof Error
+        ? ((dbErr as Error & { cause?: Error }).cause?.message ?? dbErr.message)
+        : String(dbErr);
+      console.error('[register] DB insert failed:', cause, dbErr);
+      return NextResponse.json({ error: cause }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, authEmail });
-  } catch {
-    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[register] Unexpected error:', msg, err);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

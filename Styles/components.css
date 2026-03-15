@@ -3013,6 +3013,18 @@ mark.search-highlight {
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-xl);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.perfil-guest-form-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, rgba(255, 80, 80, 0.4) 60%, transparent 100%);
 }
 
 .perfil-guest-form-card__title {
@@ -3077,65 +3089,67 @@ mark.search-highlight {
   border-radius: var(--border-radius-lg);
   margin-bottom: var(--spacing-xl);
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* Línea de acento superior */
-.perfil-banner::before {
+/* Cover strip at the top */
+.perfil-banner__cover {
+  height: 80px;
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(180, 0, 0, 0.92) 0%,
+    rgba(110, 0, 35, 0.78) 45%,
+    rgba(15, 5, 18, 0.96) 100%
+  );
+}
+
+.perfil-banner__cover::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--color-primary) 35%,
-    rgba(255, 120, 120, 0.9) 55%,
-    transparent 100%
-  );
-  z-index: 1;
-}
-
-.perfil-banner__glow {
-  position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(255, 0, 0, 0.1) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 10%, rgba(255, 0, 0, 0.04) 0%, transparent 50%);
-  pointer-events: none;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0px,
+    transparent 12px,
+    rgba(255, 255, 255, 0.03) 12px,
+    rgba(255, 255, 255, 0.03) 13px
+  );
 }
 
 .perfil-banner__body {
-  position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-xl);
-  padding: var(--spacing-xl) var(--spacing-2xl);
+  padding: 0 var(--spacing-2xl) var(--spacing-xl);
   flex-wrap: wrap;
 }
 
 .perfil-banner__avatar-wrap {
   flex-shrink: 0;
   position: relative;
+  margin-top: -40px;
+  z-index: 2;
 }
 
-/* Halo exterior del avatar */
-.perfil-banner__avatar-wrap::after {
+/* Solid ring that separates avatar from the cover */
+.perfil-banner__avatar-wrap::before {
   content: '';
   position: absolute;
-  inset: -8px;
+  inset: -5px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 0, 0, 0.18) 0%, transparent 68%);
-  pointer-events: none;
+  background: var(--color-bg-secondary);
+  z-index: -1;
 }
 
 .perfil-banner__avatar {
   border-radius: 50%;
   border: 3px solid var(--color-primary);
   object-fit: cover;
-  box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 0 2px rgba(255, 0, 0, 0.25),
+    0 6px 24px rgba(0, 0, 0, 0.55);
+  display: block;
   position: relative;
   z-index: 1;
 }
@@ -3143,6 +3157,7 @@ mark.search-highlight {
 .perfil-banner__info {
   flex: 1;
   min-width: 0;
+  padding-top: var(--spacing-sm);
 }
 
 .perfil-banner__name {
@@ -3216,12 +3231,27 @@ mark.search-highlight {
   flex-shrink: 0;
 }
 
+.perfil-banner__email {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  opacity: 0.7;
+}
+
+.perfil-banner__email--empty {
+  opacity: 0.45;
+}
+
 .perfil-banner__actions {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
   flex-shrink: 0;
   margin-left: auto;
+  padding-top: var(--spacing-sm);
 }
 
 .perfil-edit-btn,
@@ -3323,12 +3353,17 @@ mark.search-highlight {
   padding: var(--spacing-xl);
 }
 
-/* ── Tabs ── */
+/* ── Tabs: pill style ── */
 .perfil-tabs {
   display: flex;
-  gap: var(--spacing-xs);
-  border-bottom: 1px solid var(--color-border);
+  gap: 4px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 50px;
+  padding: 4px;
   margin-bottom: var(--spacing-xl);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .perfil-tab {
@@ -3336,41 +3371,45 @@ mark.search-highlight {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-lg);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 50px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  margin-bottom: -1px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.perfil-tab:hover { color: var(--color-text); }
+.perfil-tab:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .perfil-tab.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  color: #fff;
+  background: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(255, 0, 0, 0.4);
 }
 
 .perfil-tab__count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 20px;
-  padding: 0 6px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-full);
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50px;
   font-size: var(--font-size-xs);
   font-weight: 700;
-  color: var(--color-text-secondary);
+  color: inherit;
 }
 
 .perfil-tab.active .perfil-tab__count {
-  background: rgba(255, 0, 0, 0.15);
-  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 /* ── Section ── */
@@ -3574,14 +3613,19 @@ mark.search-highlight {
   .perfil-benefit i { margin-top: 0; }
 
   .perfil-banner__body {
-    padding: var(--spacing-lg);
+    padding: 0 var(--spacing-lg) var(--spacing-lg);
     gap: var(--spacing-md);
+  }
+
+  .perfil-banner__avatar-wrap {
+    margin-top: -28px;
   }
 
   .perfil-banner__actions {
     flex-direction: row;
     margin-left: 0;
     width: 100%;
+    padding-top: 0;
   }
 
   .perfil-banner__actions button,
@@ -3592,13 +3636,16 @@ mark.search-highlight {
 }
 
 @media (max-width: 600px) {
-  .perfil-tabs { gap: 0; }
+  .perfil-tabs {
+    width: 100%;
+    border-radius: var(--border-radius-lg);
+  }
 
   .perfil-tab {
     flex: 1;
     justify-content: center;
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-xs);
+    font-size: var(--font-size-xs);
   }
 
   .perfil-history-item__btn span { display: none; }

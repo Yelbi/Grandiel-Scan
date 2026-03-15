@@ -448,7 +448,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
 
       {/* ── Banner de perfil ── */}
       <div className="perfil-banner">
-        <div className="perfil-banner__glow" aria-hidden="true" />
+        <div className="perfil-banner__cover" aria-hidden="true" />
 
         <div className="perfil-banner__body">
           {/* Avatar */}
@@ -499,6 +499,17 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                 </span>
               </button>
             </div>
+
+            {/* Email enlazado */}
+            <div className="perfil-banner__email">
+              {profile.email ? (
+                <span><i className="fas fa-envelope" aria-hidden="true" /> {profile.email}</span>
+              ) : (
+                <span className="perfil-banner__email--empty">
+                  <i className="fas fa-envelope" aria-hidden="true" /> Sin email enlazado
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Acciones */}
@@ -513,17 +524,6 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
             >
               <i className="fas fa-sign-out-alt" aria-hidden="true" /> Salir
             </button>
-          </div>
-
-          {/* Email enlazado */}
-          <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', opacity: 0.65 }}>
-            {profile.email ? (
-              <span><i className="fas fa-envelope" aria-hidden="true" /> {profile.email}</span>
-            ) : (
-              <span style={{ opacity: 0.5 }}>
-                <i className="fas fa-envelope" aria-hidden="true" /> Sin email enlazado
-              </span>
-            )}
           </div>
         </div>
       </div>
