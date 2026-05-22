@@ -1223,8 +1223,8 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
                   {' '}(folder ID real),{' '}
                   <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>/manga/10719/capitulo/<strong>1</strong></code>
                   {' '}(kumanga.com) y{' '}
-                  <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>href="https://arenascan.com/slug-<strong>30</strong>/"</code>
-                  {' '}con <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>class="chapternum"</code>
+                  <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>{'href="https://arenascan.com/slug-'}<strong>30</strong>{'/"'}</code>
+                  {' '}con <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>{'class="chapternum"'}</code>
                   {' '}(arenascan / Madara WP — usa nro de capítulo como folderId).
                 </p>
                 <textarea
