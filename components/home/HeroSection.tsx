@@ -98,9 +98,9 @@ export default function HeroSection({
               className="hero__float"
               style={{
                 left: pos.l,
-                animationDuration: `${pos.dur}s`,
-                animationDelay: `${pos.d}s`,
-              }}
+                '--float-dur': `${pos.dur}s`,
+                '--float-delay': `${pos.d}s`,
+              } as React.CSSProperties}
             >
               <div
                 className="hero__float-cover"
@@ -113,7 +113,7 @@ export default function HeroSection({
                   height={104}
                   loading="lazy"
                   sizes="72px"
-                  unoptimized={manga.image.startsWith('/img/')}
+                  unoptimized={!manga.image.startsWith('http')}
                   style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                 />
               </div>

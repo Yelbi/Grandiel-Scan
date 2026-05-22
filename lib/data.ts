@@ -7,6 +7,14 @@ import type { Manga, Chapter } from './types';
 
 // ── Mappers ──────────────────────────────────────────────────────────────────
 
+/** Garantiza que la URL de imagen sea absoluta o tenga barra inicial.
+ *  Corrige entradas de BD que se guardaron sin "/" (ej: "portada.webp" → "/img/portada.webp"). */
+function normalizeImageUrl(url: string): string {
+  if (!url) return '/img/placeholder.svg';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
+  return `/img/${url}`;
+}
+
 function toManga(
   row: typeof mangas.$inferSelect,
   chapterNums: number[] = [],
@@ -15,7 +23,7 @@ function toManga(
     id:            row.id,
     slug:          row.id, // id IS the slug
     title:         row.title,
-    image:         row.image,
+    image:         normalizeImageUrl(row.image),
     description:   row.description,
     genres:        row.genres,
     type:          row.type,

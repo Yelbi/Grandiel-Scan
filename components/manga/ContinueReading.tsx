@@ -51,7 +51,7 @@ function ContinueReadingCard({
               height={280}
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               loading="lazy"
-              unoptimized={image.startsWith('/img/')}
+              unoptimized={!image.startsWith('http')}
               onError={() => setImgError(true)}
             />
           )}

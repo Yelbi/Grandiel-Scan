@@ -1,12 +1,4 @@
-function SkeletonCard() {
-  return (
-    <div className="manga-card product-item skeleton-card" aria-hidden="true">
-      <div className="manga-card-inner skeleton-cover" />
-      <div className="skeleton-line skeleton-title" />
-      <div className="skeleton-line skeleton-meta" />
-    </div>
-  );
-}
+import { MangaGridSkeleton } from '@/components/manga/MangaCardSkeleton';
 
 export default function Loading() {
   return (
@@ -21,9 +13,7 @@ export default function Loading() {
       </div>
       <div className="nuevos-section">
         <div className="skeleton-line" style={{ width: '140px', height: '18px', marginBottom: '1rem' }} />
-        <div className="mami">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
+        <MangaGridSkeleton count={6} />
       </div>
     </div>
   );

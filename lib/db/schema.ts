@@ -54,16 +54,22 @@ export const chapters = pgTable(
 );
 
 // ── Usuarios (perfil público, vinculado a Supabase Auth) ─────────────────────
-export const users = pgTable('users', {
-  id:        text('id').primaryKey(), // = auth.users.id de Supabase
-  username:  text('username').notNull(),
-  avatar:    text('avatar').notNull(),
-  // Email interno (UUID@auth.grandiel) usado para autenticación — nunca cambia
-  authEmail: text('auth_email'),
-  // Email real opcional que el usuario puede enlazar a su cuenta
-  email:     text('email'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const users = pgTable(
+  'users',
+  {
+    id:        text('id').primaryKey(), // = auth.users.id de Supabase
+    username:  text('username').notNull(),
+    avatar:    text('avatar').notNull(),
+    // Email interno (UUID@auth.grandiel) usado para autenticación — nunca cambia
+    authEmail: text('auth_email'),
+    // Email real opcional que el usuario puede enlazar a su cuenta
+    email:     text('email'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('users_username_unique').on(t.username),
+  ],
+);
 
 // ── Favoritos ────────────────────────────────────────────────────────────────
 export const favorites = pgTable(

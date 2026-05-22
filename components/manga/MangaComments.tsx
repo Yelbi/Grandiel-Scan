@@ -13,6 +13,12 @@ interface Comment {
   avatar: string;
 }
 
+interface CommentsResponse {
+  comments: Comment[];
+  page: number;
+  hasMore: boolean;
+}
+
 export default function MangaComments({
   mangaId,
   chapterNum,
@@ -22,35 +28,70 @@ export default function MangaComments({
 }) {
   const { profile, isLoggedIn } = useUserProfile();
 
-  const [comments, setComments]       = useState<Comment[]>([]);
-  const [text, setText]               = useState('');
-  const [error, setError]             = useState('');
-  const [fetchError, setFetchError]   = useState(false);
-  const [loading, setLoading]         = useState(true);
-  const [submitting, setSubmitting]   = useState(false);
+  const [comments, setComments]           = useState<Comment[]>([]);
+  const [text, setText]                   = useState('');
+  const [error, setError]                 = useState('');
+  const [fetchError, setFetchError]       = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const [submitting, setSubmitting]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [page, setPage]                   = useState(1);
+  const [hasMore, setHasMore]             = useState(false);
+  const [loadingMore, setLoadingMore]     = useState(false);
 
-  const apiUrl = chapterNum !== undefined
-    ? `/api/comments/${mangaId}?chapter=${chapterNum}`
-    : `/api/comments/${mangaId}`;
+  const buildUrl = useCallback((p: number) => {
+    const base = chapterNum !== undefined
+      ? `/api/comments/${mangaId}?chapter=${chapterNum}&page=${p}`
+      : `/api/comments/${mangaId}?page=${p}`;
+    return base;
+  }, [mangaId, chapterNum]);
 
-  const fetchComments = useCallback(async () => {
+  const [fetchErrorMsg, setFetchErrorMsg] = useState('');
+
+  const fetchComments = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch(apiUrl);
+      const res = await fetch(buildUrl(1), { signal });
       if (res.ok) {
-        setComments(await res.json() as Comment[]);
+        const data = await res.json() as CommentsResponse;
+        setComments(data.comments);
+        setPage(1);
+        setHasMore(data.hasMore);
         setFetchError(false);
+        setFetchErrorMsg('');
       } else {
         setFetchError(true);
+        setFetchErrorMsg(`Error ${res.status}: ${res.statusText || 'No se pudo conectar al servidor.'}`);
       }
-    } catch {
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
       setFetchError(true);
+      setFetchErrorMsg(err instanceof Error ? err.message : 'Error de red.');
     } finally {
       setLoading(false);
     }
-  }, [apiUrl]);
+  }, [buildUrl]);
 
-  useEffect(() => { void fetchComments(); }, [fetchComments]);
+  const loadMore = async () => {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(buildUrl(nextPage));
+      if (res.ok) {
+        const data = await res.json() as CommentsResponse;
+        setComments((prev) => [...prev, ...data.comments]);
+        setPage(nextPage);
+        setHasMore(data.hasMore);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchComments(controller.signal);
+    return () => controller.abort();
+  }, [fetchComments]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +146,11 @@ export default function MangaComments({
       {/* ── Formulario ── */}
       {isLoggedIn && profile ? (
         <form className="manga-comments__form" onSubmit={submit}>
-          {error && <p className="manga-comments__error">{error}</p>}
+          {error && (
+            <p className="manga-comments__error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+          )}
           <div className="manga-comments__fields">
             <div className="manga-comments__user-info">
               <Image
@@ -126,10 +171,11 @@ export default function MangaComments({
               maxLength={500}
               rows={3}
               disabled={submitting}
+              aria-label="Escribe tu comentario"
             />
           </div>
           <div className="manga-comments__form-footer">
-            <span className="manga-comments__chars">{text.length}/500</span>
+            <span className="manga-comments__chars" aria-live="polite">{text.length}/500</span>
             <button
               type="submit"
               className="manga-comments__submit"
@@ -157,6 +203,7 @@ export default function MangaComments({
       ) : fetchError ? (
         <div className="manga-comments__fetch-error">
           <p><i className="fas fa-exclamation-circle" aria-hidden="true" /> No se pudieron cargar los comentarios.</p>
+          {fetchErrorMsg && <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>{fetchErrorMsg}</p>}
           <button className="manga-comments__retry" onClick={() => { setLoading(true); void fetchComments(); }}>
             <i className="fas fa-redo" aria-hidden="true" /> Reintentar
           </button>
@@ -166,64 +213,82 @@ export default function MangaComments({
           <i className="far fa-comment-dots" aria-hidden="true" /> Sé el primero en comentar.
         </p>
       ) : (
-        <ul className="manga-comments__list">
-          {comments.map((c) => (
-            <li key={c.id} className="manga-comment">
-              <div className="manga-comment__avatar" aria-hidden="true">
-                <Image
-                  src={c.avatar}
-                  alt={c.username}
-                  width={36}
-                  height={36}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  unoptimized
-                />
-              </div>
-              <div className="manga-comment__body">
-                <div className="manga-comment__header">
-                  <span className="manga-comment__name">{c.username}</span>
-                  <time className="manga-comment__time">
-                    {new Date(c.createdAt).toLocaleDateString('es-ES', {
-                      year:  'numeric',
-                      month: 'short',
-                      day:   'numeric',
-                    })}
-                  </time>
-                  {profile?.id === c.userId && (
-                    confirmDelete === c.id ? (
-                      <span className="manga-comment__confirm-delete">
-                        <button
-                          className="manga-comment__confirm-yes"
-                          onClick={() => void deleteComment(c.id)}
-                          aria-label="Confirmar eliminación"
-                        >
-                          <i className="fas fa-check" aria-hidden="true" /> Eliminar
-                        </button>
-                        <button
-                          className="manga-comment__confirm-no"
-                          onClick={() => setConfirmDelete(null)}
-                          aria-label="Cancelar"
-                        >
-                          <i className="fas fa-times" aria-hidden="true" /> Cancelar
-                        </button>
-                      </span>
-                    ) : (
-                      <button
-                        className="manga-comment__delete"
-                        onClick={() => setConfirmDelete(c.id)}
-                        title="Eliminar comentario"
-                        aria-label="Eliminar comentario"
-                      >
-                        <i className="fas fa-trash-alt" aria-hidden="true" />
-                      </button>
-                    )
-                  )}
+        <>
+          <ul className="manga-comments__list">
+            {comments.map((c) => (
+              <li key={c.id} className="manga-comment">
+                <div className="manga-comment__avatar" aria-hidden="true">
+                  <Image
+                    src={c.avatar}
+                    alt={c.username}
+                    width={36}
+                    height={36}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    unoptimized
+                  />
                 </div>
-                <p className="manga-comment__text">{c.text}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="manga-comment__body">
+                  <div className="manga-comment__header">
+                    <span className="manga-comment__name">{c.username}</span>
+                    <time className="manga-comment__time">
+                      {new Date(c.createdAt).toLocaleDateString('es-ES', {
+                        year:  'numeric',
+                        month: 'short',
+                        day:   'numeric',
+                      })}
+                    </time>
+                    {profile?.id === c.userId && (
+                      confirmDelete === c.id ? (
+                        <span className="manga-comment__confirm-delete">
+                          <button
+                            className="manga-comment__confirm-yes"
+                            onClick={() => void deleteComment(c.id)}
+                            aria-label="Confirmar eliminación"
+                          >
+                            <i className="fas fa-check" aria-hidden="true" /> Eliminar
+                          </button>
+                          <button
+                            className="manga-comment__confirm-no"
+                            onClick={() => setConfirmDelete(null)}
+                            aria-label="Cancelar"
+                          >
+                            <i className="fas fa-times" aria-hidden="true" /> Cancelar
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          className="manga-comment__delete"
+                          onClick={() => setConfirmDelete(c.id)}
+                          title="Eliminar comentario"
+                          aria-label="Eliminar comentario"
+                        >
+                          <i className="fas fa-trash-alt" aria-hidden="true" />
+                        </button>
+                      )
+                    )}
+                  </div>
+                  <p className="manga-comment__text">{c.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <button
+                className="btn"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                aria-label="Cargar más comentarios"
+              >
+                {loadingMore
+                  ? <><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Cargando...</>
+                  : 'Cargar más comentarios'
+                }
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

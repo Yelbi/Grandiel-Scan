@@ -270,14 +270,36 @@ export default function ChapterReader({
     } catch {}
   }, []);
 
-  // Navegación por teclado (solo modo paginado)
+  // Navegación por teclado
   useEffect(() => {
-    if (mode !== 'paginated') return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        setCurrentPage((p) => Math.min(p + 1, pages.length - 1));
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        setCurrentPage((p) => Math.max(p - 1, 0));
+      // No interceptar si el foco está en un input/select/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+      if (mode === 'paginated') {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setCurrentPage((p) => Math.min(p + 1, pages.length - 1));
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          setCurrentPage((p) => Math.max(p - 1, 0));
+        }
+      } else {
+        // Modo continuo: desplazar al ítem anterior/siguiente
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          const next = currentPageRef.current + 1;
+          if (next < pages.length) {
+            pageRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const prev = currentPageRef.current - 1;
+          if (prev >= 0) {
+            pageRefs.current[prev]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
       }
     };
     window.addEventListener('keydown', handler);
@@ -391,7 +413,8 @@ export default function ChapterReader({
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-    if (Math.abs(dx) > 50 && dy < 80) {
+    const swipeThreshold = window.innerWidth * 0.1;
+    if (Math.abs(dx) > swipeThreshold && dy < 80) {
       if (dx < 0) setCurrentPage((p) => Math.min(p + 1, pages.length - 1));
       else        setCurrentPage((p) => Math.max(p - 1, 0));
     }
@@ -511,16 +534,16 @@ export default function ChapterReader({
         <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {/* Content — brightness aplicado como CSS variable en el wrapper */}
+      {/* Content */}
       <div
         className="reader-content"
-        style={brightness !== 100 ? { '--reader-brightness': `${brightness}%` } as React.CSSProperties : undefined}
+        style={brightness !== 100 ? { filter: `brightness(${brightness}%)` } : undefined}
         onClick={toggleUi}
       >
         {mode === 'paginated' ? (
           <>
             <div
-              className="dede"
+              className="reader-page-container"
               style={{ display: 'flex', justifyContent: 'center' }}
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
@@ -555,7 +578,7 @@ export default function ChapterReader({
             </div>
           </>
         ) : (
-          <div className="dede">
+          <div className="reader-page-container">
             {pages.map((src, i) => (
               <div
                 key={src}

@@ -1849,7 +1849,7 @@ mark.search-highlight {
 .hero__float {
   position: absolute;
   top: 0;
-  animation: floatDown linear infinite;
+  animation: floatDown var(--float-dur, 22s) linear var(--float-delay, 0s) infinite;
   will-change: transform;
 }
 

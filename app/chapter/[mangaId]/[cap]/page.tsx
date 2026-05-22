@@ -12,19 +12,35 @@ interface Props {
 
 export async function generateStaticParams() {
   const mangas = await getAllMangas();
-  return mangas
-    .filter((m) => m.latestChapter != null)
-    .map((m) => ({ mangaId: m.id, cap: String(m.latestChapter) }));
+  const params: { mangaId: string; cap: string }[] = [];
+  for (const m of mangas) {
+    const recent = [...m.chapters].sort((a, b) => b - a).slice(0, 3);
+    for (const cap of recent) {
+      params.push({ mangaId: m.id, cap: String(cap) });
+    }
+  }
+  return params;
 }
+
+const BASE_URL = 'https://grandielscan.com';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mangaId, cap } = await params;
   const manga = await getMangaById(mangaId);
   if (!manga) return {};
 
+  const imageUrl = manga.image.startsWith('http')
+    ? manga.image
+    : `${BASE_URL}${manga.image}`;
+
   return {
     title: `${manga.title} - Capítulo ${cap}`,
     description: `Lee el capítulo ${cap} de ${manga.title} en español.`,
+    openGraph: {
+      title: `${manga.title} - Capítulo ${cap} | Grandiel Scan`,
+      description: `Lee el capítulo ${cap} de ${manga.title} en español.`,
+      images: [{ url: imageUrl }],
+    },
   };
 }
 

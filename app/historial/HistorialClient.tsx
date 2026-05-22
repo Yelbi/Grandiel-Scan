@@ -50,7 +50,7 @@ export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
                     height={80}
                     style={{ objectFit: 'cover' }}
                     loading="lazy"
-                    unoptimized={manga.image.startsWith('/img/')}
+                    unoptimized={!manga.image.startsWith('http')}
                   />
                 </div>
               )}

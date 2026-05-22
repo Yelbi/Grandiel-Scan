@@ -120,7 +120,7 @@ export default function SearchBar({ mangas }: SearchBarProps) {
         placeholder="Título, género…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => open && setOpen(true)}
+        onFocus={() => { if (query.trim()) setOpen(true); }}
         onKeyDown={handleKeyDown}
         autoComplete="off"
         aria-autocomplete="list"
@@ -171,7 +171,7 @@ export default function SearchBar({ mangas }: SearchBarProps) {
                       width={40}
                       height={56}
                       style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                      unoptimized={manga.image.startsWith('/img/')}
+                      unoptimized={!manga.image.startsWith('http')}
                     />
                   </div>
                   <div className="search-result-info">

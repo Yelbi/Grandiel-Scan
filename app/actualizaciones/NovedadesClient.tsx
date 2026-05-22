@@ -41,7 +41,7 @@ const ActCard = memo(function ActCard({ manga }: { manga: Manga }) {
               height={280}
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               loading="lazy"
-              unoptimized={manga.image.startsWith('/img/')}
+              unoptimized={!manga.image.startsWith('http')}
               onError={() => setError(true)}
             />
           ) : (

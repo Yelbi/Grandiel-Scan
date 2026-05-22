@@ -1,21 +1,26 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { comments, users } from '@/lib/db/schema';
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 type Params = { params: Promise<{ mangaId: string }> };
 
-/* ── GET — obtener comentarios (público) ── */
+const COMMENTS_PAGE_SIZE = 50;
+
+/* ── GET — obtener comentarios (público, paginado) ── */
 export async function GET(
   req: NextRequest,
   { params }: Params,
 ) {
   try {
     const { mangaId } = await params;
-    const chapterParam = req.nextUrl.searchParams.get('chapter');
-    let chapter: number | null = null;
+    const sp = req.nextUrl.searchParams;
+    const chapterParam = sp.get('chapter');
+    const pageParam    = sp.get('page') ?? '1';
 
+    let chapter: number | null = null;
     if (chapterParam !== null) {
       if (!/^\d+$/.test(chapterParam)) {
         return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
@@ -25,6 +30,9 @@ export async function GET(
         return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
       }
     }
+
+    const page = Math.max(1, parseInt(pageParam, 10) || 1);
+    const offset = (page - 1) * COMMENTS_PAGE_SIZE;
 
     const rows = await db
       .select({
@@ -44,9 +52,14 @@ export async function GET(
           ? eq(comments.chapter, chapter)
           : sql`${comments.chapter} IS NULL`,
       ))
-      .orderBy(asc(comments.createdAt));
+      .orderBy(desc(comments.createdAt))
+      .limit(COMMENTS_PAGE_SIZE)
+      .offset(offset);
 
-    return NextResponse.json(rows);
+    // Indicar si hay más páginas
+    const hasMore = rows.length === COMMENTS_PAGE_SIZE;
+
+    return NextResponse.json({ comments: rows, page, hasMore });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
@@ -58,6 +71,16 @@ export async function POST(
   { params }: Params,
 ) {
   try {
+    // 10 comentarios por usuario (por IP) cada 10 minutos
+    const ip = getClientIp(req);
+    const rl = rateLimit(`comment:${ip}`, 10, 10 * 60 * 1000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Demasiados comentarios. Espera unos minutos.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+      );
+    }
+
     const { mangaId } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

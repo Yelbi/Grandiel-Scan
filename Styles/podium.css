@@ -331,3 +331,14 @@
     font-size: 0.95rem;
   }
 }
+
+/* Cuando el usuario prefiere movimiento reducido: mostrar el podio sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+  .podium__base,
+  .podium__card,
+  .podium__place {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}

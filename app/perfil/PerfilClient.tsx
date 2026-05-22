@@ -741,7 +741,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                           height={100}
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                           loading="lazy"
-                          unoptimized={manga.image.startsWith('/img/')}
+                          unoptimized={!manga.image.startsWith('http')}
                         />
                       ) : (
                         <div className="perfil-history-item__cover-placeholder">

@@ -16,9 +16,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Datos de suscripción incompletos.' }, { status: 400 });
     }
 
-    // Obtener userId si está autenticado (opcional)
+    // Validar que el endpoint sea una URL HTTPS válida (no permite rutas internas)
+    try {
+      const url = new URL(endpoint);
+      if (url.protocol !== 'https:') {
+        return NextResponse.json({ error: 'Endpoint inválido.' }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Endpoint inválido.' }, { status: 400 });
+    }
+
+    // Validar que keys sean strings base64url no vacíos (longitud razonable)
+    if (keys.p256dh.length < 10 || keys.auth.length < 10) {
+      return NextResponse.json({ error: 'Claves de suscripción inválidas.' }, { status: 400 });
+    }
+
+    // Requiere autenticación para asociar la suscripción a un usuario
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Debes iniciar sesión para activar las notificaciones.' },
+        { status: 401 },
+      );
+    }
 
     await db
       .insert(pushSubscriptions)

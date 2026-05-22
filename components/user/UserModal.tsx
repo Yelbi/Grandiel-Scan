@@ -1,11 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
+
+const FOCUSABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 const AVATARS = [
   '/img/avatars/avatar1.svg',
@@ -26,6 +35,42 @@ export default function UserModal({ onClose }: UserModalProps) {
   const { history } = useHistoryContext();
 
   const [view, setView] = useState<ModalView>(isLoggedIn ? 'profile' : 'register');
+
+  const modalRef   = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
+
+  // Guardar el elemento que tenía el foco antes de abrir y devolverlo al cerrar
+  useEffect(() => {
+    prevFocusRef.current = document.activeElement as HTMLElement;
+    // Mover foco al modal al abrir
+    const firstFocusable = modalRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+    firstFocusable?.focus();
+    return () => { prevFocusRef.current?.focus(); };
+  }, []);
+
+  // Focus trap: Tab / Shift+Tab ciclan dentro del modal; Escape cierra
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab') return;
+
+      const focusables = Array.from(
+        modalRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+      );
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last  = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   // Cambiar a perfil automáticamente al iniciar sesión
   useEffect(() => {
@@ -70,8 +115,12 @@ export default function UserModal({ onClose }: UserModalProps) {
       setRegError('Solo letras, números y guiones bajos (_).');
       return;
     }
-    if (regPassword.length < 6) {
-      setRegError('La contraseña debe tener al menos 6 caracteres.');
+    if (regPassword.length < 8) {
+      setRegError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(regPassword) || !/[0-9]/.test(regPassword)) {
+      setRegError('La contraseña debe contener al menos una letra y un número.');
       return;
     }
     if (regPassword !== regPasswordConfirm) {
@@ -141,7 +190,7 @@ export default function UserModal({ onClose }: UserModalProps) {
       <div className="user-modal-overlay active" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="user-modal active" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className="user-modal active" role="dialog" aria-modal="true" aria-labelledby="modal-title" ref={modalRef}>
         <button className="user-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
 
         {/* ── REGISTRO / LOGIN ── */}
@@ -169,7 +218,7 @@ export default function UserModal({ onClose }: UserModalProps) {
             {view === 'register' && (
               <form className="user-form" onSubmit={handleRegister}>
                 {regError && (
-                  <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                  <p role="alert" aria-live="assertive" style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
                     {regError}
                   </p>
                 )}
@@ -193,10 +242,10 @@ export default function UserModal({ onClose }: UserModalProps) {
                   <input
                     id="reg-password"
                     type="password"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    minLength={6}
+                    minLength={8}
                     required
                     autoComplete="new-password"
                   />
@@ -209,7 +258,7 @@ export default function UserModal({ onClose }: UserModalProps) {
                     placeholder="Repite tu contraseña"
                     value={regPasswordConfirm}
                     onChange={(e) => setRegPasswordConfirm(e.target.value)}
-                    minLength={6}
+                    minLength={8}
                     required
                     autoComplete="new-password"
                   />
@@ -241,7 +290,7 @@ export default function UserModal({ onClose }: UserModalProps) {
             {view === 'login' && (
               <form className="user-form" onSubmit={handleLogin}>
                 {loginError && (
-                  <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                  <p role="alert" aria-live="assertive" style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
                     {loginError}
                   </p>
                 )}
@@ -344,7 +393,7 @@ export default function UserModal({ onClose }: UserModalProps) {
             <h2 id="modal-title" className="user-modal-title">Editar Perfil</h2>
             <form className="user-form" onSubmit={handleSaveEdit}>
               {editError && (
-                <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                <p role="alert" aria-live="assertive" style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
                   {editError}
                 </p>
               )}
@@ -405,7 +454,7 @@ export default function UserModal({ onClose }: UserModalProps) {
             ) : (
               <form className="user-form" onSubmit={handleLinkEmail}>
                 {linkEmailErr && (
-                  <p style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
+                  <p role="alert" aria-live="assertive" style={{ color: 'var(--color-primary)', fontSize: '0.875rem', textAlign: 'center', margin: 0 }}>
                     {linkEmailErr}
                   </p>
                 )}

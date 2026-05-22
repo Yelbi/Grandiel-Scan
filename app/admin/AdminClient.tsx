@@ -257,7 +257,46 @@ function parseHtmlChapterEntries(html: string): HtmlChapterEntry[] {
       pushEntry({ chapter, folderId: String(chapter), viewerUrl });
     }
   }
+  // Formato 6: URL externa completa con span.chapternum (Madara WP / arenascan)
+  // <a href="https://arenascan.com/slug-30/"><span class="chapternum">Chapter 30</span></a>
+  const re6 = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  while ((match = re6.exec(html)) !== null) {
+    const href  = match[1];
+    const inner = match[2];
+    if (!/class="[^"]*chapternum[^"]*"/i.test(inner)) continue;
+    const viewerUrl = toViewerUrl(href);
+    const chapter   = chapterFromChunk(inner);
+    if (chapter !== null) pushEntry({ chapter, folderId: String(chapter), viewerUrl });
+  }
+
   return entries;
+}
+
+/* Parsea una lista de URLs de imágenes CDN con estructura {base}/{chapter}/{page}.ext
+   Ejemplo: https://cdn.arenascan.com/arena-bucket/173838/53/2.webp
+   Retorna la base detectada y los capítulos únicos encontrados, o null si el formato no es reconocido. */
+function parseCdnUrlList(raw: string): { base: string; entries: Array<{ chapter: number; folderId: string }> } | null {
+  const lines = raw.split('\n').map((l) => l.trim()).filter((l) => /^https?:\/\//i.test(l));
+  if (!lines.length) return null;
+
+  const urlPat = /^(https?:\/\/.+)\/(\d+)\/[^/]+$/;
+  const baseSet  = new Set<string>();
+  const chapMap  = new Map<number, string>();
+
+  for (const url of lines) {
+    const m = url.match(urlPat);
+    if (!m) continue;
+    baseSet.add(m[1]);
+    const ch = Number(m[2]);
+    if (isFinite(ch) && !chapMap.has(ch)) chapMap.set(ch, m[2]);
+  }
+
+  if (!chapMap.size || baseSet.size !== 1) return null;
+  const base    = [...baseSet][0];
+  const entries = [...chapMap.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([chapter, folderId]) => ({ chapter, folderId }));
+  return { base, entries };
 }
 
 function parseHtmlChapters(html: string): string {
@@ -306,6 +345,8 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [bProgress,       setBProgress]       = useState<BulkEntry[]>([]);
   const [bHtmlRaw,        setBHtmlRaw]        = useState('');
   const [bHtmlOpen,       setBHtmlOpen]       = useState(false);
+  const [bCdnRaw,         setBCdnRaw]         = useState('');
+  const [bCdnOpen,        setBCdnOpen]        = useState(false);
 
   /* ── Delete state ── */
   const [dMangaId,   setDMangaId]   = useState('');
@@ -1099,6 +1140,69 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             </span>
           </div>
 
+          {/* ── Importar desde URLs de CDN ── */}
+          <div style={{ marginBottom: '1rem', border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
+            <button
+              type="button"
+              onClick={() => setBCdnOpen((v) => !v)}
+              disabled={bRunning}
+              style={{ width: '100%', padding: '10px 14px', background: 'var(--color-bg-tertiary)', border: 'none', color: 'var(--color-text-secondary)', fontSize: '.85rem', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <i className="fas fa-images" />
+              Importar desde URLs de páginas (CDN)
+              <i className={`fas fa-chevron-${bCdnOpen ? 'up' : 'down'}`} style={{ marginLeft: 'auto' }} />
+            </button>
+            {bCdnOpen && (
+              <div style={{ padding: '12px 14px', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <p style={{ margin: 0, fontSize: '.8rem', color: 'var(--color-text-muted)' }}>
+                  Pega URLs de imágenes del CDN (una por línea). El sistema detecta la{' '}
+                  <strong>URL base</strong> y los <strong>capítulos</strong> automáticamente.{' '}
+                  Formato soportado:{' '}
+                  <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>
+                    https://cdn.arenascan.com/arena-bucket/<strong>173838</strong>/<strong>53</strong>/2.webp
+                  </code>
+                  {' '}→ base <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>…/173838</code>, capítulo <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>53</code>.
+                  La URL base rellena el campo de arriba si está vacío.
+                </p>
+                <textarea
+                  value={bCdnRaw}
+                  onChange={(e) => setBCdnRaw(e.target.value)}
+                  rows={6}
+                  placeholder={'https://cdn.arenascan.com/arena-bucket/173838/1/01.webp\nhttps://cdn.arenascan.com/arena-bucket/173838/1/02.webp\n\nhttps://cdn.arenascan.com/arena-bucket/173838/53/1.webp'}
+                  style={{ fontFamily: 'monospace', fontSize: '.75rem', resize: 'vertical' }}
+                />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={!bCdnRaw.trim()}
+                    onClick={() => {
+                      const result = parseCdnUrlList(bCdnRaw);
+                      if (!result) { notify('err', 'No se detectó un patrón de CDN válido. Verifica que las URLs tengan la estructura {base}/{capítulo}/{página}.ext'); return; }
+                      if (!bComicBase.trim()) setBComicBase(result.base);
+                      const lines = result.entries.map((e) => `${e.chapter}: ${e.folderId}`).join('\n');
+                      setBList((prev) => prev.trim() ? prev.trim() + '\n' + lines : lines);
+                      setBCdnRaw('');
+                      setBCdnOpen(false);
+                      notify('ok', `✓ Base: ${result.base} · ${result.entries.length} capítulo(s) importados.`);
+                    }}
+                  >
+                    <i className="fas fa-file-import" /> Extraer y añadir a la lista
+                  </button>
+                  {bCdnRaw.trim() && (
+                    <span style={{ fontSize: '.8rem', color: 'var(--color-text-muted)' }}>
+                      {(() => {
+                        const r = parseCdnUrlList(bCdnRaw);
+                        if (!r) return 'Formato no reconocido';
+                        return `Base: ${r.base.split('/').slice(-1)[0]} · ${r.entries.length} capítulo(s)`;
+                      })()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* ── Importar desde HTML ── */}
           <div style={{ marginBottom: '1.5rem', border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
             <button
@@ -1114,11 +1218,14 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
             {bHtmlOpen && (
               <div style={{ padding: '12px 14px', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <p style={{ margin: 0, fontSize: '.8rem', color: 'var(--color-text-muted)' }}>
-                  Pega el HTML de la página de capítulos. Soporta dos formatos:{' '}
+                  Pega el HTML de la página de capítulos. Soporta:{' '}
                   <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>/capitulo/<strong>101650</strong>/comic-…</code>
-                  {' '}(folder ID real) y{' '}
+                  {' '}(folder ID real),{' '}
                   <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>/manga/10719/capitulo/<strong>1</strong></code>
-                  {' '}(kumanga.com — usa nro de capítulo como placeholder; reemplaza el segundo número con el folder ID real del CDN si es diferente).
+                  {' '}(kumanga.com) y{' '}
+                  <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>href="https://arenascan.com/slug-<strong>30</strong>/"</code>
+                  {' '}con <code style={{ background: 'var(--color-bg-tertiary)', padding: '1px 5px', borderRadius: 3 }}>class="chapternum"</code>
+                  {' '}(arenascan / Madara WP — usa nro de capítulo como folderId).
                 </p>
                 <textarea
                   value={bHtmlRaw}

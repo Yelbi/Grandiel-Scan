@@ -50,6 +50,16 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/*
+          Script bloqueante mínimo: aplica el tema ANTES del primer paint
+          para evitar el flash de tema incorrecto. Lee localStorage y, si no
+          hay preferencia guardada, usa prefers-color-scheme del sistema.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

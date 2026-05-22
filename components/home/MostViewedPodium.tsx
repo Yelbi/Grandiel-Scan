@@ -68,7 +68,7 @@ export default function MostViewedPodium({ mangas }: Props) {
                   fill
                   sizes="(max-width: 600px) 33vw, 210px"
                   style={{ objectFit: 'cover' }}
-                  unoptimized={manga.image.startsWith('/img/')}
+                  unoptimized={!manga.image.startsWith('http')}
                 />
                 <div className="podium__cover-overlay" aria-hidden="true" />
               </div>

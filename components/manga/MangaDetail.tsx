@@ -3,6 +3,7 @@ import Link from 'next/link';
 import MangaComments from './MangaComments';
 import MangaDetailActions from './MangaDetailActions';
 import MangaChapterList from './MangaChapterList';
+import ViewTracker from './ViewTracker';
 import type { Manga } from '@/lib/types';
 
 export default function MangaDetail({ manga }: { manga: Manga }) {
@@ -11,6 +12,7 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
 
   return (
     <div className="curva">
+      <ViewTracker mangaId={manga.id} />
 
       {/* ── Header: portada + info completa ── */}
       <div className="manga-header">
@@ -23,7 +25,7 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
             sizes="220px"
             className="manga-cover-img manga-cover-glow"
             priority
-            unoptimized={manga.image.startsWith('/img/')}
+            unoptimized={!manga.image.startsWith('http')}
           />
         </div>
 

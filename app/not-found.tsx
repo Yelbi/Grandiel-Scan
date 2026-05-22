@@ -1,4 +1,10 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Página no encontrada — Grandiel Scan',
+  description: 'El manga o capítulo que buscas no existe o fue eliminado.',
+};
 
 export default function NotFound() {
   return (

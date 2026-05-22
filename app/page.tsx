@@ -21,14 +21,6 @@ const jsonLd = {
   name: 'Grandiel Scan',
   url: 'https://grandielscan.com',
   description: 'Lee manhwas, mangas y manhuas en español gratis.',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: 'https://grandielscan.com/mangas?search={search_term_string}',
-    },
-    'query-input': 'required name=search_term_string',
-  },
 };
 
 export default async function HomePage() {

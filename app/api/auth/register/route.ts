@@ -4,8 +4,19 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { ilike } from 'drizzle-orm';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  // 5 intentos de registro por IP cada 15 minutos
+  const ip = getClientIp(req);
+  const rl = rateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: 'Demasiados intentos. Espera unos minutos antes de intentarlo de nuevo.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    );
+  }
+
   // Verificar vars de entorno requeridas
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[register] Faltan variables de entorno: NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
@@ -24,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const trimmed = username?.trim() ?? '';
 
-    // Validaciones
+    // Validaciones de username
     if (trimmed.length < 3 || trimmed.length > 20) {
       return NextResponse.json(
         { error: 'El nombre debe tener entre 3 y 20 caracteres.' },
@@ -37,9 +48,34 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    if (!password || password.length < 6) {
+
+    // Validación de contraseña: mínimo 8 caracteres, al menos una letra y un número
+    if (!password || password.length < 8) {
       return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres.' },
+        { error: 'La contraseña debe tener al menos 8 caracteres.' },
+        { status: 400 },
+      );
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: 'La contraseña debe contener al menos una letra y un número.' },
+        { status: 400 },
+      );
+    }
+
+    // Validación de avatar: whitelist de avatares locales o URLs de Supabase Storage
+    // No se permite path traversal ni extensiones arbitrarias
+    const LOCAL_AVATARS = new Set([
+      '/img/avatars/avatar1.svg', '/img/avatars/avatar2.svg',
+      '/img/avatars/avatar3.svg', '/img/avatars/avatar4.svg',
+      '/img/avatars/avatar5.svg', '/img/avatars/avatar6.svg',
+      '/img/avatars/avatar7.svg', '/img/avatars/avatar8.svg',
+    ]);
+    const SUPABASE_AVATAR_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\/[a-zA-Z0-9_.-]+\.(?:svg|png|jpg|webp)$/;
+    const avatarVal = avatar?.trim() ?? '/img/avatars/avatar1.svg';
+    if (!LOCAL_AVATARS.has(avatarVal) && !SUPABASE_AVATAR_PATTERN.test(avatarVal)) {
+      return NextResponse.json(
+        { error: 'Avatar no válido.' },
         { status: 400 },
       );
     }
@@ -82,7 +118,7 @@ export async function POST(req: NextRequest) {
       const profileValues = {
         id:        authData.user.id,
         username:  trimmed,
-        avatar:    avatar ?? '/img/avatars/avatar1.svg',
+        avatar:    avatarVal,
         authEmail,
       };
       await db

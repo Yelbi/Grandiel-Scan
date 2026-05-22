@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { reports } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 const CHAPTER_REASONS = [
   'incomplete',
@@ -15,6 +16,16 @@ const FEEDBACK_TYPES = ['suggestion', 'complaint'] as const;
 
 export async function POST(req: NextRequest) {
   try {
+    // 5 reportes por IP cada 30 minutos
+    const ip = getClientIp(req);
+    const rl = rateLimit(`report:${ip}`, 5, 30 * 60 * 1000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Demasiados reportes enviados. Espera antes de enviar otro.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+      );
+    }
+
     const body = await req.json() as {
       type?: string;
       mangaId?: string;
@@ -77,7 +88,7 @@ export async function POST(req: NextRequest) {
       }
 
       await db.insert(reports).values({
-        type:        type as string,
+        type:        type!, // validado por FEEDBACK_TYPES.includes() arriba
         description: desc,
         userId:      userId ?? null,
       });
