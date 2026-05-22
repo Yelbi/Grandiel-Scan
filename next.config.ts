@@ -31,7 +31,7 @@ const securityHeaders = [
       // Fuentes
       "font-src 'self' fonts.gstatic.com use.fontawesome.com data:",
       // Imágenes: self + CDNs de portadas y páginas de manga
-      "img-src 'self' data: blob: *.supabase.co dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com *.olympusscans.com",
+      "img-src 'self' data: blob: *.supabase.co dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com *.olympusscans.com cdn.arenascan.com",
       // Conexiones API: self + Supabase
       "connect-src 'self' *.supabase.co va.vercel-scripts.com",
       // Manifesto PWA
