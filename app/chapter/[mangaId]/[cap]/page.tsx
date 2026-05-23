@@ -1,25 +1,15 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ChapterReader from '@/components/chapter/ChapterReader';
-import { getAllMangas, getChapter, getMangaById } from '@/lib/data';
+import { getChapter, getMangaById } from '@/lib/data';
 
-export const revalidate = 3600; // ISR: revalidate every hour
-export const dynamicParams = true; // render on-demand, then cache
+// force-dynamic: the root layout calls headers() for the CSP nonce,
+// which conflicts with ISR static rendering and triggers DYNAMIC_SERVER_USAGE.
+// DB queries use unstable_cache internally, so performance is preserved.
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{ mangaId: string; cap: string }>;
-}
-
-export async function generateStaticParams() {
-  const mangas = await getAllMangas();
-  const params: { mangaId: string; cap: string }[] = [];
-  for (const m of mangas) {
-    const recent = [...m.chapters].sort((a, b) => b - a).slice(0, 3);
-    for (const cap of recent) {
-      params.push({ mangaId: m.id, cap: String(cap) });
-    }
-  }
-  return params;
 }
 
 const BASE_URL = 'https://grandielscan.com';

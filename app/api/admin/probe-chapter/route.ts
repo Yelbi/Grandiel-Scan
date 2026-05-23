@@ -558,18 +558,26 @@ async function probeChapterSubPartDeep(base: string, ext: string, session: Sessi
 }
 
 /* ── Extrae la clave de ordenación de un filename decodificado ───────────
-   Para patrones simples (004.webp) usa el número directamente.
-   Para subpart ({part}_{page}.ext, ej: 01_03.webp, 1_10.webp) usa el
-   número de página (último segmento numérico) para que el orden refleje
-   la lectura real cuando hay patrones mezclados (01_03 → 3, 004 → 4,
-   1_10 → 10).
-   Para hash ({N} - {hash}.ext) usa el número de página inicial.           ── */
-function extractSortKey(decoded: string): number {
-  // Subpart: uno o más bloques {digits_} seguidos de {digits} → usar el último número
-  // Cubre: 01_03.webp, 1_10.webp, 3_01_05.webp, etc.
-  // No cubre subpart-dash (01_01-1.webp) intencionalmente — el guion rompe el patrón.
-  const subpart = /^(?:\d+_)+(\d+)\.[a-z0-9]+$/i.exec(decoded);
-  if (subpart) return parseInt(subpart[1], 10);
+   useFirstNum=false (modo parte-página): 01_03.webp → 3, 1_10.webp → 10.
+     Útil cuando el primer número es un grupo/parte y el último es la
+     página absoluta del capítulo (01_03 = parte 01, página 3).
+   useFirstNum=true (modo página-fragmento): 4_1.jpg → 4.0001.
+     Útil cuando páginas plain (1.jpg, 5.jpg) coexisten con páginas
+     divididas (4_1.jpg, 4_2.jpg) y el primer número ES el número de
+     página (4 = página 4, fragmento 1).                                   ── */
+function extractSortKey(decoded: string, useFirstNum = false): number {
+  // Subpart: primer y último número numérico separados por guiones bajos.
+  // Cubre: 01_03.webp, 4_1.jpg, 3_01_05.webp, etc.
+  // No cubre subpart-dash (01_01-1.webp) — el guion rompe el patrón.
+  const subpart = /^(\d+)(?:_\d+)*_(\d+)\.[a-z0-9]+$/i.exec(decoded);
+  if (subpart) {
+    if (useFirstNum) {
+      // Página-fragmento: ordenar por página (primer número), luego por fragmento
+      return parseInt(subpart[1], 10) + parseInt(subpart[2], 10) / 10000;
+    }
+    // Parte-página: la clave es el último número (página absoluta del capítulo)
+    return parseInt(subpart[2], 10);
+  }
 
   // Hash: {N} - {algo}.ext → usar N
   const hash = /^(\d+)\s*[-–]\s*\S+\.[a-z0-9]+$/i.exec(decoded);
@@ -583,11 +591,35 @@ function extractSortKey(decoded: string): number {
 /* ── Ordena filenames URL-encoded numéricamente ─────────── */
 function sortImageFiles(files: Iterable<string>): string[] {
   const unique = [...new Set(files)];
+  if (unique.length === 0) return unique;
+
+  const decodedList = unique.map((f) => decodeURIComponent(f));
+
+  // Detectar modo página-fragmento: ficheros plain (1.jpg, 5.jpg) coexisten con
+  // ficheros subpart (4_1.jpg) cuyo primer número cae dentro del rango de los plain.
+  // Indica que N_M.ext significa "página N, fragmento M" → ordenar por N primero.
+  // En caso contrario (solo subpart o primer número fuera del rango) usar el último
+  // número como clave, que representa la página absoluta del capítulo.
+  const plainNums: number[] = [];
+  const subpartFirsts: number[] = [];
+  for (const d of decodedList) {
+    if (/^\d+\.[a-z0-9]+$/i.test(d)) {
+      plainNums.push(parseInt(d, 10));
+    } else {
+      const sub = /^(\d+)(?:_\d+)+\.[a-z0-9]+$/i.exec(d);
+      if (sub) subpartFirsts.push(parseInt(sub[1], 10));
+    }
+  }
+  const minP = plainNums.length ? Math.min(...plainNums) : Infinity;
+  const maxP = plainNums.length ? Math.max(...plainNums) : -Infinity;
+  const useFirstNum = subpartFirsts.length > 0 &&
+    subpartFirsts.some((n) => n >= minP && n <= maxP);
+
   unique.sort((a, b) => {
     const da = decodeURIComponent(a);
     const db = decodeURIComponent(b);
-    const na = extractSortKey(da);
-    const nb = extractSortKey(db);
+    const na = extractSortKey(da, useFirstNum);
+    const nb = extractSortKey(db, useFirstNum);
     if (na !== nb) return na - nb;
     return da.localeCompare(db);
   });
