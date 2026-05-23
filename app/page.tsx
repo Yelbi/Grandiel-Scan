@@ -44,7 +44,7 @@ export default async function HomePage() {
     (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
   );
   const recent = sorted.slice(0, 12);
-  const heroCovers = sorted.slice(0, 18);
+  const heroCovers = sorted.slice(0, 45);
 
   return (
     <>

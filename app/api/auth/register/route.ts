@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { ilike } from 'drizzle-orm';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -49,10 +50,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validación de contraseña: mínimo 8 caracteres, al menos una letra y un número
-    if (!password || password.length < 8) {
+    // Validación de contraseña: mínimo 8, máximo 128 caracteres (DoS prevention)
+    if (!password || password.length < 8 || password.length > 128) {
       return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 8 caracteres.' },
+        { error: 'La contraseña debe tener entre 8 y 128 caracteres.' },
         { status: 400 },
       );
     }
@@ -142,7 +143,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: cause }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, authEmail });
+    // Iniciar sesión automáticamente y devolver tokens al cliente (nunca exponer authEmail)
+    const supabase = await createClient();
+    const { data: signInData } = await supabase.auth.signInWithPassword({
+      email:    authEmail,
+      password: password!,
+    });
+
+    return NextResponse.json({
+      ok:            true,
+      access_token:  signInData.session?.access_token  ?? null,
+      refresh_token: signInData.session?.refresh_token ?? null,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[register] Unexpected error:', msg, err);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Manga } from '@/lib/types';
 import type { Tab, Alert } from './admin-types';
 import { TABS } from './admin-types';
@@ -18,11 +18,22 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
   const [tab,    setTab]    = useState<Tab>('manga');
   const [mangas, setMangas] = useState<Manga[]>(initialMangas);
   const [alert,  setAlert]  = useState<Alert>(null);
+  const alertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+  }, []);
 
   function notify(type: 'ok' | 'err', msg: string) {
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
     setAlert({ type, msg });
-    setTimeout(() => setAlert(null), 5000);
+    alertTimerRef.current = setTimeout(() => setAlert(null), 5000);
   }
+
+  const sortedMangas = useMemo(
+    () => [...mangas].sort((a, b) => a.title.localeCompare(b.title)),
+    [mangas],
+  );
 
   const tabProps = { mangas, setMangas, notify };
 
@@ -77,7 +88,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
           Ver mangas en el catálogo ({mangas.length})
         </summary>
         <ul style={{ marginTop: '1rem', listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {[...mangas].sort((a, b) => a.title.localeCompare(b.title)).map((m) => (
+          {sortedMangas.map((m) => (
             <li key={m.id} style={{ fontSize: '.8rem', color: 'var(--color-text-secondary)', display: 'flex', gap: 12, alignItems: 'baseline' }}>
               <code style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>{m.id}</code>
               <span>{m.title}</span>

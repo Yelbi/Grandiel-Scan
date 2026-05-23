@@ -50,7 +50,7 @@ function purgeStaleSbCookies(req: NextRequest, response: NextResponse) {
 }
 
 export async function middleware(req: NextRequest) {
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const nonce = btoa(crypto.randomUUID());
   const csp = buildCsp(nonce);
 
   // Pasar nonce al layout a través de request headers
@@ -110,8 +110,8 @@ export async function middleware(req: NextRequest) {
 
         // timingSafeEqual previene ataques de timing que permiten adivinar el password
         // comparando tiempos de respuesta carácter a carácter.
-        const pwdBuf   = Buffer.from(password);
-        const adminBuf = Buffer.from(adminPassword);
+        const pwdBuf   = new TextEncoder().encode(password);
+        const adminBuf = new TextEncoder().encode(adminPassword);
         const lengthMatch = pwdBuf.length === adminBuf.length;
         // crypto.timingSafeEqual no existe en el Edge Runtime (Web Crypto API).
         // Comparación XOR manual: siempre itera todos los bytes para evitar timing attacks.

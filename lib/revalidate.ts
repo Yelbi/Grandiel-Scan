@@ -6,8 +6,8 @@ import { revalidatePath, revalidateTag } from 'next/cache';
  * Pass chapterNum when a specific chapter page also needs revalidation.
  */
 export function revalidateManga(mangaId: string, chapterNum?: number) {
-  revalidateTag('mangas',   {});
-  revalidateTag('chapters', {});
+  revalidateTag('mangas');
+  revalidateTag('chapters');
   revalidatePath('/');
   revalidatePath('/mangas');
   revalidatePath('/actualizaciones');

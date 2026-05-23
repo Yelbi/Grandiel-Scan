@@ -64,9 +64,9 @@ export default function SearchBar({ mangas }: SearchBarProps) {
 
   // Enfocar input al abrir en móvil
   useEffect(() => {
-    if (mobileOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (!mobileOpen) return;
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
   }, [mobileOpen]);
 
   const closeMobile = () => {

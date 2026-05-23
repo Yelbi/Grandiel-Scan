@@ -8,9 +8,9 @@ export async function GET(req: NextRequest) {
   try {
     const status = req.nextUrl.searchParams.get('status');
 
-    const query = db.select().from(reports).orderBy(desc(reports.createdAt));
+    const query = db.select().from(reports).orderBy(desc(reports.createdAt)).limit(500);
     const rows = status && status !== 'all'
-      ? await db.select().from(reports).where(eq(reports.status, status)).orderBy(desc(reports.createdAt))
+      ? await db.select().from(reports).where(eq(reports.status, status)).orderBy(desc(reports.createdAt)).limit(500)
       : await query;
 
     return NextResponse.json(rows);

@@ -201,15 +201,17 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, avatar }),
       });
-      const data = await res.json() as { error?: string; authEmail?: string };
+      const data = await res.json() as { error?: string; access_token?: string; refresh_token?: string };
       if (!res.ok || data.error) return { error: data.error ?? 'Error al registrarse.' };
 
-      // Iniciar sesión automáticamente con las credenciales recién creadas
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email:    data.authEmail!,
-        password,
-      });
-      if (signInError) return { error: 'Cuenta creada, pero ocurrió un error al iniciar sesión. Intenta ingresar.' };
+      // Iniciar sesión con los tokens devueltos por el servidor (authEmail nunca llega al cliente)
+      if (data.access_token && data.refresh_token) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token:  data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        if (setSessionError) return { error: 'Cuenta creada, pero ocurrió un error al iniciar sesión. Intenta ingresar.' };
+      }
       return {};
     },
     [supabase],
@@ -224,16 +226,17 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, password }),
       });
-      const data = await res.json() as { error?: string; authEmail?: string };
+      const data = await res.json() as { error?: string; access_token?: string; refresh_token?: string };
       if (!res.ok || data.error) return { error: 'Usuario o contraseña incorrectos.' };
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email:    data.authEmail!,
-        password,
+      // Establecer sesión con los tokens devueltos (authEmail nunca llega al cliente)
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token:  data.access_token!,
+        refresh_token: data.refresh_token!,
       });
-      if (signInError) return { error: 'Usuario o contraseña incorrectos.' };
+      if (setSessionError) return { error: 'Usuario o contraseña incorrectos.' };
       return {};
     },
     [supabase],
@@ -347,10 +350,12 @@ function FavoritesProvider({ children }: { children: ReactNode }) {
 
     if (profile) {
       if (isFav) {
-        void supabase.from('favorites').delete()
-          .eq('user_id', profile.id).eq('manga_id', mangaId);
+        supabase.from('favorites').delete()
+          .eq('user_id', profile.id).eq('manga_id', mangaId)
+          .then(({ error }) => { if (error) setFavorites(favorites); });
       } else {
-        void supabase.from('favorites').insert({ user_id: profile.id, manga_id: mangaId });
+        supabase.from('favorites').insert({ user_id: profile.id, manga_id: mangaId })
+          .then(({ error }) => { if (error) setFavorites(favorites); });
       }
     } else {
       try { localStorage.setItem(CONFIG.STORAGE_KEYS.FAVORITES, JSON.stringify(next)); } catch {}
@@ -426,15 +431,15 @@ function HistoryProvider({ children }: { children: ReactNode }) {
   }, [profile?.id, supabase]);
 
   const addEntry = useCallback((entry: HistoryEntry) => {
-    // Actualización optimista del estado local
-    setHistory((prev) => {
-      const filtered = prev.filter((e) => e.mangaId !== entry.mangaId);
-      const next = [entry, ...filtered].slice(0, CONFIG.PAGINATION.MAX_HISTORY_ITEMS);
-      if (!profile) {
-        try { localStorage.setItem(CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(next)); } catch {}
-      }
-      return next;
-    });
+    // Calcular el nuevo estado fuera del updater para evitar side effects impuros
+    const filtered = history.filter((e) => e.mangaId !== entry.mangaId);
+    const next = [entry, ...filtered].slice(0, CONFIG.PAGINATION.MAX_HISTORY_ITEMS);
+
+    setHistory(next);
+
+    if (!profile) {
+      try { localStorage.setItem(CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(next)); } catch {}
+    }
 
     if (profile) {
       // Upsert atómico: elimina la race condition del delete+insert previo.
@@ -450,7 +455,7 @@ function HistoryProvider({ children }: { children: ReactNode }) {
         { onConflict: 'user_id,manga_id' },
       );
     }
-  }, [profile, supabase]);
+  }, [history, profile, supabase]);
 
   const getLastRead = useCallback(
     (mangaId: string) => history.find((e) => e.mangaId === mangaId) ?? null,
