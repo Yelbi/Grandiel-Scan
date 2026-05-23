@@ -702,7 +702,6 @@ mark.search-highlight {
 
 /* Contador de resultados */
 .results-counter {
-  text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   margin: var(--spacing-md) 0;
@@ -867,86 +866,6 @@ mark.search-highlight {
   cursor: pointer;
 }
 
-/* Controles de filtro */
-.filter-controls {
-  padding: var(--spacing-lg);
-  background: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.filter-section {
-  margin-bottom: var(--spacing-md);
-}
-
-.filter-section h4 {
-  margin-bottom: var(--spacing-sm);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.filter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-.filter-tag {
-  min-height: 44px;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-sm);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.filter-tag:hover {
-  border-color: var(--color-primary);
-}
-
-.filter-tag:focus-visible {
-  outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.filter-tag.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
-.filter-select {
-  width: 100%;
-  padding: var(--spacing-sm);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-sm);
-  color: var(--color-text);
-}
-
-.filter-clear-btn {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-sm);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.filter-clear-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
 
 /* Responsive nuevos componentes */
 @media (max-width: 768px) {
@@ -1341,65 +1260,6 @@ mark.search-highlight {
   color: var(--color-text-muted);
 }
 
-/* ===== GRUPOS DE FILTROS ===== */
-.filter-group {
-  margin-bottom: var(--spacing-lg);
-}
-
-.filter-group:last-child {
-  margin-bottom: 0;
-}
-
-.filter-group__title {
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--color-text-muted);
-  margin-bottom: var(--spacing-sm);
-}
-
-.filter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-/* ===== BOTONES DE FILTRO (PILLS) ===== */
-.filter-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px var(--spacing-md);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-primary);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  white-space: nowrap;
-  line-height: 1;
-}
-
-.filter-tag:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: rgba(255, 0, 0, 0.06);
-}
-
-.filter-tag:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Estado activo (aplicado por Filtro.js vía ct_item-active) */
-.filter-tag.ct_item-active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-}
 
 /* ===== TARJETA DE MANGA — OVERLAY ===== */
 .manga-card-inner {
@@ -1529,6 +1389,12 @@ mark.search-highlight {
   border: 1px solid rgba(100, 100, 255, 0.3);
 }
 
+.manga-badge--paused {
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+
 /* Tags de generos */
 .manga-genres {
   display: flex;
@@ -1611,6 +1477,119 @@ mark.search-highlight {
   color: var(--color-text-muted);
   text-align: center;
   padding: var(--spacing-xl);
+}
+
+/* ── Controles internos de la lista de capítulos ── */
+.chapters-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.chapters-search {
+  flex: 1;
+  min-width: 100px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.chapters-search:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+  border-color: var(--color-primary);
+}
+
+.chapters-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  min-height: 36px;
+}
+
+.chapters-sort-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.chapters-sort-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.chapters-no-results {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--spacing-lg);
+}
+
+/* ── Descripción con toggle ── */
+.manga-header__description {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  line-height: 1.75;
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.manga-header__description p {
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.manga-description-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.manga-description-toggle:hover {
+  opacity: 0.8;
+}
+
+.manga-description-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* ── Comments load-more wrapper ── */
+.manga-comments__load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+}
+
+/* ── Comments fetch error detail ── */
+.manga-comments__fetch-detail {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: var(--spacing-xs);
 }
 
 /* ===== FILTER BAR (Mangas.html) ===== */
@@ -1849,17 +1828,56 @@ mark.search-highlight {
 .hero__float {
   position: absolute;
   top: 0;
-  animation: floatDown var(--float-dur, 22s) linear var(--float-delay, 0s) infinite;
-  will-change: transform;
+  animation-name: floatDown;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
+
+/* Posición y timing individuales por portada — espeja el array SCATTER en HeroSection.tsx */
+.hero__scatter > .hero__float:nth-child(1)  { left: 1%;  animation-duration: 22s; animation-delay: -5s;  }
+.hero__scatter > .hero__float:nth-child(2)  { left: 7%;  animation-duration: 26s; animation-delay: -2s;  }
+.hero__scatter > .hero__float:nth-child(3)  { left: 13%; animation-duration: 28s; animation-delay: -14s; }
+.hero__scatter > .hero__float:nth-child(4)  { left: 18%; animation-duration: 24s; animation-delay: -6s;  }
+.hero__scatter > .hero__float:nth-child(5)  { left: 24%; animation-duration: 20s; animation-delay: -8s;  }
+.hero__scatter > .hero__float:nth-child(6)  { left: 30%; animation-duration: 25s; animation-delay: -20s; }
+.hero__scatter > .hero__float:nth-child(7)  { left: 35%; animation-duration: 27s; animation-delay: -22s; }
+.hero__scatter > .hero__float:nth-child(8)  { left: 40%; animation-duration: 30s; animation-delay: -3s;  }
+.hero__scatter > .hero__float:nth-child(9)  { left: 45%; animation-duration: 29s; animation-delay: -9s;  }
+.hero__scatter > .hero__float:nth-child(10) { left: 50%; animation-duration: 23s; animation-delay: -11s; }
+.hero__scatter > .hero__float:nth-child(11) { left: 55%; animation-duration: 20s; animation-delay: -4s;  }
+.hero__scatter > .hero__float:nth-child(12) { left: 60%; animation-duration: 27s; animation-delay: -18s; }
+.hero__scatter > .hero__float:nth-child(13) { left: 65%; animation-duration: 22s; animation-delay: -19s; }
+.hero__scatter > .hero__float:nth-child(14) { left: 70%; animation-duration: 19s; animation-delay: -7s;  }
+.hero__scatter > .hero__float:nth-child(15) { left: 75%; animation-duration: 33s; animation-delay: -15s; }
+.hero__scatter > .hero__float:nth-child(16) { left: 80%; animation-duration: 31s; animation-delay: -24s; }
+.hero__scatter > .hero__float:nth-child(17) { left: 85%; animation-duration: 25s; animation-delay: -6s;  }
+.hero__scatter > .hero__float:nth-child(18) { left: 90%; animation-duration: 24s; animation-delay: -16s; }
+.hero__scatter > .hero__float:nth-child(19) { left: 95%; animation-duration: 21s; animation-delay: -10s; }
+.hero__scatter > .hero__float:nth-child(20) { left: 4%;  animation-duration: 29s; animation-delay: -17s; }
+.hero__scatter > .hero__float:nth-child(21) { left: 10%; animation-duration: 23s; animation-delay: -12s; }
+.hero__scatter > .hero__float:nth-child(22) { left: 21%; animation-duration: 21s; animation-delay: -13s; }
+.hero__scatter > .hero__float:nth-child(23) { left: 33%; animation-duration: 26s; animation-delay: -21s; }
+.hero__scatter > .hero__float:nth-child(24) { left: 43%; animation-duration: 22s; animation-delay: -11s; }
+.hero__scatter > .hero__float:nth-child(25) { left: 52%; animation-duration: 32s; animation-delay: -1s;  }
+.hero__scatter > .hero__float:nth-child(26) { left: 63%; animation-duration: 28s; animation-delay: -3s;  }
+.hero__scatter > .hero__float:nth-child(27) { left: 72%; animation-duration: 18s; animation-delay: -23s; }
+.hero__scatter > .hero__float:nth-child(28) { left: 78%; animation-duration: 19s; animation-delay: -25s; }
+.hero__scatter > .hero__float:nth-child(29) { left: 88%; animation-duration: 25s; animation-delay: -8s;  }
+.hero__scatter > .hero__float:nth-child(30) { left: 97%; animation-duration: 30s; animation-delay: -20s; }
 
 .hero__float-cover {
   width: 72px;
   height: 104px;
   border-radius: var(--border-radius-md);
   overflow: hidden;
-  opacity: 0.15;
+  opacity: 0.45;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  background: rgba(128, 128, 128, 0.3);
+}
+
+[data-theme="light"] .hero__float-cover {
+  opacity: 0.55;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 @media (max-width: 768px) {
@@ -2081,6 +2099,9 @@ mark.search-highlight {
 
 /* Contenedor principal */
 .filter-bar {
+  position: sticky;
+  top: calc(var(--nav-height) + var(--spacing-sm));
+  z-index: 50;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-lg);
@@ -2144,13 +2165,19 @@ mark.search-highlight {
   line-height: 1;
 }
 
-/* Panel interior */
+/* Panel interior — D-1: animación de apertura */
+@keyframes filterControlsIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .filter-controls {
   padding: var(--spacing-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
   background: var(--color-bg-secondary);
+  animation: filterControlsIn 0.18s ease;
 }
 
 /* Sección individual */
@@ -2198,7 +2225,7 @@ mark.search-highlight {
 .filter-tag:hover:not(.active) {
   border-color: var(--color-primary);
   color: var(--color-text);
-  background: rgba(255, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
 .filter-tag:focus-visible {
@@ -2256,9 +2283,9 @@ mark.search-highlight {
 
 .manga-cover-glow {
   box-shadow:
-    0 0 0 1px rgba(255, 0, 0, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 20%, transparent),
     0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(255, 0, 0, 0.15);
+    0 0 40px color-mix(in srgb, var(--color-primary) 15%, transparent);
   border-radius: var(--border-radius-lg);
 }
 
@@ -2269,14 +2296,13 @@ mark.search-highlight {
   flex-direction: column;
 }
 
-/* Sobreescribir la regla global h1 { color: red; text-align: center } */
-.manga-header__title {
-  font-size: clamp(1.5rem, 3.5vw, 2.2rem) !important;
-  font-weight: 700 !important;
-  margin-bottom: var(--spacing-md) !important;
-  line-height: 1.15 !important;
-  color: var(--color-text) !important;
-  text-align: left !important;
+.manga-header__info .manga-header__title {
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  line-height: 1.15;
+  color: var(--color-text);
+  text-align: left;
 }
 
 .manga-header__meta {
@@ -2286,17 +2312,6 @@ mark.search-highlight {
   margin: var(--spacing-md) 0;
 }
 
-/* Descripción — crece para llenar el espacio entre meta y botones */
-.manga-header__description {
-  flex: 1;
-  font-size: var(--font-size-sm);
-  line-height: 1.75;
-  color: var(--color-text-secondary);
-  margin: var(--spacing-md) 0;
-  padding: var(--spacing-md) 0;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-}
 
 /* ============================================================
    MANGA DETAIL — BOTONES DE ACCIÓN RÁPIDA
@@ -2330,10 +2345,10 @@ mark.search-highlight {
 }
 
 .manga-action-btn--primary:hover {
-  background: #cc0000;
-  border-color: #cc0000;
+  background: color-mix(in srgb, var(--color-primary) 80%, black);
+  border-color: color-mix(in srgb, var(--color-primary) 80%, black);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(255, 0, 0, 0.35);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 .manga-action-btn--secondary {
@@ -2369,6 +2384,15 @@ mark.search-highlight {
   border-radius: var(--border-radius-md);
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+  position: relative;
+}
+
+/* Fade al pie en móvil para indicar que la lista es desplazable */
+@media (max-width: 768px) {
+  .chapters-scroll {
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  }
 }
 
 .chapters-scroll::-webkit-scrollbar {
@@ -2400,8 +2424,8 @@ mark.search-highlight {
     gap: var(--spacing-lg);
   }
 
-  .manga-header__title {
-    text-align: center !important;
+  .manga-header__info .manga-header__title {
+    text-align: center;
   }
 
   .manga-header__meta {
@@ -3762,9 +3786,9 @@ mark.search-highlight {
 .skeleton-line {
   background: linear-gradient(
     90deg,
-    var(--color-bg-secondary) 25%,
-    var(--color-bg-tertiary, #2a2a2a) 50%,
-    var(--color-bg-secondary) 75%
+    rgba(128, 128, 128, 0.15) 25%,
+    rgba(128, 128, 128, 0.30) 50%,
+    rgba(128, 128, 128, 0.15) 75%
   );
   background-size: 800px 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
@@ -3773,7 +3797,7 @@ mark.search-highlight {
 
 .skeleton-cover {
   width: 100%;
-  aspect-ratio: 5 / 7;
+  aspect-ratio: 2 / 3;
   min-height: 200px;
   border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
 }
@@ -4389,4 +4413,267 @@ mark.search-highlight {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* ============================================================
+   SECTION CTA — botón centrado al final de una sección
+   ============================================================ */
+
+.section-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-xl);
+}
+
+/* ============================================================
+   MANGA GRID — SLIDER HORIZONTAL EN MÓVIL
+   Aplicado solo al grid de "Recientes" en la homepage.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .manga-grid--recientes {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    /* Asegura que las cards no se compriman */
+    grid-template-columns: unset;
+  }
+
+  .manga-grid--recientes::-webkit-scrollbar {
+    display: none;
+  }
+
+  .manga-grid--recientes > * {
+    flex: 0 0 140px;
+    scroll-snap-align: start;
+  }
+}
+
+/* ============================================================
+   F-4: PREFERS-REDUCED-MOTION — Anulación de animaciones del hero
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Detener el badge de fuego pulsante */
+  .badge-hot {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   UX-2: FOCUS-VISIBLE EXPLÍCITO EN BOTONES DEL HERO
+   El outline rojo sobre el botón primario rojo tiene bajo contraste;
+   se usa blanco para garantizar visibilidad.
+   ============================================================ */
+
+.hero__btn-primary:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.hero__btn-secondary:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/* ============================================================
+   A-6: BOTÓN DE FAVORITO VISIBLE EN DISPOSITIVOS TOUCH
+   En touch (sin hover) el wrapper permanecía invisible. Se fuerza
+   opacidad 1 en pantallas pequeñas donde no hay cursor.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .favorite-btn-wrapper {
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   F-5: BANNER DE ACTUALIZACIÓN DEL SERVICE WORKER
+   ============================================================ */
+
+.sw-update-banner {
+  position: fixed;
+  bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-full);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  z-index: var(--z-toast, 9999);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  animation: sw-banner-in 0.3s ease;
+}
+
+@keyframes sw-banner-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.sw-update-banner__text {
+  color: var(--color-text);
+}
+
+.sw-update-banner__btn {
+  padding: 5px var(--spacing-md);
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.sw-update-banner__btn:hover {
+  background: var(--color-primary-hover, #cc0000);
+}
+
+.sw-update-banner__btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.sw-update-banner__dismiss {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--border-radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.sw-update-banner__dismiss:hover {
+  color: var(--color-text);
+}
+
+.sw-update-banner__dismiss:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   UX-6: ENLACE "VER TODO" EN TÍTULOS DE SECCIÓN
+   ============================================================ */
+
+.section-title__link {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transition: opacity var(--transition-fast);
+}
+
+.section-title__link:hover {
+  opacity: 0.75;
+}
+
+.section-title__link:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================================
+   GALERÍA — CLASES NUEVAS
+   ============================================================ */
+
+/* Estado del manga — siempre visible debajo del título (F-7) */
+.manga-status-line {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  margin: 2px 0 0;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.manga-status-line--ongoing { color: #00c875; }
+.manga-status-line--done    { color: #8888ff; }
+.manga-status-line--paused  { color: var(--color-text-muted); }
+
+/* Chips de filtros activos bajo el toggle (D-7) */
+.filter-active-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: var(--spacing-xs) var(--spacing-lg) var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  border-radius: var(--border-radius-full);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  opacity: 0.75;
+}
+
+.filter-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Buscador de géneros dentro del panel (F-6) */
+.filter-genre-search {
+  width: 100%;
+  max-width: 260px;
+  padding: 6px var(--spacing-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-primary);
+  transition: border-color var(--transition-fast);
+  margin-bottom: 6px;
+}
+
+.filter-genre-search:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.filter-genre-search::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Sin resultados en la búsqueda de géneros */
+.filter-no-genres {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+  padding: var(--spacing-xs) 0;
 }

@@ -17,6 +17,17 @@ interface CommentsResponse {
   comments: Comment[];
   page: number;
   hasMore: boolean;
+  total: number;
+}
+
+interface PostCommentResponse {
+  ok: boolean;
+  comment: {
+    id: number;
+    text: string;
+    createdAt: string;
+    userId: string;
+  };
 }
 
 export default function MangaComments({
@@ -29,24 +40,24 @@ export default function MangaComments({
   const { profile, isLoggedIn } = useUserProfile();
 
   const [comments, setComments]           = useState<Comment[]>([]);
+  const [total, setTotal]                 = useState<number | null>(null);
   const [text, setText]                   = useState('');
   const [error, setError]                 = useState('');
   const [fetchError, setFetchError]       = useState(false);
+  const [fetchErrorMsg, setFetchErrorMsg] = useState('');
   const [loading, setLoading]             = useState(true);
   const [submitting, setSubmitting]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [deletingId, setDeletingId]       = useState<number | null>(null);
   const [page, setPage]                   = useState(1);
   const [hasMore, setHasMore]             = useState(false);
   const [loadingMore, setLoadingMore]     = useState(false);
 
   const buildUrl = useCallback((p: number) => {
-    const base = chapterNum !== undefined
+    return chapterNum !== undefined
       ? `/api/comments/${mangaId}?chapter=${chapterNum}&page=${p}`
       : `/api/comments/${mangaId}?page=${p}`;
-    return base;
   }, [mangaId, chapterNum]);
-
-  const [fetchErrorMsg, setFetchErrorMsg] = useState('');
 
   const fetchComments = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -54,6 +65,7 @@ export default function MangaComments({
       if (res.ok) {
         const data = await res.json() as CommentsResponse;
         setComments(data.comments);
+        setTotal(data.total);
         setPage(1);
         setHasMore(data.hasMore);
         setFetchError(false);
@@ -82,6 +94,8 @@ export default function MangaComments({
         setPage(nextPage);
         setHasMore(data.hasMore);
       }
+    } catch {
+      // red error — silently ignore, user can retry
     } finally {
       setLoadingMore(false);
     }
@@ -96,50 +110,69 @@ export default function MangaComments({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-
     setSubmitting(true);
     setError('');
-
-    const body: { text: string; chapter?: number } = { text };
-    if (chapterNum !== undefined) body.chapter = chapterNum;
-
-    const res = await fetch(`/api/comments/${mangaId}`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
-    });
-
-    if (res.ok) {
-      setText('');
-      await fetchComments();
-    } else {
-      const data = await res.json() as { error?: string };
-      setError(data.error ?? 'Error al publicar el comentario.');
+    try {
+      const body: { text: string; chapter?: number } = { text };
+      if (chapterNum !== undefined) body.chapter = chapterNum;
+      const res = await fetch(`/api/comments/${mangaId}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json() as PostCommentResponse;
+        const newComment: Comment = {
+          id:        data.comment.id,
+          text:      data.comment.text,
+          createdAt: data.comment.createdAt,
+          userId:    data.comment.userId,
+          username:  profile!.username,
+          avatar:    profile!.avatar,
+        };
+        setComments((prev) => [newComment, ...prev]);
+        setTotal((prev) => (prev !== null ? prev + 1 : 1));
+        setText('');
+      } else {
+        const data = await res.json() as { error?: string };
+        setError(data.error ?? 'Error al publicar el comentario.');
+      }
+    } catch {
+      setError('Error de red. Inténtalo de nuevo.');
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   };
 
   const deleteComment = async (commentId: number) => {
-    const res = await fetch(`/api/comments/${mangaId}`, {
-      method:  'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ commentId }),
-    });
-
-    if (res.ok) {
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    setDeletingId(commentId);
+    try {
+      const res = await fetch(`/api/comments/${mangaId}`, {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ commentId }),
+      });
+      if (res.ok) {
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+        setTotal((prev) => (prev !== null ? prev - 1 : null));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingId(null);
+      setConfirmDelete(null);
     }
-    setConfirmDelete(null);
   };
+
+  const charsLeft = 500 - text.length;
 
   return (
     <section className="manga-comments">
       <h2 className="manga-comments__title">
         <i className="fas fa-comments" aria-hidden="true" />
         Comentarios
-        {comments.length > 0 && (
-          <span className="manga-comments__count">{comments.length}</span>
+        {total !== null && total > 0 && (
+          <span className="manga-comments__count">{total}</span>
         )}
       </h2>
 
@@ -175,7 +208,14 @@ export default function MangaComments({
             />
           </div>
           <div className="manga-comments__form-footer">
-            <span className="manga-comments__chars" aria-live="polite">{text.length}/500</span>
+            {/* A-7: only announce when running low on chars */}
+            <span
+              className="manga-comments__chars"
+              aria-live={charsLeft <= 50 ? 'polite' : 'off'}
+              aria-atomic="true"
+            >
+              {text.length}/500
+            </span>
             <button
               type="submit"
               className="manga-comments__submit"
@@ -203,7 +243,7 @@ export default function MangaComments({
       ) : fetchError ? (
         <div className="manga-comments__fetch-error">
           <p><i className="fas fa-exclamation-circle" aria-hidden="true" /> No se pudieron cargar los comentarios.</p>
-          {fetchErrorMsg && <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>{fetchErrorMsg}</p>}
+          {fetchErrorMsg && <p className="manga-comments__fetch-detail">{fetchErrorMsg}</p>}
           <button className="manga-comments__retry" onClick={() => { setLoading(true); void fetchComments(); }}>
             <i className="fas fa-redo" aria-hidden="true" /> Reintentar
           </button>
@@ -230,7 +270,7 @@ export default function MangaComments({
                 <div className="manga-comment__body">
                   <div className="manga-comment__header">
                     <span className="manga-comment__name">{c.username}</span>
-                    <time className="manga-comment__time">
+                    <time className="manga-comment__time" dateTime={c.createdAt}>
                       {new Date(c.createdAt).toLocaleDateString('es-ES', {
                         year:  'numeric',
                         month: 'short',
@@ -243,14 +283,18 @@ export default function MangaComments({
                           <button
                             className="manga-comment__confirm-yes"
                             onClick={() => void deleteComment(c.id)}
+                            disabled={deletingId === c.id}
                             aria-label="Confirmar eliminación"
                           >
-                            <i className="fas fa-check" aria-hidden="true" /> Eliminar
+                            {deletingId === c.id
+                              ? <i className="fas fa-spinner fa-spin" aria-hidden="true" />
+                              : <><i className="fas fa-check" aria-hidden="true" /> Eliminar</>
+                            }
                           </button>
                           <button
                             className="manga-comment__confirm-no"
                             onClick={() => setConfirmDelete(null)}
-                            aria-label="Cancelar"
+                            aria-label="Cancelar eliminación"
                           >
                             <i className="fas fa-times" aria-hidden="true" /> Cancelar
                           </button>
@@ -274,7 +318,7 @@ export default function MangaComments({
           </ul>
 
           {hasMore && (
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <div className="manga-comments__load-more">
               <button
                 className="btn"
                 onClick={() => void loadMore()}

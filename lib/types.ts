@@ -25,6 +25,7 @@ export interface HistoryEntry {
   mangaId: string;
   chapter: number;
   page?: number;
+  totalPages?: number;
   timestamp: number;
   title: string;
   image?: string;

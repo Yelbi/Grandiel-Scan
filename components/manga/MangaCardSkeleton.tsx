@@ -10,7 +10,7 @@ export default function MangaCardSkeleton() {
 
 export function MangaGridSkeleton({ count = 12 }: { count?: number }) {
   return (
-    <div className="mami" aria-busy="true" aria-label="Cargando títulos...">
+    <div className="manga-grid" aria-busy="true" aria-label="Cargando títulos...">
       {Array.from({ length: count }).map((_, i) => (
         <MangaCardSkeleton key={i} />
       ))}

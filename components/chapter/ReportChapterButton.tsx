@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const REASONS: { value: string; label: string }[] = [
@@ -11,6 +11,8 @@ const REASONS: { value: string; label: string }[] = [
   { value: 'other',          label: 'Otro' },
 ];
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 interface Props {
   mangaId: string;
   chapter: number;
@@ -18,26 +20,59 @@ interface Props {
 }
 
 export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Props) {
-  const [open, setOpen]           = useState(false);
-  const [reason, setReason]       = useState('');
+  const [open, setOpen]               = useState(false);
+  const [reason, setReason]           = useState('');
   const [description, setDescription] = useState('');
-  const [loading, setLoading]     = useState(false);
-  const [success, setSuccess]     = useState(false);
-  const [error, setError]         = useState('');
-  const dialogRef                 = useRef<HTMLDivElement>(null);
+  const [loading, setLoading]         = useState(false);
+  const [success, setSuccess]         = useState(false);
+  const [error, setError]             = useState('');
+  const dialogRef  = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Cerrar con Escape
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }, []);
+
+  // Escape → close
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open]);
+  }, [open, handleClose]);
 
-  // Bloquear scroll del body mientras el modal está abierto
+  // Block body scroll while modal is open
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
+  // Focus first element when modal opens
+  useEffect(() => {
+    if (!open || !dialogRef.current) return;
+    requestAnimationFrame(() => {
+      const first = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      first?.focus();
+    });
+  }, [open]);
+
+  // Focus trap: keep Tab/Shift+Tab inside the modal
+  useEffect(() => {
+    if (!open || !dialogRef.current) return;
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      const first = focusable[0];
+      const last  = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      } else {
+        if (document.activeElement === last)  { e.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener('keydown', trap);
+    return () => document.removeEventListener('keydown', trap);
   }, [open]);
 
   const handleOpen = () => {
@@ -68,7 +103,7 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
       const data = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok) { setError(data.error ?? 'Error al enviar el reporte.'); return; }
       setSuccess(true);
-      setTimeout(() => setOpen(false), 2000);
+      setTimeout(() => handleClose(), 2000);
     } catch {
       setError('Error de conexión. Inténtalo de nuevo.');
     } finally {
@@ -78,8 +113,8 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
 
   return (
     <>
-      {/* Botón en la topbar */}
       <button
+        ref={triggerRef}
         className="reader-mode-btn reader-topbar__report"
         onClick={handleOpen}
         title="Reportar problema con este capítulo"
@@ -91,14 +126,13 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
         </svg>
       </button>
 
-      {/* Modal — portal para escapar del stacking context del reader-topbar */}
       {open && createPortal(
         <div
           className="report-overlay"
           role="dialog"
           aria-modal="true"
           aria-labelledby="report-title"
-          onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div className="report-modal" ref={dialogRef}>
             <div className="report-modal__header">
@@ -110,8 +144,8 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
               </div>
               <button
                 className="report-modal__close"
-                onClick={() => setOpen(false)}
-                aria-label="Cerrar"
+                onClick={handleClose}
+                aria-label="Cerrar modal"
               >
                 <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -129,7 +163,11 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
               </div>
             ) : (
               <form className="report-modal__form" onSubmit={handleSubmit}>
-                {error && <p className="report-modal__error">{error}</p>}
+                {error && (
+                  <p className="report-modal__error" role="alert" aria-live="assertive">
+                    {error}
+                  </p>
+                )}
 
                 <fieldset className="report-modal__fieldset">
                   <legend className="report-modal__legend">¿Cuál es el problema?</legend>
@@ -155,7 +193,7 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
 
                 <div className="report-modal__detail">
                   <label htmlFor="report-desc" className="report-modal__label">
-                    Detalles adicionales <span style={{ opacity: 0.5 }}>(opcional)</span>
+                    Detalles adicionales <span className="report-modal__optional">(opcional)</span>
                   </label>
                   <textarea
                     id="report-desc"
@@ -173,7 +211,7 @@ export default function ReportChapterButton({ mangaId, chapter, mangaTitle }: Pr
                   <button
                     type="button"
                     className="report-modal__btn report-modal__btn--cancel"
-                    onClick={() => setOpen(false)}
+                    onClick={handleClose}
                   >
                     Cancelar
                   </button>

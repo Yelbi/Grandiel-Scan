@@ -349,7 +349,7 @@ nav:not(.breadcrumbs) {
   margin: 0 auto;
 }
 
-/* ===== FOOTER ===== */
+/* ===== FOOTER (legado) ===== */
 .footer {
   display: flex;
   align-items: center;
@@ -366,6 +366,7 @@ nav:not(.breadcrumbs) {
   margin: 0;
   color: inherit;
 }
+
 
 /* ===== BARRA DE PROGRESO ===== */
 #progress-bar {
@@ -462,23 +463,23 @@ nav:not(.breadcrumbs) {
 }
 
 /* ===== GRID DE MANGAS ===== */
-.mami {
+.manga-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--spacing-lg);
   padding: var(--spacing-md) 0;
 }
 
-.mami > li,
-.mami > div {
+.manga-grid > li,
+.manga-grid > div {
   text-align: center;
 }
 
-.mami a {
+.manga-grid a {
   display: block;
 }
 
-.mami img {
+.manga-grid img {
   width: 100%;
   aspect-ratio: 2/3;
   object-fit: cover;
@@ -486,12 +487,12 @@ nav:not(.breadcrumbs) {
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.mami img:hover {
+.manga-grid img:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
 
-.mami h3 {
+.manga-grid h3 {
   margin-top: var(--spacing-sm);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -735,7 +736,7 @@ nav:not(.breadcrumbs) {
     padding: var(--spacing-lg) var(--spacing-md);
   }
 
-  .mami {
+  .manga-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--spacing-md);
   }
@@ -791,7 +792,7 @@ nav:not(.breadcrumbs) {
 }
 
 @media (max-width: 480px) {
-  .mami {
+  .manga-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-sm);
   }

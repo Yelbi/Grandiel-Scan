@@ -1,18 +1,9 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import type { Manga } from '@/lib/types';
+import HeroWordCycle from './HeroWordCycle';
 
-const WORDS = ['manhwas', 'mangas', 'manhuas'] as const;
-const INTERVAL_MS   = 3000;
-const GLITCH_OUT_MS = 450;
-const GLITCH_IN_MS  = 450;
-
-type Phase = 'idle' | 'out' | 'in';
-
-// Cada portada tiene su propia posición, ángulo, velocidad y punto de inicio
+// Posiciones estáticas de las portadas flotantes.
 // l = left%, r = rotación°, dur = duración s, d = delay s (negativo = ya avanzado en su ciclo)
 const SCATTER = [
   { l: '1%',  r: -8,  dur: 22, d: -5  },
@@ -52,87 +43,50 @@ export default function HeroSection({
 }: {
   heroCovers: Pick<Manga, 'id' | 'image'>[];
 }) {
-  const [wordIndex, setWordIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>('idle');
-
-  useEffect(() => {
-    // Guardamos los inner timeouts para limpiarlos si el componente se desmonta
-    // durante una transición (evita setState sobre componente desmontado).
-    const pending: ReturnType<typeof setTimeout>[] = [];
-
-    const timer = setInterval(() => {
-      setPhase('out');
-      const t1 = setTimeout(() => {
-        setWordIndex((i) => (i + 1) % WORDS.length);
-        setPhase('in');
-        const t2 = setTimeout(() => setPhase('idle'), GLITCH_IN_MS);
-        pending.push(t2);
-      }, GLITCH_OUT_MS);
-      pending.push(t1);
-    }, INTERVAL_MS);
-
-    return () => {
-      clearInterval(timer);
-      pending.forEach(clearTimeout);
-    };
-  }, []);
-
-  const accentClass = [
-    'hero__accent',
-    'hero__accent--cycle',
-    phase === 'out' ? 'hero__accent--glitch-out' : '',
-    phase === 'in'  ? 'hero__accent--glitch-in'  : '',
-  ].filter(Boolean).join(' ');
-
   return (
     <section className="hero" aria-label="Bienvenida a Grandiel Scan">
       <div className="hero__bg-glow" />
 
-      {/* Portadas dispersas cayendo individualmente */}
-      <div className="hero__scatter" aria-hidden="true">
-        {SCATTER.map((pos, i) => {
-          const manga = heroCovers[i % heroCovers.length];
-          return (
-            <div
-              key={i}
-              className="hero__float"
-              style={{
-                left: pos.l,
-                '--float-dur': `${pos.dur}s`,
-                '--float-delay': `${pos.d}s`,
-              } as React.CSSProperties}
-            >
-              <div
-                className="hero__float-cover"
-                style={{ transform: `rotate(${pos.r}deg)` }}
-              >
-                <Image
-                  src={manga.image}
-                  alt=""
-                  width={72}
-                  height={104}
-                  loading="lazy"
-                  sizes="72px"
-                  unoptimized={!manga.image.startsWith('http')}
-                  style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                />
+      {/* Portadas dispersas — renderizadas en servidor, decorativas.
+          F-2: solo se renderizan si hay portadas disponibles. */}
+      {heroCovers.length > 0 && (
+        <div className="hero__scatter" aria-hidden="true">
+          {SCATTER.map((pos, i) => {
+            const manga = heroCovers[i % heroCovers.length];
+            return (
+              <div key={i} className="hero__float">
+                <div
+                  className="hero__float-cover"
+                  style={{ transform: `rotate(${pos.r}deg)` }}
+                >
+                  <Image
+                    src={manga.image}
+                    alt=""
+                    width={72}
+                    height={104}
+                    loading="eager"
+                    unoptimized={manga.image.startsWith('http')}
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                  />
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="hero__content">
         <p className="hero__eyebrow">Grandiel Scan</p>
         <h1 className="hero__title">
           Lee los mejores{' '}
-          <span className={accentClass} aria-live="polite">
-            {WORDS[wordIndex]}
-          </span>
+          {/* Único fragmento cliente: la palabra rotatoria */}
+          <HeroWordCycle />
           {' '}en español
         </h1>
         <p className="hero__subtitle">
-          Aquí podrás leer tus mangas, manhuas y manhwas favoritos de forma rápida y cómoda desde cualquier dispositivo. Descubre nuevos títulos y disfruta la mejor experiencia de lectura en un solo lugar.
+          Aquí podrás leer tus mangas, manhuas y manhwas favoritos de forma rápida y cómoda
+          desde cualquier dispositivo. Descubre nuevos títulos y disfruta la mejor experiencia
+          de lectura en un solo lugar.
         </p>
         <div className="hero__actions">
           <Link href="/mangas" className="hero__btn-primary">

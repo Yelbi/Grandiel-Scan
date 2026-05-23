@@ -128,7 +128,7 @@ export async function PATCH(req: NextRequest) {
       .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)))
       .returning();
 
-    revalidateManga(mangaId);
+    revalidateManga(mangaId, chapterValue);
     return NextResponse.json({ ok: true, chapter });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
@@ -159,6 +159,8 @@ export async function DELETE(req: NextRequest) {
       .delete(chapters)
       .where(and(eq(chapters.mangaId, mangaId), eq(chapters.chapter, chapterValue)));
 
+    revalidateManga(mangaId, chapterValue); // invalida la página del capítulo eliminado
+
     // Recalcular latestChapter desde los capítulos restantes
     const [mangaRow, remaining] = await Promise.all([
       db.select({ latestChapter: mangas.latestChapter })
@@ -180,7 +182,6 @@ export async function DELETE(req: NextRequest) {
       })
       .where(eq(mangas.id, mangaId));
 
-    revalidateManga(mangaId);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });

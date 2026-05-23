@@ -3,12 +3,15 @@ import Link from 'next/link';
 import MangaComments from './MangaComments';
 import MangaDetailActions from './MangaDetailActions';
 import MangaChapterList from './MangaChapterList';
+import MangaDescriptionToggle from './MangaDescriptionToggle';
 import ViewTracker from './ViewTracker';
 import type { Manga } from '@/lib/types';
 
 export default function MangaDetail({ manga }: { manga: Manga }) {
   const statusClass =
-    manga.status === 'Finalizado' ? 'manga-badge--done' : 'manga-badge--ongoing';
+    manga.status === 'Finalizado' ? 'manga-badge--done' :
+    manga.status === 'Pausado'    ? 'manga-badge--paused' :
+                                    'manga-badge--ongoing';
 
   return (
     <div className="curva">
@@ -25,7 +28,7 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
             sizes="220px"
             className="manga-cover-img manga-cover-glow"
             priority
-            unoptimized={!manga.image.startsWith('http')}
+            unoptimized={manga.image.startsWith('http')}
           />
         </div>
 
@@ -54,16 +57,26 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
           {/* Meta */}
           <div className="manga-header__meta">
             <span className="manga-info-item">
+              <i className="fas fa-calendar-alt" aria-hidden="true" />{' '}
               <strong>Actualizado:</strong>{' '}
-              {new Date(manga.lastUpdated).toLocaleDateString('es-ES')}
+              <time dateTime={manga.lastUpdated}>
+                {new Date(manga.lastUpdated).toLocaleDateString('es-ES')}
+              </time>
             </span>
             <span className="manga-info-item">
+              <i className="fas fa-book" aria-hidden="true" />{' '}
               <strong>Capítulos:</strong> {manga.chapters.length}
             </span>
+            {manga.views !== undefined && (
+              <span className="manga-info-item">
+                <i className="fas fa-eye" aria-hidden="true" />{' '}
+                <strong>Vistas:</strong> {manga.views.toLocaleString('es-ES')}
+              </span>
+            )}
           </div>
 
-          {/* Descripción */}
-          <p className="manga-header__description">{manga.description}</p>
+          {/* Descripción con toggle */}
+          <MangaDescriptionToggle description={manga.description} />
 
           {/* Botones de acción — requieren estado del cliente */}
           <MangaDetailActions manga={manga} />
@@ -77,12 +90,12 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
             <h2>Capítulos</h2>
             <span className="chapters-count">{manga.chapters.length} capítulos</span>
           </div>
-          <div className="chapters-scroll">
+          <div className="chapters-scroll" role="region" aria-label="Capítulos">
             <MangaChapterList manga={manga} />
           </div>
         </div>
 
-        <aside className="manga-lower__side">
+        <aside className="manga-lower__side" aria-label="Comentarios">
           <MangaComments mangaId={manga.id} />
         </aside>
       </div>

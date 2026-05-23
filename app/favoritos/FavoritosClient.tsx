@@ -26,7 +26,7 @@ export default function FavoritosClient({ mangas }: { mangas: Manga[] }) {
           <p className="results-counter">
             {favoriteMangas.length} manga{favoriteMangas.length !== 1 ? 's' : ''} en favoritos
           </p>
-          <div className="mami">
+          <div className="manga-grid">
             {favoriteMangas.map((manga) => (
               <MangaCard key={manga.id} manga={manga} />
             ))}

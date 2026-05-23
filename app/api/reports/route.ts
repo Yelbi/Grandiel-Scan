@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
 
     // ── Reporte de capítulo ──
     if (type === 'chapter') {
-      if (!mangaId || typeof mangaId !== 'string' || mangaId.trim().length === 0) {
-        return NextResponse.json({ error: 'mangaId requerido.' }, { status: 400 });
+      if (!mangaId || typeof mangaId !== 'string' || mangaId.trim().length === 0 || mangaId.trim().length > 200) {
+        return NextResponse.json({ error: 'mangaId inválido.' }, { status: 400 });
       }
       // El capítulo puede llegar como string desde JSON — normalizar a número
       const chapterNum = typeof chapter === 'number'
@@ -97,12 +97,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Tipo de reporte inválido.' }, { status: 400 });
   } catch (err) {
-    // Drizzle envuelve el error real de PostgreSQL en err.cause
-    const cause = err instanceof Error
-      ? (err as Error & { cause?: Error }).cause
-      : undefined;
-    const message = cause instanceof Error ? cause.message : (err as Error).message;
-    console.error('[reports] Error:', message, err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[reports] Error:', err);
+    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
   }
 }

@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import type { HistoryEntry } from '@/lib/types';
 
 interface ContinueReadingProps {
-  /** Mapa id→imagen de todos los mangas para enriquecer entradas antiguas sin imagen. */
   mangaImages?: Record<string, string>;
 }
 
@@ -19,15 +18,24 @@ function ContinueReadingCard({
   mangaImages?: Record<string, string>;
 }) {
   const [imgError, setImgError] = useState(false);
-  // Usar la imagen del entry; si no existe (entrada antigua), buscarla en mangaImages
   const image = entry.image ?? mangaImages?.[entry.mangaId];
 
+  const progressPct =
+    entry.page !== undefined && entry.page > 0 && entry.totalPages && entry.totalPages > 0
+      ? Math.min(Math.round((entry.page / entry.totalPages) * 100), 100)
+      : null;
+
   return (
-    <div className="manga-card product-item">
-      <Link href={`/chapter/${entry.mangaId}/${entry.chapter}`}>
+    <li className="manga-card product-item">
+      <Link
+        href={`/chapter/${entry.mangaId}/${entry.chapter}`}
+        aria-label={`Continuar leyendo ${entry.title}, capítulo ${entry.chapter}`}
+      >
         <div className="manga-card-inner">
           {!image || imgError ? (
             <div
+              role="img"
+              aria-label={entry.title}
               style={{
                 width: '100%',
                 height: '100%',
@@ -39,7 +47,6 @@ function ContinueReadingCard({
                 color: 'var(--color-text-secondary, #b0b0b0)',
                 fontSize: '2rem',
               }}
-              aria-label={entry.title}
             >
               <i className="fas fa-book" aria-hidden="true" />
             </div>
@@ -56,16 +63,11 @@ function ContinueReadingCard({
             />
           )}
 
-          {/* Progress bar overlay */}
-          {entry.page !== undefined && entry.page > 0 && (
-            <div
-              className="manga-card__progress"
-              aria-label={`Página ${entry.page}`}
-              aria-hidden="true"
-            >
+          {progressPct !== null && (
+            <div className="manga-card__progress" aria-hidden="true">
               <div
                 className="manga-card__progress-fill"
-                style={{ width: `${Math.min(entry.page * 5, 100)}%` }}
+                style={{ width: `${progressPct}%` }}
               />
             </div>
           )}
@@ -73,27 +75,37 @@ function ContinueReadingCard({
         <h3 className="manga-card__title">{entry.title}</h3>
         <div className="manga-meta">
           <span className="manga-chapters">Cap. {entry.chapter}</span>
+          {entry.page !== undefined && entry.page > 0 && (
+            <span className="manga-chapters">Pág. {entry.page + 1}</span>
+          )}
         </div>
       </Link>
-    </div>
+    </li>
   );
 }
 
 export default function ContinueReading({ mangaImages }: ContinueReadingProps) {
   const { history } = useHistoryContext();
+  // UX-4: esperar a que el cliente hidrate antes de renderizar para evitar CLS.
+  // En SSR el historial siempre está vacío, por lo que sin este flag el contenido
+  // aparecería y desaparecería bruscamente al hidratar.
+  const [mounted, setMounted] = useState(false);
 
-  if (history.length === 0) return null;
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted || history.length === 0) return null;
 
   const items = history.slice(0, 6);
 
   return (
     <section className="continue-reading-container index-section" aria-label="Continuar leyendo">
       <h2 className="section-title">Continuar Leyendo</h2>
-      <div className="mami">
+      {/* A-4: <ul>/<li> para semántica de lista correcta */}
+      <ul className="manga-grid" role="list">
         {items.map((entry) => (
           <ContinueReadingCard key={entry.mangaId} entry={entry} mangaImages={mangaImages} />
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

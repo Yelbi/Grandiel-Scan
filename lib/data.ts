@@ -67,6 +67,29 @@ export const getAllMangas = cache(async function getAllMangas(): Promise<Manga[]
   }
 });
 
+/** Like getAllMangas but includes chapter numbers — used by admin to populate chapter selects. */
+export async function getAllMangasWithChapters(): Promise<Manga[]> {
+  try {
+    const [mangaRows, chapterRows] = await Promise.all([
+      db.select().from(mangas).orderBy(desc(mangas.lastUpdated)),
+      db
+        .select({ mangaId: chapters.mangaId, chapter: chapters.chapter })
+        .from(chapters)
+        .orderBy(asc(chapters.chapter)),
+    ]);
+    const chapterMap = new Map<string, number[]>();
+    for (const c of chapterRows) {
+      const arr = chapterMap.get(c.mangaId) ?? [];
+      arr.push(c.chapter);
+      chapterMap.set(c.mangaId, arr);
+    }
+    return mangaRows.map((r) => toManga(r, chapterMap.get(r.id) ?? []));
+  } catch (err) {
+    console.error('[data] getAllMangasWithChapters error:', err);
+    return [];
+  }
+}
+
 const _getMangaById = unstable_cache(
   async function _getMangaById(id: string): Promise<Manga | null> {
     const [mangaRows, chapterRows] = await Promise.all([

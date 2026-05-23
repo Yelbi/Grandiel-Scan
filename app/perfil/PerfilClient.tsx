@@ -694,7 +694,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                   {favoriteMangas.length} título{favoriteMangas.length !== 1 ? 's' : ''} guardados
                 </span>
               </div>
-              <div className="mami">
+              <div className="manga-grid">
                 {favoriteMangas.map((manga) => (
                   <MangaCard key={manga.id} manga={manga} />
                 ))}

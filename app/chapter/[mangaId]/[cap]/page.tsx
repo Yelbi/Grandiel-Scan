@@ -57,7 +57,7 @@ export default async function ChapterPage({ params }: Props) {
 
   if (!manga || !chapter) notFound();
 
-  const allCaps = manga.chapters.sort((a, b) => a - b);
+  const allCaps = [...manga.chapters].sort((a, b) => a - b);
   const idx = allCaps.findIndex((c) => Math.abs(c - capNum) < 0.001);
   const prevCap = idx > 0 ? allCaps[idx - 1] : null;
   const nextCap = idx < allCaps.length - 1 ? allCaps[idx + 1] : null;

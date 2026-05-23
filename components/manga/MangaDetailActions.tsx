@@ -12,12 +12,17 @@ export default function MangaDetailActions({ manga }: { manga: Manga }) {
   const { getLastRead } = useHistoryContext();
   const { profile } = useUserProfile();
   const [showLoginHint, setShowLoginHint] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fav = isFavorite(manga.id);
   const lastReadChapter = getLastRead(manga.id)?.chapter ?? null;
 
-  useEffect(() => () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); }, []);
+  useEffect(() => () => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    if (announceTimerRef.current) clearTimeout(announceTimerRef.current);
+  }, []);
 
   const handleFavorite = () => {
     if (!profile) {
@@ -26,7 +31,11 @@ export default function MangaDetailActions({ manga }: { manga: Manga }) {
       hintTimerRef.current = setTimeout(() => setShowLoginHint(false), 2500);
       return;
     }
+    const msg = fav ? 'Eliminado de favoritos' : 'Agregado a favoritos';
     toggle(manga.id);
+    setAnnouncement(msg);
+    if (announceTimerRef.current) clearTimeout(announceTimerRef.current);
+    announceTimerRef.current = setTimeout(() => setAnnouncement(''), 1500);
   };
 
   return (
@@ -53,15 +62,18 @@ export default function MangaDetailActions({ manga }: { manga: Manga }) {
           onClick={handleFavorite}
           aria-label={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
         >
-          <i className={fav ? 'fas fa-heart' : 'far fa-heart'} />
+          <i className={fav ? 'fas fa-heart' : 'far fa-heart'} aria-hidden="true" />
           {fav ? ' En Favoritos' : ' Favoritos'}
         </button>
         {showLoginHint && (
-          <span className="favorite-login-hint" role="alert">
+          <span className="favorite-login-hint" role="alert" aria-live="assertive">
             Inicia sesión para guardar favoritos
           </span>
         )}
       </div>
+      <span className="visually-hidden" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </span>
     </div>
   );
 }

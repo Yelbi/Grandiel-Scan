@@ -15,27 +15,18 @@ function formatViews(v: number): string {
 const LABELS = { 1: '1°', 2: '2°', 3: '3°' } as const;
 
 export default function MostViewedPodium({ mangas }: Props) {
-  if (mangas.length === 0) return null;
+  // F-3: el podio solo se muestra con al menos 3 mangas para garantizar la
+  // experiencia visual completa. Con menos datos el componente no aporta valor.
+  if (mangas.length < 3) return null;
 
   const [first, second, third] = mangas;
 
-  // Orden visual según cuántos mangas haya:
-  // 3: bronce(izq) → oro(centro) → plata(der)
-  // 2: plata(izq) → oro(centro)
-  // 1: solo oro(centro)
-  const slots =
-    mangas.length >= 3
-      ? [
-          { manga: third,  rank: 3 as const },
-          { manga: first,  rank: 1 as const },
-          { manga: second, rank: 2 as const },
-        ]
-      : mangas.length === 2
-        ? [
-            { manga: second, rank: 2 as const },
-            { manga: first,  rank: 1 as const },
-          ]
-        : [{ manga: first, rank: 1 as const }];
+  // Orden visual: bronce(izq) → oro(centro) → plata(der)
+  const slots = [
+    { manga: third,  rank: 3 as const },
+    { manga: first,  rank: 1 as const },
+    { manga: second, rank: 2 as const },
+  ];
 
   return (
     <section className="index-section podium-section" aria-label="Mangas más vistos">

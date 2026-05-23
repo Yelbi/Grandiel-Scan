@@ -326,6 +326,12 @@ label:has(+ textarea:required)::after {
   border-radius: var(--border-radius-sm);
 }
 
+/* Next.js 15 devtools indicator: external CSS overrides :host rules inside shadow DOM */
+nextjs-portal {
+  position: fixed;
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
 }

@@ -155,7 +155,7 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
                   <i className="fas fa-fire" aria-hidden="true" /> Hoy
                   <span className="nuevos-section__count">{updatedToday.length} títulos</span>
                 </h2>
-                <div className="mami">
+                <div className="manga-grid">
                   {updatedToday.map((m) => <ActCard key={m.id} manga={m} />)}
                 </div>
               </section>
@@ -167,7 +167,7 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
                   <i className="fas fa-calendar-week" aria-hidden="true" /> Esta semana
                   <span className="nuevos-section__count">{updatedThisWeek.length} títulos</span>
                 </h2>
-                <div className="mami">
+                <div className="manga-grid">
                   {updatedThisWeek.map((m) => <ActCard key={m.id} manga={m} />)}
                 </div>
               </section>
@@ -179,7 +179,7 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
                   <i className="fas fa-history" aria-hidden="true" /> Anteriores
                   <span className="nuevos-section__count">{updatedOlder.length} títulos</span>
                 </h2>
-                <div className="mami">
+                <div className="manga-grid">
                   {updatedOlder.map((m) => <ActCard key={m.id} manga={m} />)}
                 </div>
               </section>
@@ -214,7 +214,7 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
               <i className="fas fa-fire" aria-hidden="true" /> Esta semana
               <span className="nuevos-section__count">{thisWeek.length} títulos</span>
             </h2>
-            <div className="mami">
+            <div className="manga-grid">
               {thisWeek.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
             </div>
           </section>
@@ -226,7 +226,7 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
               <i className="fas fa-calendar-alt" aria-hidden="true" /> Este mes
               <span className="nuevos-section__count">{thisMonth.length} títulos</span>
             </h2>
-            <div className="mami">
+            <div className="manga-grid">
               {thisMonth.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
             </div>
           </section>
@@ -238,7 +238,7 @@ export default function NovedadesClient({ mangas }: { mangas: Manga[] }) {
               <i className="fas fa-history" aria-hidden="true" /> Anteriores
               <span className="nuevos-section__count">{older.length} títulos</span>
             </h2>
-            <div className="mami">
+            <div className="manga-grid">
               {older.map((manga) => <MangaCard key={manga.id} manga={manga} />)}
             </div>
           </section>

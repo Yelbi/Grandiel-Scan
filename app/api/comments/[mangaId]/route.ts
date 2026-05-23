@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { comments, users } from '@/lib/db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, count } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -34,34 +34,41 @@ export async function GET(
     const page = Math.max(1, parseInt(pageParam, 10) || 1);
     const offset = (page - 1) * COMMENTS_PAGE_SIZE;
 
-    const rows = await db
-      .select({
-        id:        comments.id,
-        text:      comments.text,
-        createdAt: comments.createdAt,
-        userId:    comments.userId,
-        username:  users.username,
-        avatar:    users.avatar,
-      })
-      .from(comments)
-      .innerJoin(users, eq(comments.userId, users.id))
-      .where(and(
-        eq(comments.mangaId, mangaId),
-        eq(comments.deleted, false),
-        chapter !== null
-          ? eq(comments.chapter, chapter)
-          : sql`${comments.chapter} IS NULL`,
-      ))
-      .orderBy(desc(comments.createdAt))
-      .limit(COMMENTS_PAGE_SIZE)
-      .offset(offset);
+    const whereClause = and(
+      eq(comments.mangaId, mangaId),
+      eq(comments.deleted, false),
+      chapter !== null
+        ? eq(comments.chapter, chapter)
+        : sql`${comments.chapter} IS NULL`,
+    );
 
-    // Indicar si hay más páginas
+    const [rows, [{ total }]] = await Promise.all([
+      db
+        .select({
+          id:        comments.id,
+          text:      comments.text,
+          createdAt: comments.createdAt,
+          userId:    comments.userId,
+          username:  users.username,
+          avatar:    users.avatar,
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .where(whereClause)
+        .orderBy(desc(comments.createdAt))
+        .limit(COMMENTS_PAGE_SIZE)
+        .offset(offset),
+      db
+        .select({ total: count() })
+        .from(comments)
+        .where(whereClause),
+    ]);
+
     const hasMore = rows.length === COMMENTS_PAGE_SIZE;
 
-    return NextResponse.json({ comments: rows, page, hasMore });
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    return NextResponse.json({ comments: rows, page, hasMore, total });
+  } catch {
+    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
   }
 }
 
@@ -110,8 +117,8 @@ export async function POST(
       .returning();
 
     return NextResponse.json({ ok: true, comment });
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
   }
 }
 
@@ -146,7 +153,7 @@ export async function DELETE(
       );
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
   }
 }

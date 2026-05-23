@@ -296,7 +296,7 @@
 /* ===== TOAST DE COMENTARIOS ===== */
 .comment-toast {
     position: fixed;
-    bottom: 24px;
+    bottom: max(24px, env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%) translateY(100px);
     padding: 12px 20px;
@@ -355,6 +355,18 @@
 
     .comment-submit-btn {
         justify-content: center;
+    }
+
+    /* Prevenir zoom automático en iOS al enfocar inputs (<16px dispara zoom) */
+    .comment-textarea,
+    .comment-edit-textarea {
+        font-size: 16px;
+    }
+
+    /* Objetivo táctil mínimo para botones de acción de comentario */
+    .comment-action-btn {
+        width: 44px;
+        height: 44px;
     }
 }
 
