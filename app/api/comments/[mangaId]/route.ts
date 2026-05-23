@@ -80,7 +80,7 @@ export async function POST(
   try {
     // 10 comentarios por usuario (por IP) cada 10 minutos
     const ip = getClientIp(req);
-    const rl = rateLimit(`comment:${ip}`, 10, 10 * 60 * 1000);
+    const rl = await rateLimit(`comment:${ip}`, 10, 10 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Demasiados comentarios. Espera unos minutos.' },

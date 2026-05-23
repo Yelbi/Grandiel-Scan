@@ -580,19 +580,19 @@ export default function ChapterReader({
             mangaTitle={manga.title}
           />
         </div>
-      </div>
 
-      {/* A-4: Progress bar con aria-valuemin y aria-valuetext */}
-      <div
-        className="reader-progress-bar"
-        role="progressbar"
-        aria-label="Progreso de lectura"
-        aria-valuemin={1}
-        aria-valuenow={currentPage + 1}
-        aria-valuemax={pages.length}
-        aria-valuetext={`Página ${currentPage + 1} de ${pages.length}`}
-      >
-        <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
+        {/* A-4: Barra de progreso anclada al fondo del topbar — siempre visible */}
+        <div
+          className="reader-progress-bar"
+          role="progressbar"
+          aria-label="Progreso de lectura"
+          aria-valuemin={1}
+          aria-valuenow={currentPage + 1}
+          aria-valuemax={pages.length}
+          aria-valuetext={`Página ${currentPage + 1} de ${pages.length}`}
+        >
+          <div className="reader-progress-bar__fill" style={{ width: `${progress}%` }} />
+        </div>
       </div>
 
       {/* F-1: brightness via CSS variable — sólo afecta imágenes, no botones ni texto */}
@@ -702,6 +702,29 @@ export default function ChapterReader({
           className={`reader-controls-panel${panelOpen ? ' active' : ''}`}
         >
           <p className="reader-controls-title">Ajustes de lectura</p>
+
+          {/* Modo de lectura — visible siempre, relevante en móvil donde los botones del topbar se ocultan */}
+          <div className="reader-control-group reader-control-group--mode">
+            <div className="reader-control-label">Modo de lectura</div>
+            <div className="reader-control-row">
+              <button
+                className={`reader-panel-mode-btn${mode === 'paginated' ? ' active' : ''}`}
+                onClick={() => { saveMode('paginated'); setPanelOpen(false); }}
+                aria-pressed={mode === 'paginated'}
+                suppressHydrationWarning
+              >
+                <IcoFile /> Paginado
+              </button>
+              <button
+                className={`reader-panel-mode-btn${mode === 'continuous' ? ' active' : ''}`}
+                onClick={() => { saveMode('continuous'); setPanelOpen(false); }}
+                aria-pressed={mode === 'continuous'}
+                suppressHydrationWarning
+              >
+                <IcoBars /> Continuo
+              </button>
+            </div>
+          </div>
 
           {/* Brightness */}
           <div className="reader-control-group">

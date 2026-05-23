@@ -90,9 +90,7 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
             <h2>Capítulos</h2>
             <span className="chapters-count">{manga.chapters.length} capítulos</span>
           </div>
-          <div className="chapters-scroll" role="region" aria-label="Capítulos">
-            <MangaChapterList manga={manga} />
-          </div>
+          <MangaChapterList manga={manga} />
         </div>
 
         <aside className="manga-lower__side" aria-label="Comentarios">

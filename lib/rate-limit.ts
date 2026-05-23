@@ -1,25 +1,5 @@
-/**
- * Rate limiter de ventana deslizante en memoria.
- * Suficiente para Vercel (warm instances) y entornos de desarrollo.
- * Para multi-instancia distribuida, sustituir por @upstash/ratelimit + Redis.
- */
-
-interface Entry {
-  count:     number;
-  resetAt:   number;
-}
-
-const store = new Map<string, Entry>();
-
-// Limpiar entradas expiradas cada 5 minutos para no acumular memoria
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store) {
-      if (entry.resetAt <= now) store.delete(key);
-    }
-  }, 5 * 60 * 1000);
-}
+import { db } from '@/lib/db';
+import { sql } from 'drizzle-orm';
 
 export interface RateLimitResult {
   success: boolean;
@@ -28,29 +8,57 @@ export interface RateLimitResult {
 }
 
 /**
+ * Rate limiter de ventana deslizante respaldado por Postgres.
+ * Funciona correctamente en entornos multi-instancia (Vercel serverless).
+ * Si la DB no está disponible falla abierto (deja pasar la petición).
+ *
  * @param key       Clave única (ej: `register:${ip}`)
  * @param limit     Número máximo de peticiones por ventana
  * @param windowMs  Duración de la ventana en milisegundos
  */
-export function rateLimit(
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-): RateLimitResult {
-  const now = Date.now();
-  const entry = store.get(key);
+): Promise<RateLimitResult> {
+  const resetAtSecs = (Date.now() + windowMs) / 1000;
 
-  if (!entry || entry.resetAt <= now) {
-    store.set(key, { count: 1, resetAt: now + windowMs });
-    return { success: true, remaining: limit - 1, resetAt: now + windowMs };
+  try {
+    // UPSERT atómico: si la ventana expiró reinicia el contador; si no, lo incrementa.
+    const result = await db.execute(sql`
+      INSERT INTO rate_limit_store (key, count, reset_at)
+      VALUES (
+        ${key},
+        1,
+        to_timestamp(${resetAtSecs})
+      )
+      ON CONFLICT (key) DO UPDATE
+        SET
+          count = CASE
+            WHEN rate_limit_store.reset_at <= now() THEN 1
+            ELSE rate_limit_store.count + 1
+          END,
+          reset_at = CASE
+            WHEN rate_limit_store.reset_at <= now() THEN to_timestamp(${resetAtSecs})
+            ELSE rate_limit_store.reset_at
+          END
+      RETURNING
+        count,
+        (extract(epoch from reset_at) * 1000)::bigint AS reset_ms
+    `);
+
+    const row = result[0] as { count: number | string; reset_ms: number | string };
+    const count       = Number(row.count);
+    const actualReset = Number(row.reset_ms);
+
+    if (count > limit) {
+      return { success: false, remaining: 0, resetAt: actualReset };
+    }
+    return { success: true, remaining: limit - count, resetAt: actualReset };
+  } catch {
+    // Si la DB no está disponible se falla abierto para no bloquear usuarios legítimos.
+    return { success: true, remaining: limit, resetAt: Date.now() + windowMs };
   }
-
-  if (entry.count >= limit) {
-    return { success: false, remaining: 0, resetAt: entry.resetAt };
-  }
-
-  entry.count += 1;
-  return { success: true, remaining: limit - entry.count, resetAt: entry.resetAt };
 }
 
 /** Extrae la IP del cliente del request de Next.js. */

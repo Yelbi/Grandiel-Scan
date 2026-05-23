@@ -21,6 +21,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  // Muestra las peticiones fetch del servidor en la consola durante dev
+  logging: {
+    fetches: {
+      fullUrl: true,
+      hmrRefreshes: false,
+    },
+  },
   async headers() {
     return [
       {

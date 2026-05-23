@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // 1 conteo de vista por IP + manga cada hora
   const ip = getClientIp(req);
-  const rl = rateLimit(`view:${ip}:${mangaId}`, 1, 60 * 60 * 1000);
+  const rl = await rateLimit(`view:${ip}:${mangaId}`, 1, 60 * 60 * 1000);
   if (!rl.success) {
     return NextResponse.json({ ok: true, deduplicated: true });
   }

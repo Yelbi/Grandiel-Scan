@@ -46,9 +46,6 @@ export default async function HomePage() {
   const recent = sorted.slice(0, 12);
   const heroCovers = sorted.slice(0, 18);
 
-  // UX-1: reemplazar el poco informativo "ES" por el total de capítulos disponibles
-  const totalChapters = mangas.reduce((sum, m) => sum + (m.chapters?.length ?? 0), 0);
-
   return (
     <>
       <script
@@ -73,9 +70,13 @@ export default async function HomePage() {
           </div>
           <div className="stats-bar__divider" aria-hidden="true" />
           <div className="stats-bar__item">
-            {/* UX-1: dato real y útil en lugar del código de idioma "ES" */}
-            <strong className="stats-bar__value">{totalChapters > 0 ? `${totalChapters}+` : '∞'}</strong>
-            <span className="stats-bar__label">Capítulos</span>
+            <strong className="stats-bar__value">EN</strong>
+            <span className="stats-bar__label">English</span>
+          </div>
+          <div className="stats-bar__divider" aria-hidden="true" />
+          <div className="stats-bar__item">
+            <strong className="stats-bar__value">ES</strong>
+            <span className="stats-bar__label">Español</span>
           </div>
         </div>
       )}

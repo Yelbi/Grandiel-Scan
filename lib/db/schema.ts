@@ -168,6 +168,16 @@ export const reports = pgTable(
   ],
 );
 
+// ── Rate limit store (ventana deslizante distribuida) ────────────────────────
+// Permite que el rate limiter funcione correctamente en entornos multi-instancia
+// (ej: Vercel serverless con múltiples regiones). La clave es "tipo:ip[:mangaId]".
+// Las entradas expiradas se reemplazan atómicamente en el UPSERT; no es necesario purgarlas.
+export const rateLimitStore = pgTable('rate_limit_store', {
+  key:     text('key').primaryKey(),
+  count:   integer('count').notNull().default(1),
+  resetAt: timestamp('reset_at', { withTimezone: true }).notNull(),
+});
+
 // ── Tipos inferidos ──────────────────────────────────────────────────────────
 export type MangaRow           = typeof mangas.$inferSelect;
 export type MangaInsert        = typeof mangas.$inferInsert;

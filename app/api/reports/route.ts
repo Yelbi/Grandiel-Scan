@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     // 5 reportes por IP cada 30 minutos
     const ip = getClientIp(req);
-    const rl = rateLimit(`report:${ip}`, 5, 30 * 60 * 1000);
+    const rl = await rateLimit(`report:${ip}`, 5, 30 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Demasiados reportes enviados. Espera antes de enviar otro.' },

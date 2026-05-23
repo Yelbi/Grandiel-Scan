@@ -26,7 +26,7 @@ export default function MangaChapterList({ manga }: { manga: Manga }) {
   }, [sortedChapters, search]);
 
   return (
-    <section className="capitulos" aria-label="Lista de capítulos">
+    <>
       <div className="chapters-controls">
         <input
           type="search"
@@ -50,24 +50,28 @@ export default function MangaChapterList({ manga }: { manga: Manga }) {
         </button>
       </div>
 
-      {filteredChapters.length === 0 ? (
-        <p className="chapters-no-results">No se encontró el capítulo &quot;{search}&quot;.</p>
-      ) : (
-        filteredChapters.map((cap) => {
-          const isLastRead = lastReadChapter !== null && cap === lastReadChapter;
-          return (
-            <div key={cap} className={`cap${isLastRead ? ' cap--last-read' : ''}`}>
-              <Link
-                href={`/chapter/${manga.id}/${cap}`}
-                aria-label={`Capítulo ${cap}${isLastRead ? ' — último leído' : ''}`}
-              >
-                Capítulo {cap}
-                {isLastRead && <span className="chapter-badge">Último leído</span>}
-              </Link>
-            </div>
-          );
-        })
-      )}
-    </section>
+      <div className="chapters-scroll" role="region" aria-label="Capítulos">
+        <section className="capitulos" aria-label="Lista de capítulos">
+          {filteredChapters.length === 0 ? (
+            <p className="chapters-no-results">No se encontró el capítulo &quot;{search}&quot;.</p>
+          ) : (
+            filteredChapters.map((cap) => {
+              const isLastRead = lastReadChapter !== null && cap === lastReadChapter;
+              return (
+                <div key={cap} className={`cap${isLastRead ? ' cap--last-read' : ''}`}>
+                  <Link
+                    href={`/chapter/${manga.id}/${cap}`}
+                    aria-label={`Capítulo ${cap}${isLastRead ? ' — último leído' : ''}`}
+                  >
+                    Capítulo {cap}
+                    {isLastRead && <span className="chapter-badge">Último leído</span>}
+                  </Link>
+                </div>
+              );
+            })
+          )}
+        </section>
+      </div>
+    </>
   );
 }

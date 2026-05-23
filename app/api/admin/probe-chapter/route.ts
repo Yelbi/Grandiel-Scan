@@ -172,13 +172,14 @@ async function probeSubPart(
    padPart controla si la parte va sin padding (1→"1") o con 2 dígitos (2→"01").
    Tolera huecos igual que probeSubPart.                              ── */
 async function probePrefixedSubPart(
-  base: string, ext: string, prefix: string, padPart: number = 1, session: Session,
+  base: string, ext: string, prefix: string, padPart: number = 1, session: Session, startPart = 1,
 ): Promise<string[]> {
   const pages: string[] = [];
   let gaps = 0;
+  const upperBound = startPart + MAX_PARTS - 1;
 
-  for (let partStart = 1; partStart <= MAX_PARTS; partStart += BATCH_SIZE) {
-    const count    = Math.min(BATCH_SIZE, MAX_PARTS - partStart + 1);
+  for (let partStart = startPart; partStart <= upperBound; partStart += BATCH_SIZE) {
+    const count    = Math.min(BATCH_SIZE, upperBound - partStart + 1);
     const partNums = Array.from({ length: count }, (_, k) => partStart + k);
     const results  = await probeBatch(
       partNums.map((p) => base + `${prefix}${String(p).padStart(padPart, '0')}_01.${ext}`),
@@ -264,8 +265,7 @@ async function probePrefixedSubPartDeep(
     const results = await probeBatch(batch, session);
     for (let k = 0; k < results.length; k++) {
       if (results[k]) {
-        const pp = String(partNums[k]).padStart(padPart, '0');
-        return probePagesOfPart(base, ext, `${prefix}${pp}`, session);
+        return probePrefixedSubPart(base, ext, prefix, padPart, session, partNums[k]);
       }
     }
   }
@@ -621,7 +621,7 @@ function sortImageFiles(files: Iterable<string>): string[] {
     const na = extractSortKey(da, useFirstNum);
     const nb = extractSortKey(db, useFirstNum);
     if (na !== nb) return na - nb;
-    return da.localeCompare(db);
+    return da.localeCompare(db, undefined, { numeric: true, sensitivity: 'base' });
   });
   return unique;
 }
@@ -939,10 +939,6 @@ function tryBuildAutoViewerUrl(baseUrl: string): string | null {
 
 /* ── Handler ─────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json({ error: 'Solo disponible en desarrollo local.' }, { status: 403 });
-  }
-
   const { baseUrl, ext = 'webp', chapterHint, slugHint, viewerUrl } = await req.json();
   if (!baseUrl) {
     return NextResponse.json({ error: 'baseUrl requerido.' }, { status: 400 });
@@ -967,6 +963,7 @@ export async function POST(req: NextRequest) {
 
   /* ── 1. Sondear patrones estándar + prefijados en paralelo ── */
   const prefixes = extractPrefixes(base); // ["c-743-", "c-58812-", "743-", "58812-"]
+  const chapterHintNum = (chapterHint != null && !isNaN(Number(chapterHint))) ? Math.floor(Number(chapterHint)) : null;
 
   const standardChecks = [
     `01_01.${ext}`,       // subpart-padded
@@ -1004,10 +1001,15 @@ export async function POST(req: NextRequest) {
   // Chequeos de pares por prefijo: c-231-1-2.webp
   const pairPrefixChecks = prefixes.map((p) => `${p}1-2.${ext}`);
 
-  // Chequeos de paréntesis por prefijo: c-65-1%20(1).webp y c-65-{chap}%20(1).webp
+  // Chequeos de paréntesis por prefijo: c-65-1%20(1).webp
   const prefixParenChecks = prefixes.map((p) => `${p}1%20(1).${ext}`);
 
-  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks, ...prefixParenChecks];
+  // Chequeos de paréntesis por prefijo con chapterHint como número de parte: c-65-54%20(1).webp
+  const prefixParenChapterChecks = (chapterHintNum != null && chapterHintNum > 1)
+    ? prefixes.map((p) => `${p}${chapterHintNum}%20(1).${ext}`)
+    : [];
+
+  const allChecks = [...standardChecks, ...prefixChecks, ...pairPrefixChecks, ...prefixParenChecks, ...prefixParenChapterChecks];
 
   // Para CDNs conocidos (ej: ikigaimangas) construimos la URL del visor automáticamente
   // y la ejecutamos en paralelo con los checks estándar. También omitimos el listado de
@@ -1200,7 +1202,6 @@ export async function POST(req: NextRequest) {
     }
   }
   // Quick check con chapterHint como número de parte
-  const chapterHintNum = (chapterHint != null && !isNaN(Number(chapterHint))) ? Math.floor(Number(chapterHint)) : null;
   if (chapterHintNum != null && chapterHintNum > 1) {
     for (let i = 0; i < prefixes.length; i++) {
       if (prefixParenChapterResults[i]) {
@@ -1227,6 +1228,16 @@ export async function POST(req: NextRequest) {
       const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart, session);
       if (pages.length > 0) {
         return NextResponse.json({ pages, pattern: `prefixed(${prefix})`, count: pages.length });
+      }
+    }
+
+    // Scan profundo para prefixed-paren: probar qué número de parte existe cuando la parte 1 no coincidió
+    for (let i = 0; i < prefixes.length; i++) {
+      if (!prefixParenResults[i]) {
+        const pages = await probePrefixedParenPartDeep(base, ext, prefixes[i], session);
+        if (pages.length > 0) {
+          return NextResponse.json({ pages, pattern: `prefixed-paren(${prefixes[i]})`, count: pages.length });
+        }
       }
     }
 
