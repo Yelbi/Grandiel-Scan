@@ -1826,43 +1826,39 @@ mark.search-highlight {
 
 .hero__float {
   position: absolute;
-  top: 0;
-  animation-name: floatDown;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
 }
 
-/* Posición y timing individuales por portada — espeja el array SCATTER en HeroSection.tsx */
-.hero__scatter > .hero__float:nth-child(1)  { left: 1%;  animation-duration: 22s; animation-delay: -5s;  }
-.hero__scatter > .hero__float:nth-child(2)  { left: 7%;  animation-duration: 26s; animation-delay: -2s;  }
-.hero__scatter > .hero__float:nth-child(3)  { left: 13%; animation-duration: 28s; animation-delay: -14s; }
-.hero__scatter > .hero__float:nth-child(4)  { left: 18%; animation-duration: 24s; animation-delay: -6s;  }
-.hero__scatter > .hero__float:nth-child(5)  { left: 24%; animation-duration: 20s; animation-delay: -8s;  }
-.hero__scatter > .hero__float:nth-child(6)  { left: 30%; animation-duration: 25s; animation-delay: -20s; }
-.hero__scatter > .hero__float:nth-child(7)  { left: 35%; animation-duration: 27s; animation-delay: -22s; }
-.hero__scatter > .hero__float:nth-child(8)  { left: 40%; animation-duration: 30s; animation-delay: -3s;  }
-.hero__scatter > .hero__float:nth-child(9)  { left: 45%; animation-duration: 29s; animation-delay: -9s;  }
-.hero__scatter > .hero__float:nth-child(10) { left: 50%; animation-duration: 23s; animation-delay: -11s; }
-.hero__scatter > .hero__float:nth-child(11) { left: 55%; animation-duration: 20s; animation-delay: -4s;  }
-.hero__scatter > .hero__float:nth-child(12) { left: 60%; animation-duration: 27s; animation-delay: -18s; }
-.hero__scatter > .hero__float:nth-child(13) { left: 65%; animation-duration: 22s; animation-delay: -19s; }
-.hero__scatter > .hero__float:nth-child(14) { left: 70%; animation-duration: 19s; animation-delay: -7s;  }
-.hero__scatter > .hero__float:nth-child(15) { left: 75%; animation-duration: 33s; animation-delay: -15s; }
-.hero__scatter > .hero__float:nth-child(16) { left: 80%; animation-duration: 31s; animation-delay: -24s; }
-.hero__scatter > .hero__float:nth-child(17) { left: 85%; animation-duration: 25s; animation-delay: -6s;  }
-.hero__scatter > .hero__float:nth-child(18) { left: 90%; animation-duration: 24s; animation-delay: -16s; }
-.hero__scatter > .hero__float:nth-child(19) { left: 95%; animation-duration: 21s; animation-delay: -10s; }
-.hero__scatter > .hero__float:nth-child(20) { left: 4%;  animation-duration: 29s; animation-delay: -17s; }
-.hero__scatter > .hero__float:nth-child(21) { left: 10%; animation-duration: 23s; animation-delay: -12s; }
-.hero__scatter > .hero__float:nth-child(22) { left: 21%; animation-duration: 21s; animation-delay: -13s; }
-.hero__scatter > .hero__float:nth-child(23) { left: 33%; animation-duration: 26s; animation-delay: -21s; }
-.hero__scatter > .hero__float:nth-child(24) { left: 43%; animation-duration: 22s; animation-delay: -11s; }
-.hero__scatter > .hero__float:nth-child(25) { left: 52%; animation-duration: 32s; animation-delay: -1s;  }
-.hero__scatter > .hero__float:nth-child(26) { left: 63%; animation-duration: 28s; animation-delay: -3s;  }
-.hero__scatter > .hero__float:nth-child(27) { left: 72%; animation-duration: 18s; animation-delay: -23s; }
-.hero__scatter > .hero__float:nth-child(28) { left: 78%; animation-duration: 19s; animation-delay: -25s; }
-.hero__scatter > .hero__float:nth-child(29) { left: 88%; animation-duration: 25s; animation-delay: -8s;  }
-.hero__scatter > .hero__float:nth-child(30) { left: 97%; animation-duration: 30s; animation-delay: -20s; }
+/* Posición individual por portada — left espeja SCATTER en HeroSection.tsx, top distribuye verticalmente */
+.hero__scatter > .hero__float:nth-child(1)  { left: 1%;  top: 15%; }
+.hero__scatter > .hero__float:nth-child(2)  { left: 7%;  top: 42%; }
+.hero__scatter > .hero__float:nth-child(3)  { left: 13%; top: 68%; }
+.hero__scatter > .hero__float:nth-child(4)  { left: 18%; top: 25%; }
+.hero__scatter > .hero__float:nth-child(5)  { left: 24%; top: 58%; }
+.hero__scatter > .hero__float:nth-child(6)  { left: 30%; top: 33%; }
+.hero__scatter > .hero__float:nth-child(7)  { left: 35%; top: 78%; }
+.hero__scatter > .hero__float:nth-child(8)  { left: 40%; top: 12%; }
+.hero__scatter > .hero__float:nth-child(9)  { left: 45%; top: 48%; }
+.hero__scatter > .hero__float:nth-child(10) { left: 50%; top: 82%; }
+.hero__scatter > .hero__float:nth-child(11) { left: 55%; top: 28%; }
+.hero__scatter > .hero__float:nth-child(12) { left: 60%; top: 62%; }
+.hero__scatter > .hero__float:nth-child(13) { left: 65%; top: 38%; }
+.hero__scatter > .hero__float:nth-child(14) { left: 70%; top: 72%; }
+.hero__scatter > .hero__float:nth-child(15) { left: 75%; top: 18%; }
+.hero__scatter > .hero__float:nth-child(16) { left: 80%; top: 55%; }
+.hero__scatter > .hero__float:nth-child(17) { left: 85%; top: 32%; }
+.hero__scatter > .hero__float:nth-child(18) { left: 90%; top: 70%; }
+.hero__scatter > .hero__float:nth-child(19) { left: 95%; top: 45%; }
+.hero__scatter > .hero__float:nth-child(20) { left: 4%;  top: 83%; }
+.hero__scatter > .hero__float:nth-child(21) { left: 10%; top: 22%; }
+.hero__scatter > .hero__float:nth-child(22) { left: 21%; top: 60%; }
+.hero__scatter > .hero__float:nth-child(23) { left: 33%; top: 75%; }
+.hero__scatter > .hero__float:nth-child(24) { left: 43%; top: 30%; }
+.hero__scatter > .hero__float:nth-child(25) { left: 52%; top: 52%; }
+.hero__scatter > .hero__float:nth-child(26) { left: 63%; top: 16%; }
+.hero__scatter > .hero__float:nth-child(27) { left: 72%; top: 48%; }
+.hero__scatter > .hero__float:nth-child(28) { left: 78%; top: 85%; }
+.hero__scatter > .hero__float:nth-child(29) { left: 88%; top: 20%; }
+.hero__scatter > .hero__float:nth-child(30) { left: 97%; top: 65%; }
 
 .hero__float-cover {
   width: 72px;
