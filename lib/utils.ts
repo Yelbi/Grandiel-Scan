@@ -10,6 +10,19 @@ export function resolvePageUrl(chapter: Chapter, page: string): string {
   return page;
 }
 
+const PROXY_HOSTS = new Set(['cdn.arenascan.com']);
+
+/** Redirige URLs de CDNs con hotlink protection por el proxy interno */
+export function toProxyUrl(url: string): string {
+  try {
+    const { hostname } = new URL(url);
+    if (PROXY_HOSTS.has(hostname)) {
+      return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+  } catch {}
+  return url;
+}
+
 const MS_MINUTE = 60_000;
 const MS_HOUR   = 3_600_000;
 const MS_DAY    = 86_400_000;

@@ -8,7 +8,7 @@ import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import MangaComments from '@/components/manga/MangaComments';
 import ReportChapterButton from '@/components/chapter/ReportChapterButton';
 import type { Chapter, Manga, ReadingMode } from '@/lib/types';
-import { resolvePageUrl } from '@/lib/utils';
+import { resolvePageUrl, toProxyUrl } from '@/lib/utils';
 import { CONFIG } from '@/lib/config';
 
 /* ─── Inline SVG icons (no CDN dependency) ─── */
@@ -211,7 +211,7 @@ export default function ChapterReader({
   const pendingScrollPage = useRef<number | null>(null);
 
   const pages = useMemo(
-    () => chapter.pages.map((p) => resolvePageUrl(chapter, p)),
+    () => chapter.pages.map((p) => toProxyUrl(resolvePageUrl(chapter, p))),
     [chapter],
   );
 
