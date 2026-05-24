@@ -25,6 +25,9 @@ export default function ChapterError({
         <button className="btn" onClick={reset}>
           <i className="fas fa-redo" aria-hidden="true" /> Reintentar
         </button>
+        <button className="btn" onClick={() => window.location.reload()}>
+          <i className="fas fa-sync-alt" aria-hidden="true" /> Recargar página
+        </button>
         <Link href="/mangas" className="btn">
           <i className="fas fa-images" aria-hidden="true" /> Ver galería
         </Link>

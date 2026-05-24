@@ -25,6 +25,9 @@ export default function GlobalError({
         <button className="btn" onClick={reset}>
           <i className="fas fa-redo" aria-hidden="true" /> Intentar de nuevo
         </button>
+        <button className="btn" onClick={() => window.location.reload()}>
+          <i className="fas fa-sync-alt" aria-hidden="true" /> Recargar página
+        </button>
         <Link href="/" className="btn">
           <i className="fas fa-home" aria-hidden="true" /> Ir al inicio
         </Link>
