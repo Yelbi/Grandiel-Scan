@@ -78,3 +78,40 @@ export const ALLOWED_IMAGE_HOSTS_HUMAN = [
   ...Array.from(EXACT_HOSTS),
   ...SUFFIX_HOSTS.map((s) => `*${s}`),
 ].join(', ');
+
+/**
+ * Codifica espacios y otros caracteres unsafe en una URL de imagen sin romper
+ * lo que ya esté codificado. Evita 404 cuando una portada tiene nombre con espacios
+ * o caracteres especiales y el server estático (Vercel/Linux) no los tolera.
+ *
+ * - Rutas locales `/img/Foo bar.webp` → `/img/Foo%20bar.webp`
+ * - URLs absolutas: encoda solo el pathname, preserva host/protocolo/query intactos.
+ * - URLs ya codificadas: no las re-encoda (detecta `%XX` y los respeta).
+ */
+export function normalizeImageSrc(src: string | null | undefined): string {
+  if (!src) return '';
+  const trimmed = src.trim();
+  if (!trimmed) return '';
+
+  // Helper: encodea cada segmento del path preservando los `/` y los `%XX` ya válidos.
+  const encodePath = (p: string) =>
+    p.split('/').map((seg) => {
+      // Si el segmento ya parece estar percent-encoded (contiene %XX), no lo toques.
+      if (/%[0-9A-Fa-f]{2}/.test(seg)) return seg;
+      return encodeURIComponent(seg);
+    }).join('/');
+
+  // Rutas locales relativas a `public/`
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return encodePath(trimmed);
+  }
+
+  // URLs absolutas: solo encodear el pathname, conservar el resto.
+  try {
+    const url = new URL(trimmed);
+    url.pathname = encodePath(url.pathname);
+    return url.toString();
+  } catch {
+    return trimmed;
+  }
+}

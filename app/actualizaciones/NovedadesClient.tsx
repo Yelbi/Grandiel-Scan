@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useMemo, memo } from 'react';
 import MangaCard from '@/components/manga/MangaCard';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 type Tab = 'actualizaciones' | 'nuevos';
@@ -36,7 +36,7 @@ const ActCard = memo(function ActCard({ manga }: { manga: Manga }) {
         <div className="manga-card-inner">
           {!error ? (
             <Image
-              src={manga.image}
+              src={normalizeImageSrc(manga.image)}
               alt={manga.title}
               width={200}
               height={280}

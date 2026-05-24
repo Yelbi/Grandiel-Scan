@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 import HeroWordCycle from './HeroWordCycle';
 
@@ -76,7 +76,7 @@ export default function HeroSection({
               >
                 <div className="hero__float-cover">
                   <Image
-                    src={manga.image}
+                    src={normalizeImageSrc(manga.image)}
                     alt=""
                     width={72}
                     height={104}

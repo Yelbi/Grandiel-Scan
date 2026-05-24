@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { HistoryEntry } from '@/lib/types';
 
 interface ContinueReadingProps {
@@ -53,7 +53,7 @@ function ContinueReadingCard({
             </div>
           ) : (
             <Image
-              src={image}
+              src={normalizeImageSrc(image)}
               alt={entry.title}
               width={200}
               height={280}

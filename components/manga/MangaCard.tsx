@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 const DAYS_NEW = 30;
@@ -93,7 +93,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
           ) : (
             <Image
               ref={imgRef}
-              src={manga.image}
+              src={normalizeImageSrc(manga.image)}
               alt={manga.title}
               width={200}
               height={280}

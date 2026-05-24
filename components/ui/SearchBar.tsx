@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { searchMangas } from '@/lib/search';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 interface SearchBarProps {
@@ -167,7 +167,7 @@ export default function SearchBar({ mangas }: SearchBarProps) {
                 >
                   <div className="search-result-cover">
                     <Image
-                      src={manga.image}
+                      src={normalizeImageSrc(manga.image)}
                       alt=""
                       width={40}
                       height={56}

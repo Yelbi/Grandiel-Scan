@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 interface Props {
@@ -55,7 +55,7 @@ export default function MostViewedPodium({ mangas }: Props) {
 
               <div className="podium__cover">
                 <Image
-                  src={manga.image}
+                  src={normalizeImageSrc(manga.image)}
                   alt={manga.title}
                   fill
                   sizes="(max-width: 600px) 33vw, 210px"

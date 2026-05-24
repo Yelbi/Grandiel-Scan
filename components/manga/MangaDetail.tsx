@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import MangaComments from './MangaComments';
 import MangaDetailActions from './MangaDetailActions';
 import MangaChapterList from './MangaChapterList';
@@ -22,7 +22,7 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
       <div className="manga-header">
         <div className="manga-header__cover">
           <Image
-            src={manga.image}
+            src={normalizeImageSrc(manga.image)}
             alt={`Portada de ${manga.title}`}
             width={220}
             height={310}

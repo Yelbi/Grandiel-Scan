@@ -10,7 +10,7 @@ import MangaCard from '@/components/manga/MangaCard';
 import PushSubscribeButton from '@/components/PushSubscribeButton';
 import FeedbackForm from '@/components/FeedbackForm';
 import { relativeDateTime } from '@/lib/utils';
-import { shouldOptimize } from '@/lib/image';
+import { shouldOptimize, normalizeImageSrc } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 const AVATARS = [
@@ -736,7 +736,7 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                     <Link href={`/manga/${entry.mangaId}`} className="perfil-history-item__cover">
                       {manga ? (
                         <Image
-                          src={manga.image}
+                          src={normalizeImageSrc(manga.image)}
                           alt={manga.title}
                           width={72}
                           height={100}
