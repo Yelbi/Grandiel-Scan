@@ -100,20 +100,24 @@ export async function POST(
     }
 
     const { text, chapter } = await req.json() as { text: string; chapter?: unknown };
-    if (!text?.trim() || text.trim().length > 500) {
+    const trimmedText = typeof text === 'string' ? text.trim() : '';
+    if (!trimmedText || trimmedText.length > 500) {
       return NextResponse.json({ error: 'Comentario inválido.' }, { status: 400 });
     }
     if (
       chapter !== undefined &&
-      (typeof chapter !== 'number' || !Number.isInteger(chapter) || chapter < 1)
+      (typeof chapter !== 'number' || !Number.isInteger(chapter) || chapter < 1 || chapter > 100_000)
     ) {
       return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
     }
     const chapterValue = chapter === undefined ? null : (chapter as number);
 
+    // Sanear < y > para prevenir inyección HTML en clientes que no escapen correctamente
+    const safeText = trimmedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
     const [comment] = await db
       .insert(comments)
-      .values({ mangaId, userId: user.id, text: text.trim(), chapter: chapterValue })
+      .values({ mangaId, userId: user.id, text: safeText, chapter: chapterValue })
       .returning();
 
     return NextResponse.json({ ok: true, comment });

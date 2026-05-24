@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -81,7 +82,7 @@ interface UserProfileContextValue {
   register: (username: string, password: string, avatar: string) => Promise<{ error?: string }>;
   login: (username: string, password: string) => Promise<{ error?: string }>;
   linkEmail: (email: string) => Promise<{ error?: string }>;
-  updateProfile: (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => Promise<void>;
+  updateProfile: (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -92,7 +93,7 @@ const UserProfileContext = createContext<UserProfileContextValue>({
   register:      async () => ({}),
   login:         async () => ({}),
   linkEmail:     async () => ({}),
-  updateProfile: async () => {},
+  updateProfile: async () => ({}),
   logout:        async () => {},
 });
 
@@ -142,11 +143,16 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
 
     const avatar = (metadata?.avatar as string | undefined) ?? '/img/avatars/avatar1.svg';
 
-    const { data: newUser } = await supabase
+    const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({ id: userId, username, avatar })
       .select('id, username, avatar, created_at')
       .single();
+
+    if (insertError) {
+      console.error('[loadProfile] Error creando perfil de usuario:', insertError.message);
+      return;
+    }
 
     if (newUser) {
       setProfile({
@@ -262,17 +268,19 @@ function UserProfileProvider({ children }: { children: ReactNode }) {
   );
 
   const updateProfile = useCallback(
-    async (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>) => {
-      if (!profile) return;
-      const { error } = await supabase
-        .from('users')
-        .update(updates)
-        .eq('id', profile.id);
-      if (!error) {
-        setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
-      }
+    async (updates: Partial<Pick<UserProfile, 'username' | 'avatar'>>): Promise<{ error?: string }> => {
+      if (!profile) return { error: 'No estás autenticado.' };
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json() as { error?: string; username?: string; avatar?: string };
+      if (!res.ok || data.error) return { error: data.error ?? 'Error al actualizar el perfil.' };
+      setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      return {};
     },
-    [profile, supabase],
+    [profile],
   );
 
   const logout = useCallback(async () => {
@@ -313,6 +321,8 @@ function FavoritesProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => createClient());
   const { profile } = useUserProfile();
   const [favorites, setFavorites] = useState<string[]>([]);
+  // Evita doble-toggle mientras una petición está en vuelo (race condition)
+  const pendingRef = useRef<Set<string>>(new Set());
 
   // Recarga favoritos cuando cambia el estado de auth
   useEffect(() => {
@@ -338,9 +348,10 @@ function FavoritesProvider({ children }: { children: ReactNode }) {
     [favorites],
   );
 
-  // Actualización optimista: el estado local cambia de inmediato,
-  // la BD se actualiza en segundo plano.
+  // Actualización optimista con bloqueo de doble-toggle durante peticiones en vuelo.
   const toggle = useCallback((mangaId: string) => {
+    if (pendingRef.current.has(mangaId)) return;
+
     const isFav = favorites.includes(mangaId);
     const next = isFav
       ? favorites.filter((id) => id !== mangaId)
@@ -349,14 +360,15 @@ function FavoritesProvider({ children }: { children: ReactNode }) {
     setFavorites(next);
 
     if (profile) {
-      if (isFav) {
-        supabase.from('favorites').delete()
-          .eq('user_id', profile.id).eq('manga_id', mangaId)
-          .then(({ error }) => { if (error) setFavorites(favorites); });
-      } else {
-        supabase.from('favorites').insert({ user_id: profile.id, manga_id: mangaId })
-          .then(({ error }) => { if (error) setFavorites(favorites); });
-      }
+      pendingRef.current.add(mangaId);
+      const op = isFav
+        ? supabase.from('favorites').delete().eq('user_id', profile.id).eq('manga_id', mangaId)
+        : supabase.from('favorites').insert({ user_id: profile.id, manga_id: mangaId });
+
+      op.then(({ error }) => {
+        pendingRef.current.delete(mangaId);
+        if (error) setFavorites(favorites);
+      });
     } else {
       try { localStorage.setItem(CONFIG.STORAGE_KEYS.FAVORITES, JSON.stringify(next)); } catch {}
     }
@@ -431,15 +443,18 @@ function HistoryProvider({ children }: { children: ReactNode }) {
   }, [profile?.id, supabase]);
 
   const addEntry = useCallback((entry: HistoryEntry) => {
-    // Calcular el nuevo estado fuera del updater para evitar side effects impuros
-    const filtered = history.filter((e) => e.mangaId !== entry.mangaId);
-    const next = [entry, ...filtered].slice(0, CONFIG.PAGINATION.MAX_HISTORY_ITEMS);
+    // Updater funcional para evitar la race condition de closure stale al
+    // llamar addEntry varias veces seguidas (ej: cambio rápido de capítulos).
+    setHistory((prev) => {
+      const next = [entry, ...prev.filter((e) => e.mangaId !== entry.mangaId)]
+        .slice(0, CONFIG.PAGINATION.MAX_HISTORY_ITEMS);
 
-    setHistory(next);
+      if (!profile) {
+        try { localStorage.setItem(CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(next)); } catch {}
+      }
 
-    if (!profile) {
-      try { localStorage.setItem(CONFIG.STORAGE_KEYS.HISTORY, JSON.stringify(next)); } catch {}
-    }
+      return next;
+    });
 
     if (profile) {
       // Upsert atómico: elimina la race condition del delete+insert previo.
@@ -450,12 +465,13 @@ function HistoryProvider({ children }: { children: ReactNode }) {
           manga_id:   entry.mangaId,
           chapter:    entry.chapter,
           page:       entry.page ?? 1,
+          title:      entry.title ?? '',
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id,manga_id' },
       );
     }
-  }, [history, profile, supabase]);
+  }, [profile, supabase]);
 
   const getLastRead = useCallback(
     (mangaId: string) => history.find((e) => e.mangaId === mangaId) ?? null,

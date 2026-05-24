@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { ilike } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
@@ -27,11 +27,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Buscar el email interno por username (case-insensitive)
+    // Buscar por lower(username) para usar el índice funcional y evitar seq scan.
     const [user] = await db
       .select({ authEmail: users.authEmail })
       .from(users)
-      .where(ilike(users.username, trimmed))
+      .where(eq(sql`lower(${users.username})`, trimmed.toLowerCase()))
       .limit(1);
 
     if (!user?.authEmail) {
@@ -56,10 +56,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      access_token:  data.session.access_token,
-      refresh_token: data.session.refresh_token,
-    });
+    return NextResponse.json(
+      {
+        access_token:  data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch {
     return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
   }

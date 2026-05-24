@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { db } from './db';
 import { mangas, chapters } from './db/schema';
-import { eq, desc, asc, sql, and } from 'drizzle-orm';
+import { eq, desc, asc, sql, and, inArray } from 'drizzle-orm';
 import type { Manga, Chapter } from './types';
 
 // ── Mappers ──────────────────────────────────────────────────────────────────
@@ -194,6 +194,87 @@ export async function getMostViewed(limit = 6): Promise<Manga[]> {
     return await _getMostViewed(limit);
   } catch (err) {
     console.error('[data] getMostViewed error:', err);
+    return [];
+  }
+}
+
+const _getRecentMangas = unstable_cache(
+  async function _getRecentMangas(limit: number): Promise<Manga[]> {
+    const rows = await db
+      .select()
+      .from(mangas)
+      .orderBy(desc(mangas.lastUpdated))
+      .limit(limit);
+    return rows.map((r) => toManga(r));
+  },
+  ['recent-mangas'],
+  { tags: ['mangas'], revalidate: 300 },
+);
+
+/** N most recently updated mangas — for homepage and updates page. */
+export async function getRecentMangas(limit = 20): Promise<Manga[]> {
+  try {
+    return await _getRecentMangas(limit);
+  } catch (err) {
+    console.error('[data] getRecentMangas error:', err);
+    return [];
+  }
+}
+
+const _getFeaturedMangas = unstable_cache(
+  async function _getFeaturedMangas(): Promise<Manga[]> {
+    const rows = await db
+      .select()
+      .from(mangas)
+      .where(eq(mangas.featured, true))
+      .orderBy(desc(mangas.lastUpdated));
+    return rows.map((r) => toManga(r));
+  },
+  ['featured-mangas'],
+  { tags: ['mangas'], revalidate: 300 },
+);
+
+/** All mangas marked as featured — for the hero/banner section. */
+export async function getFeaturedMangas(): Promise<Manga[]> {
+  try {
+    return await _getFeaturedMangas();
+  } catch (err) {
+    console.error('[data] getFeaturedMangas error:', err);
+    return [];
+  }
+}
+
+const _getMangaCount = unstable_cache(
+  async function _getMangaCount(): Promise<number> {
+    const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(mangas);
+    return row?.n ?? 0;
+  },
+  ['manga-count'],
+  { tags: ['mangas'], revalidate: 300 },
+);
+
+/** Total number of mangas — for stats bar. Cheaper than fetching all rows. */
+export async function getMangaCount(): Promise<number> {
+  try {
+    return await _getMangaCount();
+  } catch (err) {
+    console.error('[data] getMangaCount error:', err);
+    return 0;
+  }
+}
+
+/** Fetch a specific set of mangas by their IDs — for favorites/history pages.
+ *  Not cached because the set of IDs is dynamic (user-specific). */
+export async function getMangasByIds(ids: string[]): Promise<Manga[]> {
+  if (ids.length === 0) return [];
+  try {
+    const rows = await db
+      .select()
+      .from(mangas)
+      .where(inArray(mangas.id, ids));
+    return rows.map((r) => toManga(r));
+  } catch (err) {
+    console.error('[data] getMangasByIds error:', err);
     return [];
   }
 }

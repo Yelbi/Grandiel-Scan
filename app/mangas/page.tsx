@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 300;
+// force-dynamic: root layout calls headers() for CSP nonce — incompatible with ISR.
+// Data queries use unstable_cache internally, so DB performance is preserved.
+export const dynamic = 'force-dynamic';
 
 import MangaGrid from '@/components/manga/MangaGrid';
 import { getAllMangas } from '@/lib/data';

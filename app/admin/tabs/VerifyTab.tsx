@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { VerifyEntry, SharedTabProps } from '../admin-types';
 
 export function VerifyTab({ mangas, notify }: SharedTabProps) {
@@ -10,7 +10,10 @@ export function VerifyTab({ mangas, notify }: SharedTabProps) {
   const [vrSaving,   setVrSaving]   = useState(false);
   const [vrFilter,   setVrFilter]   = useState<'all' | 'ok' | 'different' | 'error' | 'no-url'>('all');
   const [vrLoaded,   setVrLoaded]   = useState(false);
-  const [vrProgress, setVrProgress] = useState<{ current: number; total: number } | null>(null);
+  const [vrProgress,     setVrProgress]     = useState<{ current: number; total: number } | null>(null);
+  const [vrConcurrency,  setVrConcurrency]  = useState(5);
+  const [vrMaxPages,     setVrMaxPages]     = useState(15);
+  const abortRef = useRef(false);
 
   async function loadChapters(mangaId: string) {
     if (!mangaId) return;
@@ -49,23 +52,47 @@ export function VerifyTab({ mangas, notify }: SharedTabProps) {
     }
   }
 
+  function stopVerify() {
+    abortRef.current = true;
+  }
+
   async function runVerify() {
     if (vrRunning) return;
-    const snapshot = vrEntries.filter((e) => e.baseUrl);
-    if (!snapshot.length) { notify('err', 'No hay capítulos con URL para verificar.'); return; }
+    const eligible  = vrEntries.filter((e) => e.baseUrl);
+    const snapshot  = eligible.filter((e) => e.currentCount < vrMaxPages);
+    const skipped   = eligible.length - snapshot.length;
+    if (!snapshot.length) {
+      notify('err', eligible.length
+        ? `Ningún capítulo tiene menos de ${vrMaxPages} páginas. Sube el umbral.`
+        : 'No hay capítulos con URL para verificar.');
+      return;
+    }
+    abortRef.current = false;
     setVrRunning(true);
     setVrProgress({ current: 0, total: snapshot.length });
+    const targets = new Set(snapshot.map((e) => e.chapter));
     setVrEntries((prev) => prev.map((e) =>
-      e.baseUrl ? { ...e, status: 'idle', detectedCount: undefined, detectedPattern: undefined, detectedPages: undefined, errorMsg: undefined } : e,
+      targets.has(e.chapter) ? { ...e, status: 'idle', detectedCount: undefined, detectedPattern: undefined, detectedPages: undefined, errorMsg: undefined } : e,
     ));
     let done = 0;
-    for (const entry of snapshot) {
-      await probeOne(entry);
-      done++;
-      setVrProgress({ current: done, total: snapshot.length });
+    const queue = [...snapshot];
+    async function worker() {
+      while (queue.length > 0 && !abortRef.current) {
+        const entry = queue.shift();
+        if (!entry) break;
+        await probeOne(entry);
+        done++;
+        setVrProgress({ current: done, total: snapshot.length });
+      }
     }
+    await Promise.all(Array.from({ length: vrConcurrency }, worker));
+    const stopped = abortRef.current;
+    abortRef.current = false;
     setVrRunning(false); setVrProgress(null);
-    notify('ok', 'Verificación completada.');
+    const skipMsg = skipped > 0 ? ` (${skipped} omitidos por tener ≥ ${vrMaxPages} págs)` : '';
+    notify('ok', stopped
+      ? `Verificación detenida (${done}/${snapshot.length} procesados${skipMsg}).`
+      : `Verificación completada${skipMsg}.`);
   }
 
   async function retryOne(chapterNum: number) {
@@ -188,16 +215,39 @@ export function VerifyTab({ mangas, notify }: SharedTabProps) {
           )}
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
             <button type="button" className="btn-primary" onClick={runVerify} disabled={vrRunning || vrSaving}>
               {vrRunning ? <><i className="fas fa-spinner fa-spin" /> Verificando…</> : <><i className="fas fa-search" /> Verificar todos</>}
             </button>
+            {vrRunning && (
+              <button type="button" onClick={stopVerify}
+                style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid rgba(255,50,50,.4)', background: 'rgba(255,0,0,.1)', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '.875rem' }}>
+                <i className="fas fa-stop" /> Detener
+              </button>
+            )}
             {vrEntries.some((e) => e.status === 'different') && (
               <button type="button" onClick={updateAllDifferent} disabled={vrSaving || vrRunning}
                 style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid rgba(240,165,0,.4)', background: 'rgba(240,165,0,.1)', color: '#f0a500', cursor: 'pointer', fontSize: '.875rem' }}>
                 {vrSaving ? <><i className="fas fa-spinner fa-spin" /> Actualizando…</> : <><i className="fas fa-sync-alt" /> Actualizar distintos ({vrEntries.filter((e) => e.status === 'different').length})</>}
               </button>
             )}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14, fontSize: '.8rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label htmlFor="vr-maxpages" style={{ whiteSpace: 'nowrap' }}>Solo si &lt;</label>
+                <input id="vr-maxpages" type="number" min={1} max={999} value={vrMaxPages}
+                  onChange={(e) => setVrMaxPages(Math.max(1, Math.min(999, Number(e.target.value) || 1)))}
+                  disabled={vrRunning}
+                  style={{ width: 56, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', fontSize: '.78rem' }} />
+                <span>págs</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <label htmlFor="vr-concurrency" style={{ whiteSpace: 'nowrap' }}>Paralelo: <strong style={{ color: 'var(--color-text)' }}>{vrConcurrency}</strong></label>
+                <input id="vr-concurrency" type="range" min={1} max={10} value={vrConcurrency}
+                  onChange={(e) => setVrConcurrency(Number(e.target.value))}
+                  disabled={vrRunning}
+                  style={{ width: 80, accentColor: 'var(--color-primary)', cursor: vrRunning ? 'not-allowed' : 'pointer' }} />
+              </div>
+            </div>
           </div>
 
           {/* Filters */}

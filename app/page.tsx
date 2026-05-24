@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 300; // ISR: revalidar cada 5 minutos
+// force-dynamic: root layout calls headers() for CSP nonce — incompatible with ISR.
+// Data queries use unstable_cache internally, so DB performance is preserved.
+export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import MangaCard from '@/components/manga/MangaCard';
@@ -8,7 +10,7 @@ import ContinueReading from '@/components/manga/ContinueReading';
 import HeroSection from '@/components/home/HeroSection';
 import MostViewedPodium from '@/components/home/MostViewedPodium';
 import { MangaGridSkeleton } from '@/components/manga/MangaCardSkeleton';
-import { getAllMangas, getMostViewed } from '@/lib/data';
+import { getRecentMangas, getMostViewed, getMangaCount } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Grandiel Scan - Manhwas en Español | Inicio',
@@ -26,25 +28,24 @@ const jsonLd = {
 };
 
 export default async function HomePage() {
-  // F-1: envolver en try/catch para evitar que un fallo de DB rompa toda la página
-  let mangas: Awaited<ReturnType<typeof getAllMangas>> = [];
+  // Queries paralelas y acotadas: no se carga todo el catálogo, solo lo necesario.
+  let recentMangas: Awaited<ReturnType<typeof getRecentMangas>> = [];
   let mostViewed: Awaited<ReturnType<typeof getMostViewed>> = [];
+  let totalMangas = 0;
 
   try {
-    [mangas, mostViewed] = await Promise.all([
-      getAllMangas(),
+    [recentMangas, mostViewed, totalMangas] = await Promise.all([
+      getRecentMangas(45),
       getMostViewed(3),
+      getMangaCount(),
     ]);
   } catch (err) {
     if (process.env.NODE_ENV === 'development') console.error('[HomePage] Error cargando datos:', err);
   }
 
-  // F-7: orden explícito por fecha descendente como red de seguridad
-  const sorted = [...mangas].sort(
-    (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
-  );
-  const recent = sorted.slice(0, 12);
-  const heroCovers = sorted.slice(0, 45);
+  // DB ya devuelve ordenado por lastUpdated DESC — no se necesita re-ordenar.
+  const recent = recentMangas.slice(0, 12);
+  const heroCovers = recentMangas;
 
   return (
     <>
@@ -57,10 +58,10 @@ export default async function HomePage() {
       <HeroSection heroCovers={heroCovers} />
 
       {/* ===== STATS BAR ===== */}
-      {mangas.length > 0 && (
+      {totalMangas > 0 && (
         <div className="stats-bar" aria-label="Estadísticas del sitio">
           <div className="stats-bar__item">
-            <strong className="stats-bar__value">{mangas.length}+</strong>
+            <strong className="stats-bar__value">{totalMangas}+</strong>
             <span className="stats-bar__label">Títulos</span>
           </div>
           <div className="stats-bar__divider" aria-hidden="true" />
@@ -84,7 +85,7 @@ export default async function HomePage() {
       <div className="curva">
         {/* ===== CONTINUAR LEYENDO ===== */}
         {/* CLS prevenido por el estado mounted interno del componente (UX-4) */}
-        <ContinueReading mangaImages={Object.fromEntries(mangas.map((m) => [m.id, m.image]))} />
+        <ContinueReading mangaImages={Object.fromEntries(recentMangas.map((m) => [m.id, m.image]))} />
 
         {/* ===== MÁS VISTOS ===== */}
         {mostViewed.length >= 1 && (

@@ -36,9 +36,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ChapterPage({ params }: Props) {
   const { mangaId, cap } = await params;
-  const capNum = parseFloat(cap);
+  // Number() rechaza strings parciales como "3abc" (parseFloat los aceptaría como 3)
+  const capNum = Number(cap);
 
-  if (isNaN(capNum)) notFound();
+  if (!Number.isFinite(capNum) || capNum < 0) notFound();
 
   const [manga, chapter] = await Promise.all([
     getMangaById(mangaId),

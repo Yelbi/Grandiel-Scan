@@ -61,9 +61,17 @@ export async function rateLimit(
   }
 }
 
-/** Extrae la IP del cliente del request de Next.js. */
+/** Extrae la IP del cliente del request de Next.js.
+ *
+ * En Vercel, el proxy añade la IP real del cliente al FINAL de x-forwarded-for
+ * para que no pueda ser falsificada por el cliente. Se usa la última IP en la
+ * cadena, que es la añadida por la infraestructura de Vercel.
+ */
 export function getClientIp(req: Request): string {
   const forwarded = (req as Request & { headers: Headers }).headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
+  if (forwarded) {
+    const parts = forwarded.split(',');
+    return parts[parts.length - 1].trim();
+  }
   return 'unknown';
 }

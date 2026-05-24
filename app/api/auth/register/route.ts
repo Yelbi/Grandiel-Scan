@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
-import { ilike } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
       '/img/avatars/avatar5.svg', '/img/avatars/avatar6.svg',
       '/img/avatars/avatar7.svg', '/img/avatars/avatar8.svg',
     ]);
-    const SUPABASE_AVATAR_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\/[a-zA-Z0-9_.-]+\.(?:svg|png|jpg|webp)$/;
+    // Nombre de archivo: alfanumérico + guiones/puntos, sin '..' para evitar path traversal
+    const SUPABASE_AVATAR_PATTERN = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\/(?!.*\.\.)[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*\.(?:svg|png|jpg|webp)$/;
     const avatarVal = avatar?.trim() ?? '/img/avatars/avatar1.svg';
     if (!LOCAL_AVATARS.has(avatarVal) && !SUPABASE_AVATAR_PATTERN.test(avatarVal)) {
       return NextResponse.json(
@@ -81,11 +82,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar que el username no esté en uso (case-insensitive)
+    // Verificar unicidad usando el índice funcional lower(username) — evita seq scan.
     const existing = await db
       .select({ id: users.id })
       .from(users)
-      .where(ilike(users.username, trimmed))
+      .where(eq(sql`lower(${users.username})`, trimmed.toLowerCase()))
       .limit(1);
 
     if (existing.length > 0) {
@@ -106,8 +107,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError || !authData.user) {
+      console.error('[register] Auth error:', authError?.message);
       return NextResponse.json(
-        { error: authError?.message ?? 'Error al crear la cuenta.' },
+        { error: 'Error al crear la cuenta. Inténtalo de nuevo.' },
         { status: 500 },
       );
     }
@@ -140,7 +142,7 @@ export async function POST(req: NextRequest) {
         ? ((dbErr as Error & { cause?: Error }).cause?.message ?? dbErr.message)
         : String(dbErr);
       console.error('[register] DB insert failed:', cause, dbErr);
-      return NextResponse.json({ error: cause }, { status: 500 });
+      return NextResponse.json({ error: 'Error al guardar el perfil. Inténtalo de nuevo.' }, { status: 500 });
     }
 
     // Iniciar sesión automáticamente y devolver tokens al cliente (nunca exponer authEmail)
@@ -150,14 +152,16 @@ export async function POST(req: NextRequest) {
       password: password!,
     });
 
-    return NextResponse.json({
-      ok:            true,
-      access_token:  signInData.session?.access_token  ?? null,
-      refresh_token: signInData.session?.refresh_token ?? null,
-    });
+    return NextResponse.json(
+      {
+        ok:            true,
+        access_token:  signInData.session?.access_token  ?? null,
+        refresh_token: signInData.session?.refresh_token ?? null,
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[register] Unexpected error:', msg, err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[register] Unexpected error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Error interno del servidor.' }, { status: 500 });
   }
 }

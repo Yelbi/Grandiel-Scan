@@ -10,6 +10,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ── Mangas ──────────────────────────────────────────────────────────────────
 export const mangas = pgTable(
@@ -65,9 +66,15 @@ export const users = pgTable(
     // Email real opcional que el usuario puede enlazar a su cuenta
     email:     text('email'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    // Roles: 'user' | 'admin'. Listo para migrar admin de Basic Auth a sesión+rol.
+    role:      text('role').notNull().default('user'),
   },
   (t) => [
-    uniqueIndex('users_username_unique').on(t.username),
+    // Unicidad case-insensitive: previene registrar 'GrandUser' y 'granduser' como distintos.
+    // Reemplaza el antiguo uniqueIndex case-sensitive. Requiere npm run db:migrate.
+    uniqueIndex('users_username_lower_unique').on(sql`lower(${t.username})`),
+    // Índice regular para acelerar ORDER BY / SELECT en consultas no-unique.
+    index('users_username_lower_idx').on(sql`lower(${t.username})`),
   ],
 );
 

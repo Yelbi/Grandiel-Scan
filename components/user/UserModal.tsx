@@ -21,6 +21,10 @@ const AVATARS = [
   '/img/avatars/avatar2.svg',
   '/img/avatars/avatar3.svg',
   '/img/avatars/avatar4.svg',
+  '/img/avatars/avatar5.svg',
+  '/img/avatars/avatar6.svg',
+  '/img/avatars/avatar7.svg',
+  '/img/avatars/avatar8.svg',
 ];
 
 type ModalView = 'register' | 'login' | 'profile' | 'edit' | 'link-email';
@@ -146,14 +150,27 @@ export default function UserModal({ onClose }: UserModalProps) {
     if (result.error) setLoginError(result.error);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const [editLoading, setEditLoading] = useState(false);
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = editUsername.trim();
     if (trimmed.length < 3 || trimmed.length > 20) {
       setEditError('El nombre debe tener entre 3 y 20 caracteres.');
       return;
     }
-    updateProfile({ username: trimmed, avatar: editAvatar });
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+      setEditError('Solo letras, números y guiones bajos (_).');
+      return;
+    }
+    setEditLoading(true);
+    setEditError('');
+    const result = await updateProfile({ username: trimmed, avatar: editAvatar });
+    setEditLoading(false);
+    if (result.error) {
+      setEditError(result.error);
+      return;
+    }
     setView('profile');
   };
 
@@ -430,7 +447,9 @@ export default function UserModal({ onClose }: UserModalProps) {
                 <button type="button" className="btn-secondary" onClick={() => setView('profile')}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary">Guardar Cambios</button>
+                <button type="submit" className="btn-primary" disabled={editLoading}>
+                  {editLoading ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
               </div>
             </form>
           </>

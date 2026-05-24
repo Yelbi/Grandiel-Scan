@@ -1,18 +1,15 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 600; // ISR: revalidate every 10 minutes
-export const dynamicParams = true; // render on-demand, then cache
+// force-dynamic: root layout calls headers() for CSP nonce — incompatible with ISR.
+// generateStaticParams + revalidate = DYNAMIC_SERVER_USAGE crash in production.
+// getMangaById uses unstable_cache with tag revalidation, so DB performance is preserved.
+export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import MangaDetail from '@/components/manga/MangaDetail';
-import { getAllMangas, getMangaById } from '@/lib/data';
+import { getMangaById } from '@/lib/data';
 
 interface Props {
   params: Promise<{ id: string }>;
-}
-
-export async function generateStaticParams() {
-  const mangas = await getAllMangas();
-  return mangas.map((m) => ({ id: m.id }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

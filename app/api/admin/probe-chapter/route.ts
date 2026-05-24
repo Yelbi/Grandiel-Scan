@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TIMEOUT_MS          = 10_000;
-const BATCH_SIZE          = 16;
+const TIMEOUT_MS          = 5_000;
+const BATCH_SIZE          = 24;
 const MAX_PAGES           = 600;
 const MAX_PARTS           = 80;
 const MAX_PER_PART        = 60;

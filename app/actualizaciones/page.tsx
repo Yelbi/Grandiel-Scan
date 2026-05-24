@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 
-export const revalidate = 300; // ISR: revalidate every 5 minutes
-import { getAllMangas } from '@/lib/data';
+// force-dynamic: root layout calls headers() for CSP nonce — incompatible with ISR.
+// Data queries use unstable_cache internally, so DB performance is preserved.
+export const dynamic = 'force-dynamic';
+import { getRecentMangas } from '@/lib/data';
 import NovedadesClient from './NovedadesClient';
 
 export const metadata: Metadata = {
@@ -10,6 +12,6 @@ export const metadata: Metadata = {
 };
 
 export default async function ActualizacionesPage() {
-  const mangas = await getAllMangas();
+  const mangas = await getRecentMangas(100);
   return <NovedadesClient mangas={mangas} />;
 }

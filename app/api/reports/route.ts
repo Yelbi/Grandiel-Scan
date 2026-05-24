@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         : typeof chapter === 'string'
           ? parseFloat(chapter)
           : NaN;
-      if (!isFinite(chapterNum) || chapterNum < 0) {
+      if (!isFinite(chapterNum) || chapterNum < 0 || chapterNum > 100_000) {
         return NextResponse.json({ error: 'Número de capítulo inválido.' }, { status: 400 });
       }
       if (!reason || !CHAPTER_REASONS.includes(reason as typeof CHAPTER_REASONS[number])) {

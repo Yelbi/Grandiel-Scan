@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import path from 'path';
+import { withSentryConfig } from '@sentry/nextjs';
 
 // La CSP con nonces se genera por request en middleware.ts.
 // Aquí solo se definen los headers que son estáticos y no cambian por request.
@@ -64,4 +65,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Subir source maps a Sentry en cada build de producción.
+  // Requiere SENTRY_AUTH_TOKEN en las variables de entorno de Vercel.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true, // Silenciar logs de Sentry durante el build
+  sourcemaps: { disable: false }, // Subir source maps solo en prod (ver SENTRY_AUTH_TOKEN)
+  disableLogger: true,
+});
