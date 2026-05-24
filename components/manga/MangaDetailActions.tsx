@@ -56,7 +56,7 @@ export default function MangaDetailActions({ manga }: { manga: Manga }) {
           <i className="fas fa-redo" aria-hidden="true" /> Continuar · Cap. {lastReadChapter}
         </Link>
       )}
-      <div className="favorite-btn-wrapper">
+      <div className="manga-fav-wrapper">
         <button
           className={`manga-fav-btn${fav ? ' manga-fav-btn--active' : ''}`}
           onClick={handleFavorite}
@@ -66,8 +66,8 @@ export default function MangaDetailActions({ manga }: { manga: Manga }) {
           {fav ? ' En Favoritos' : ' Favoritos'}
         </button>
         {showLoginHint && (
-          <span className="favorite-login-hint" role="alert" aria-live="assertive">
-            Inicia sesión para guardar favoritos
+          <span className="manga-fav-hint" role="alert" aria-live="assertive">
+            <i className="fas fa-lock" aria-hidden="true" /> Inicia sesión para guardar favoritos
           </span>
         )}
       </div>

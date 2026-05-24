@@ -63,18 +63,19 @@ export default function HeroSection({
       <div className="hero__bg-glow" />
 
       {/* Portadas dispersas — renderizadas en servidor, decorativas.
-          F-2: solo se renderizan si hay portadas disponibles. */}
+          F-2: solo se renderizan si hay portadas disponibles.
+          La rotación va inline directo en `.hero__float-cover` para no depender de
+          herencia de variables CSS — más simple y robusto. */}
       {heroCovers.length > 0 && (
         <div className="hero__scatter" aria-hidden="true">
           {SCATTER.map((pos, i) => {
             const manga = heroCovers[i % heroCovers.length];
             return (
-              <div
-                key={i}
-                className="hero__float"
-                style={{ '--base-rot': `${pos.r}deg` } as React.CSSProperties}
-              >
-                <div className="hero__float-cover">
+              <div key={i} className="hero__float">
+                <div
+                  className="hero__float-cover"
+                  style={{ transform: `rotate(${pos.r}deg)` }}
+                >
                   <Image
                     src={normalizeImageSrc(manga.image)}
                     alt=""

@@ -584,6 +584,7 @@ mark.search-highlight {
 .favorite-btn-wrapper {
   opacity: 0;
   right: var(--spacing-xs);
+  top: var(--spacing-xs);
   transition: opacity var(--transition-fast);
 }
 
@@ -1315,7 +1316,20 @@ mark.search-highlight {
 
 /* ===== MANGA DETAIL PAGE ===== */
 
-/* Boton de favorito en pagina de manga */
+/* ============================================================
+   BOTÓN DE FAVORITO EN PÁGINA DE DETALLE
+   Independiente del .favorite-btn de las cards (corazón en esquina):
+   - Etiqueta visible con texto ("Favoritos" / "En Favoritos").
+   - Siempre visible (no oculto-hasta-hover).
+   - Border outlined + fill al activarse.
+   - Hint de login a la DERECHA del botón (no abajo).
+   ============================================================ */
+.manga-fav-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .manga-fav-btn {
   display: inline-flex;
   align-items: center;
@@ -1326,30 +1340,107 @@ mark.search-highlight {
   border-radius: var(--border-radius-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  font-weight: 600;
   font-family: var(--font-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
-  margin: var(--spacing-md) 0;
+  margin: 0;
 }
 
 .manga-fav-btn i {
   font-size: var(--font-size-base);
-  transition: color var(--transition-fast);
+  transition: transform var(--transition-fast);
 }
 
 .manga-fav-btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+  background: rgba(255, 50, 50, 0.06);
+}
+
+.manga-fav-btn:hover i {
+  transform: scale(1.15);
+}
+
+.manga-fav-btn:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .manga-fav-btn--active {
   border-color: var(--color-primary);
-  background: rgba(255, 0, 0, 0.08);
-  color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .manga-fav-btn--active i {
-  color: var(--color-primary);
+  color: #fff;
+}
+
+.manga-fav-btn--active:hover {
+  background: var(--color-primary);
+  color: #fff;
+  filter: brightness(1.1);
+}
+
+/* Hint de "Inicia sesión" — sale por la derecha del botón, no debajo */
+.manga-fav-hint {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  pointer-events: none;
+  z-index: 20;
+  animation: manga-fav-hint-in 0.2s ease;
+}
+
+.manga-fav-hint i {
+  font-size: 11px;
+  margin-right: 4px;
+}
+
+.manga-fav-hint::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: rgba(0, 0, 0, 0.9);
+}
+
+@keyframes manga-fav-hint-in {
+  from { opacity: 0; transform: translate(-4px, -50%); }
+  to   { opacity: 1; transform: translate(0,    -50%); }
+}
+
+/* En móvil el hint baja para no salirse del viewport */
+@media (max-width: 600px) {
+  .manga-fav-hint {
+    left: 0;
+    top: calc(100% + 8px);
+    transform: none;
+    animation: manga-fav-hint-in-mobile 0.2s ease;
+  }
+  .manga-fav-hint::before {
+    right: auto;
+    left: 12px;
+    top: auto;
+    bottom: 100%;
+    transform: none;
+    border-right-color: transparent;
+    border-bottom-color: rgba(0, 0, 0, 0.9);
+  }
+  @keyframes manga-fav-hint-in-mobile {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 }
 
 /* Badges de tipo y estado */
@@ -1798,9 +1889,13 @@ mark.search-highlight {
    HERO — PORTADAS DISPERSAS EN CAÍDA
    ============================================================ */
 
+/* `transform` con `var(--base-rot)` interpolado dentro de un keyframe NO funciona
+   en todos los navegadores sin registrar la propiedad con `@property`. La solución
+   compatible: animación solo de translateY en el padre, rotación estática en el hijo
+   (cada elemento tiene su propio transform stack y el navegador los compone visualmente). */
 @keyframes floatDown {
-  from { transform: translateY(-130px) rotate(var(--base-rot, 0deg)); }
-  to   { transform: translateY(calc(100vh + 130px)) rotate(var(--base-rot, 0deg)); }
+  from { transform: translateY(-130px); }
+  to   { transform: translateY(calc(100vh + 130px)); }
 }
 
 .hero__scatter {
@@ -1887,6 +1982,8 @@ mark.search-highlight {
   opacity: 0.45;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   background: rgba(128, 128, 128, 0.3);
+  /* La rotación se aplica inline desde HeroSection.tsx (style={{ transform: ... }}).
+     Inline gana en specificity y evita problemas de herencia de variables CSS. */
 }
 
 [data-theme="light"] .hero__float-cover {
@@ -2376,12 +2473,6 @@ mark.search-highlight {
 /* Ajuste del botón de favoritos dentro de quick-actions */
 .manga-quick-actions .manga-fav-btn {
   margin: 0;
-}
-
-/* El wrapper de favoritos en la página de detalle siempre visible (no es overlay de tarjeta) */
-.manga-quick-actions .favorite-btn-wrapper {
-  position: relative;
-  opacity: 1;
 }
 
 /* ============================================================
