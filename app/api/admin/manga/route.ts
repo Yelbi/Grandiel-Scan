@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { mangas, chapters } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidateManga } from '@/lib/revalidate';
+import { isValidImageUrl, ALLOWED_IMAGE_HOSTS_HUMAN } from '@/lib/image';
 
 /* ── GET — listar todos los mangas ── */
 export async function GET() {
@@ -22,6 +23,14 @@ export async function POST(req: NextRequest) {
 
     if (!id || !title) {
       return NextResponse.json({ error: 'Faltan campos obligatorios.' }, { status: 400 });
+    }
+
+    // Validar URL de portada — evita guardar URLs que después fallan en el frontend
+    if (image && !isValidImageUrl(image)) {
+      return NextResponse.json(
+        { error: `URL de portada inválida. Hosts permitidos: ${ALLOWED_IMAGE_HOSTS_HUMAN}, o rutas locales (/img/...).` },
+        { status: 400 },
+      );
     }
 
     const existing = await db.select({ id: mangas.id }).from(mangas).where(eq(mangas.id, id)).limit(1);
@@ -60,6 +69,14 @@ export async function PATCH(req: NextRequest) {
     const { id, title, image, description, genres, type, status, dateAdded, featured } = await req.json();
 
     if (!id) return NextResponse.json({ error: 'id requerido.' }, { status: 400 });
+
+    // Validar URL de portada si se está actualizando
+    if (image !== undefined && !isValidImageUrl(image)) {
+      return NextResponse.json(
+        { error: `URL de portada inválida. Hosts permitidos: ${ALLOWED_IMAGE_HOSTS_HUMAN}, o rutas locales (/img/...).` },
+        { status: 400 },
+      );
+    }
 
     const existing = await db.select({ id: mangas.id }).from(mangas).where(eq(mangas.id, id)).limit(1);
     if (existing.length === 0) {

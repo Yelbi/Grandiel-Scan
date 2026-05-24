@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { shouldOptimize } from '@/lib/image';
 import MangaComments from './MangaComments';
 import MangaDetailActions from './MangaDetailActions';
 import MangaChapterList from './MangaChapterList';
@@ -28,7 +29,7 @@ export default function MangaDetail({ manga }: { manga: Manga }) {
             sizes="220px"
             className="manga-cover-img manga-cover-glow"
             priority
-            unoptimized={manga.image.startsWith('http')}
+            unoptimized={!shouldOptimize(manga.image)}
           />
         </div>
 

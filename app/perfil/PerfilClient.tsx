@@ -10,6 +10,7 @@ import MangaCard from '@/components/manga/MangaCard';
 import PushSubscribeButton from '@/components/PushSubscribeButton';
 import FeedbackForm from '@/components/FeedbackForm';
 import { relativeDateTime } from '@/lib/utils';
+import { shouldOptimize } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 const AVATARS = [
@@ -739,9 +740,10 @@ export default function PerfilClient({ mangas }: { mangas: Manga[] }) {
                           alt={manga.title}
                           width={72}
                           height={100}
+                          sizes="72px"
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                           loading="lazy"
-                          unoptimized={!manga.image.startsWith('http')}
+                          unoptimized={!shouldOptimize(manga.image)}
                         />
                       ) : (
                         <div className="perfil-history-item__cover-placeholder">

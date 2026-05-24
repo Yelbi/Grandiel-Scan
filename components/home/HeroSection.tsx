@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { shouldOptimize } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 import HeroWordCycle from './HeroWordCycle';
 
@@ -80,7 +81,7 @@ export default function HeroSection({
                     width={72}
                     height={104}
                     loading="eager"
-                    unoptimized={manga.image.startsWith('http')}
+                    unoptimized={!shouldOptimize(manga.image)}
                     style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   />
                 </div>

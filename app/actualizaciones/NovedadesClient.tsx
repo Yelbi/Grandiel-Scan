@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useMemo, memo } from 'react';
 import MangaCard from '@/components/manga/MangaCard';
+import { shouldOptimize } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 type Tab = 'actualizaciones' | 'nuevos';
@@ -39,9 +40,10 @@ const ActCard = memo(function ActCard({ manga }: { manga: Manga }) {
               alt={manga.title}
               width={200}
               height={280}
+              sizes="(max-width: 480px) 140px, 200px"
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               loading="lazy"
-              unoptimized={!manga.image.startsWith('http')}
+              unoptimized={!shouldOptimize(manga.image)}
               onError={() => setError(true)}
             />
           ) : (

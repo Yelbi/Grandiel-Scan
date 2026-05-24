@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useFavoritesContext } from '@/components/providers/FavoritesProvider';
 import { useUserProfile } from '@/components/providers/UserProfileProvider';
+import { shouldOptimize } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 const DAYS_NEW = 30;
@@ -99,6 +100,7 @@ export default function MangaCard({ manga, showFavoriteBtn = true }: MangaCardPr
               sizes="(max-width: 480px) 140px, 200px"
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               loading="lazy"
+              unoptimized={!shouldOptimize(manga.image)}
               onError={() => setImgError(true)}
             />
           )}

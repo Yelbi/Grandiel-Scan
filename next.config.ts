@@ -59,8 +59,11 @@ const nextConfig: NextConfig = {
       // CDNs adicionales usados como origen de portadas
       { protocol: 'https', hostname: 'media.ikigaimangas.cloud' },
       { protocol: 'https', hostname: 'cdn.arenascan.com' },
+      // Wildcards (*.host) NO cubren el apex (host) — registrar ambos.
       { protocol: 'https', hostname: '*.olympusbiblioteca.com' },
+      { protocol: 'https', hostname: 'olympusbiblioteca.com' },
       { protocol: 'https', hostname: '*.olympusscans.com' },
+      { protocol: 'https', hostname: 'olympusscans.com' },
     ],
   },
 };

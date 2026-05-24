@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useHistoryContext } from '@/components/providers/HistoryProvider';
 import { relativeDateTime } from '@/lib/utils';
+import { shouldOptimize } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
@@ -48,9 +49,10 @@ export default function HistorialClient({ mangas }: { mangas: Manga[] }) {
                     alt={manga.title}
                     width={60}
                     height={80}
+                    sizes="60px"
                     style={{ objectFit: 'cover' }}
                     loading="lazy"
-                    unoptimized={!manga.image.startsWith('http')}
+                    unoptimized={!shouldOptimize(manga.image)}
                   />
                 </div>
               )}

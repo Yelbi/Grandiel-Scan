@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { shouldOptimize } from '@/lib/image';
 import type { Manga } from '@/lib/types';
 
 interface Props {
@@ -59,7 +60,7 @@ export default function MostViewedPodium({ mangas }: Props) {
                   fill
                   sizes="(max-width: 600px) 33vw, 210px"
                   style={{ objectFit: 'cover' }}
-                  unoptimized={!manga.image.startsWith('http')}
+                  unoptimized={!shouldOptimize(manga.image)}
                 />
                 <div className="podium__cover-overlay" aria-hidden="true" />
               </div>
