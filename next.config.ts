@@ -69,12 +69,35 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Subir source maps a Sentry en cada build de producción.
-  // Requiere SENTRY_AUTH_TOKEN en las variables de entorno de Vercel.
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+  // ── Subida de source maps ──────────────────────────────────────────────────
+  // Sin estas tres variables el build sigue funcionando, pero los stack traces
+  // llegan a Sentry minificados. La integración de Sentry en Vercel las inyecta.
+  org:       process.env.SENTRY_ORG,
+  project:   process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: true, // Silenciar logs de Sentry durante el build
-  sourcemaps: { disable: false }, // Subir source maps solo en prod (ver SENTRY_AUTH_TOKEN)
+
+  sourcemaps: {
+    disable: false,
+    // Borrar los .map tras subirlos: si no, quedan servidos públicamente en
+    // /_next/static y cualquiera puede leer el código fuente original.
+    deleteSourcemapsAfterUpload: true,
+  },
+  // Incluye los chunks fuera de la carpeta de páginas para no perder frames del stack.
+  widenClientFileUpload: true,
+
+  // ── Envío de eventos desde el navegador ────────────────────────────────────
+  // Los eventos salen por https://grandielscan.com/monitoring en vez de ir
+  // directos a ingest.sentry.io. Dos motivos: la CSP de middleware.ts solo
+  // permite connect-src 'self', y los bloqueadores de anuncios filtran sentry.io
+  // (una parte grande del público de un sitio de manhwas los usa).
+  // Ojo: /monitoring está excluido del matcher del middleware.
+  tunnelRoute: '/monitoring',
+
+  // Registra el cron de vercel.json (/api/cron/cleanup) como Cron Monitor en Sentry,
+  // para enterarse también cuando NO se ejecuta.
+  automaticVercelMonitors: true,
+
+  // Silencioso en local; en CI/Vercel sí queremos ver si falla la subida de source maps.
+  silent: !process.env.CI,
   disableLogger: true,
 });

@@ -22,11 +22,13 @@ export async function GET(
 
     let chapter: number | null = null;
     if (chapterParam !== null) {
-      if (!/^\d+$/.test(chapterParam)) {
+      // `chapters.chapter` es `real`: existen capítulos decimales (10.5, 7.1...).
+      // Un patrón de solo enteros los dejaba sin comentarios.
+      if (!/^\d+(?:\.\d+)?$/.test(chapterParam)) {
         return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
       }
       chapter = Number(chapterParam);
-      if (chapter < 1) {
+      if (!Number.isFinite(chapter) || chapter < 0) {
         return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
       }
     }
@@ -64,7 +66,9 @@ export async function GET(
         .where(whereClause),
     ]);
 
-    const hasMore = rows.length === COMMENTS_PAGE_SIZE;
+    // Comparar contra el total: `rows.length === PAGE_SIZE` anunciaba una página
+    // siguiente vacía cuando la última página venía justo llena.
+    const hasMore = offset + rows.length < total;
 
     return NextResponse.json({ comments: rows, page, hasMore, total });
   } catch {
@@ -106,7 +110,7 @@ export async function POST(
     }
     if (
       chapter !== undefined &&
-      (typeof chapter !== 'number' || !Number.isInteger(chapter) || chapter < 1 || chapter > 100_000)
+      (typeof chapter !== 'number' || !Number.isFinite(chapter) || chapter < 0 || chapter > 100_000)
     ) {
       return NextResponse.json({ error: 'chapter inválido.' }, { status: 400 });
     }
