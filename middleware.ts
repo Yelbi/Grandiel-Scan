@@ -10,13 +10,13 @@ function buildCsp(nonce: string): string {
     // reemplazar todos los inline styles por clases CSS — limitación arquitectónica conocida.
     `style-src 'self' 'unsafe-inline' 'nonce-${nonce}' fonts.googleapis.com use.fontawesome.com`,
     "font-src 'self' fonts.gstatic.com use.fontawesome.com data:",
-    "img-src 'self' data: blob: *.supabase.co dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com olympusbiblioteca.com *.olympusscans.com olympusscans.com cdn.arenascan.com",
+    "img-src 'self' data: blob: *.supabase.co dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com olympusbiblioteca.com *.olympusscans.com olympusscans.com cdn.arenascan.com media.imagesolymp.xyz *.imagesolymp.xyz imagesolymp.xyz *.olympusxyz.com olympusxyz.com",
     // Incluir CDNs de imágenes para fetch() y push notifications.
     // Google Fonts debe estar aquí además de en style-src porque el SW intercepta
     // el fetch() de <link rel="stylesheet"> y connect-src rige las peticiones del SW.
     // Sentry no necesita entrada propia: sus eventos salen por el túnel /monitoring
     // (tunnelRoute en next.config.ts), que es mismo origen y ya cubre 'self'.
-    "connect-src 'self' *.supabase.co va.vercel-scripts.com dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com olympusbiblioteca.com *.olympusscans.com olympusscans.com cdn.arenascan.com fonts.googleapis.com fonts.gstatic.com",
+    "connect-src 'self' *.supabase.co va.vercel-scripts.com dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com olympusbiblioteca.com *.olympusscans.com olympusscans.com cdn.arenascan.com media.imagesolymp.xyz *.imagesolymp.xyz imagesolymp.xyz *.olympusxyz.com olympusxyz.com fonts.googleapis.com fonts.gstatic.com",
     "manifest-src 'self'",
     "worker-src 'self'",
     "frame-src 'none'",

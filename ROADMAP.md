@@ -27,7 +27,8 @@
 
 1. Ir a [supabase.com](https://supabase.com) → **New project**
 2. Nombre: `grandiel-scan` · Región: `us-east-1` (o la más cercana)
-3. Guardar la contraseña de la base de datos en un lugar seguro (2!j5?.qC2KySAdf)
+3. Guardar la contraseña de la base de datos en un gestor de contraseñas.
+   Nunca escribirla en un archivo del repositorio: este es público.
 4. Una vez creado, ir a **Settings → API** y copiar:
    - `SUPABASE_URL` (Project URL)
    - `SUPABASE_ANON_KEY` (public anon key)

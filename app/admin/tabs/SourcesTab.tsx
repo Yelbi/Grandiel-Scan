@@ -71,8 +71,8 @@ export function SourcesTab({ notify }: { notify: Notify }) {
     });
   }
 
-  async function save(mangaId: string) {
-    setBusyId(mangaId);
+  /** Vuelca el borrador a la base de datos. Devuelve si fue bien. */
+  async function persist(mangaId: string): Promise<boolean> {
     try {
       const res = await fetch('/api/admin/source', {
         method: 'PATCH',
@@ -80,12 +80,22 @@ export function SourcesTab({ notify }: { notify: Notify }) {
         body: JSON.stringify({ mangaId, ...draft }),
       });
       const json = await res.json();
-      if (!res.ok) { notify('err', json.error ?? 'No se pudo guardar.'); return; }
+      if (!res.ok) { notify('err', json.error ?? 'No se pudo guardar.'); return false; }
       setRows((prev) => prev.map((r) => (r.id === mangaId ? { ...r, ...json } : r)));
-      notify('ok', 'Origen guardado.');
-      setOpenId(null);
+      return true;
     } catch {
       notify('err', 'Error de red al guardar.');
+      return false;
+    }
+  }
+
+  async function save(mangaId: string) {
+    setBusyId(mangaId);
+    try {
+      if (await persist(mangaId)) {
+        notify('ok', 'Origen guardado.');
+        setOpenId(null);
+      }
     } finally {
       setBusyId(null);
     }
@@ -116,6 +126,11 @@ export function SourcesTab({ notify }: { notify: Notify }) {
   async function syncNow(mangaId: string, dryRun: boolean) {
     setBusyId(mangaId);
     try {
+      // Guardar antes de nada: el motor lee la configuración de la base de datos,
+      // así que sin esto trabajaría con los valores viejos (o con ninguno) y
+      // respondería "le falta la URL de la serie" aunque esté escrita en pantalla.
+      if (!(await persist(mangaId))) return;
+
       const res = await fetch('/api/admin/source', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -232,7 +247,7 @@ export function SourcesTab({ notify }: { notify: Notify }) {
                 </button>
               </div>
               <p style={{ fontSize: '.78rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                Guarda antes de simular o sincronizar: esos botones leen lo que hay en la base de datos.
+                Simular y Sincronizar guardan los cambios automáticamente antes de ejecutarse.
               </p>
             </div>
           )}

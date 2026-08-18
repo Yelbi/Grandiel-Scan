@@ -122,19 +122,37 @@ function harvestChaptersFromJson(node: unknown, out: Map<number, string>, depth 
 
   const obj = node as Record<string, unknown>;
 
-  // ¿Tiene forma de capítulo? Necesita un id y algo que indique el número.
+  // ¿Tiene forma de capítulo? Necesita un id numérico...
   const idRaw = obj.id ?? obj.chapter_id ?? obj.chapterId;
-  const numRaw =
-    obj.number ?? obj.chapter ?? obj.chapter_number ?? obj.num ?? obj.name ?? obj.title ?? obj.slug;
+  const id = idRaw == null ? '' : String(idRaw).trim();
 
-  if (idRaw != null && numRaw != null) {
-    const id = String(idRaw).trim();
-    // El id debe ser el numérico que usa el CDN en la ruta.
-    if (/^\d+$/.test(id)) {
-      const num =
-        typeof numRaw === 'number' ? normalizeNum(String(numRaw)) : parseChapterNumber(String(numRaw));
-      if (num !== null && !out.has(num)) out.set(num, id);
+  if (/^\d+$/.test(id)) {
+    // ...y un número de capítulo de una fuente FIABLE. Aquí está la diferencia
+    // entre leer capítulos y recoger basura: un objeto cualquiera con {id, name}
+    // es de lo más común en el JSON de una web (menús, géneros, etiquetas...).
+    // Aceptar un número suelto de `name` o `title` producía capítulos fantasma
+    // apuntando a carpetas del CDN equivocadas, que es peor que no leer nada.
+    //
+    // Solo se acepta el número si viene de:
+    //   a) una clave que dice explícitamente que es un capítulo, o
+    //   b) un texto con la palabra "capítulo"/"chapter"/"cap" delante.
+    const claveExplicita = obj.number ?? obj.chapter ?? obj.chapter_number ?? obj.chapterNumber;
+
+    let num: number | null = null;
+    if (claveExplicita != null) {
+      num = typeof claveExplicita === 'number'
+        ? normalizeNum(String(claveExplicita))
+        : parseChapterNumber(String(claveExplicita));
+    } else {
+      // Solo texto etiquetado: "Capítulo 45" sí, "45" a secas no.
+      for (const campo of [obj.name, obj.title, obj.slug]) {
+        if (typeof campo !== 'string') continue;
+        const etiquetado = /(?:cap[ií]tulo|capitulo|chapter|cap)\s*[-_.]?\s*\d/i.test(campo);
+        if (etiquetado) { num = parseChapterNumber(campo); break; }
+      }
     }
+
+    if (num !== null && !out.has(num)) out.set(num, id);
   }
 
   for (const value of Object.values(obj)) harvestChaptersFromJson(value, out, depth + 1);

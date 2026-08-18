@@ -64,6 +64,13 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'olympusbiblioteca.com' },
       { protocol: 'https', hostname: '*.olympusscans.com' },
       { protocol: 'https', hostname: 'olympusscans.com' },
+      // Dominios nuevos de Olympus (2026). El CDN de imágenes y el sitio de la
+      // serie cambiaron de host; sin esto el optimizador rechaza las portadas.
+      { protocol: 'https', hostname: 'media.imagesolymp.xyz' },
+      { protocol: 'https', hostname: '*.imagesolymp.xyz' },
+      { protocol: 'https', hostname: 'imagesolymp.xyz' },
+      { protocol: 'https', hostname: '*.olympusxyz.com' },
+      { protocol: 'https', hostname: 'olympusxyz.com' },
     ],
   },
 };
