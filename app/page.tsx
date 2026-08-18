@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 // force-dynamic: root layout calls headers() for CSP nonce — incompatible with ISR.
 // Data queries use unstable_cache internally, so DB performance is preserved.
@@ -23,7 +24,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'Grandiel Scan',
-  url: 'https://grandielscan.com',
+  url: SITE_URL,
   description: 'Lee manhwas, mangas y manhuas en español gratis.',
 };
 

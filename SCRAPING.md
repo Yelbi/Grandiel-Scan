@@ -100,7 +100,25 @@ copia **su contenido** (no la ruta del archivo) y pégalo en Supabase → **SQL 
 Es idempotente: se puede ejecutar varias veces. Añade cinco columnas a `mangas`
 y la tabla `sync_runs`.
 
-### 2. Secrets en GitHub
+### 2. Crear `CRON_SECRET` en Vercel
+
+Vercel → Settings → Environment Variables → **Add**, en *All Environments*:
+
+| Variable | Valor |
+|---|---|
+| `CRON_SECRET` | Una cadena aleatoria larga: `openssl rand -hex 32` |
+
+No es opcional. Los dos endpoints de cron empiezan así:
+
+```ts
+if (!process.env.CRON_SECRET || secret !== `Bearer ${process.env.CRON_SECRET}`)
+  return 401;
+```
+
+Sin la variable devuelven **401 siempre**, incluso a las llamadas legítimas de
+Vercel. Es lo que le venía pasando al cron de limpieza diario.
+
+### 3. Secrets en GitHub
 
 Repo → Settings → Secrets and variables → **Actions** → botón verde
 **New repository secret**.
@@ -110,10 +128,10 @@ Esa página tiene dos apartados: usa **Repository secrets**, el de abajo.
 
 | Secret | Valor |
 |---|---|
-| `SITE_URL` | `https://grandielscan.com` (sin barra final) |
+| `SITE_URL` | `https://grandiel-scan-swart.vercel.app` (sin barra final) |
 | `CRON_SECRET` | El mismo valor que la variable `CRON_SECRET` de Vercel |
 
-### 3. Configurar cada manga
+### 4. Configurar cada manga
 
 Panel `/admin` → pestaña **Automático**. Por cada serie hacen falta dos datos:
 
@@ -134,7 +152,7 @@ Luego, en este orden:
 Los botones de simular y sincronizar leen lo guardado, no lo que hay en pantalla:
 guarda antes de usarlos.
 
-### 4. Comprobar el workflow
+### 5. Comprobar el workflow
 
 Repo → Actions → **Sincronizar capítulos** → *Run workflow*, marcando *dry run* la
 primera vez. El resumen del run dice cuántos mangas revisó y cuántos capítulos entraron.

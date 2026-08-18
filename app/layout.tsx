@@ -8,9 +8,10 @@ import SwRegister from '@/components/SwRegister';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
 import { CONFIG } from '@/lib/config';
+import { SITE_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://grandielscan.com'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Grandiel Scan - Manhwas en Español',
     template: '%s | Grandiel Scan',

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 import { getAllMangas, getAllChapters } from '@/lib/data';
 
-const BASE_URL = 'https://grandielscan.com';
+const BASE_URL = SITE_URL;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [mangas, chapters] = await Promise.all([getAllMangas(), getAllChapters()]);
