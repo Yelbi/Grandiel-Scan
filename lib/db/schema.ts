@@ -28,11 +28,27 @@ export const mangas = pgTable(
     latestChapter: real('latest_chapter').notNull().default(0),
     featured:      boolean('featured').notNull().default(false),
     views:         integer('views').notNull().default(0),
+
+    // ── Sincronización automática de capítulos (lib/scraper) ──────────────
+    /** Página de la serie en el sitio de origen. De ahí se leen los capítulos publicados. */
+    sourceUrl:     text('source_url'),
+    /** Carpeta del cómic en el CDN, sin el id del capítulo.
+     *  Ej: https://dashboard.olympusscans.com/storage/comics/460
+     *  Es exactamente el "comicBase" que se escribe a mano en Auto-descubrir. */
+    sourceCdnBase: text('source_cdn_base'),
+    /** Extensión de las imágenes en ese CDN. */
+    sourceExt:     text('source_ext').notNull().default('webp'),
+    /** Si está en false el cron ignora este manga. */
+    autoSync:      boolean('auto_sync').notNull().default(false),
+    /** Última vez que el cron miró este manga. Ordena la cola: primero los más antiguos. */
+    lastSyncedAt:  timestamp('last_synced_at'),
   },
   (t) => [
     index('mangas_status_idx').on(t.status),
     index('mangas_last_updated_idx').on(t.lastUpdated),
     index('mangas_views_idx').on(t.views),
+    // El cron pide "los autoSync ordenados por lastSyncedAt"; este índice cubre esa consulta.
+    index('mangas_autosync_idx').on(t.autoSync, t.lastSyncedAt),
   ],
 );
 
@@ -175,6 +191,34 @@ export const reports = pgTable(
   ],
 );
 
+// ── Registro de sincronizaciones automáticas ─────────────────────────────────
+// Una fila por manga y pasada del cron. Sirve para ver desde el admin por qué un
+// manga dejó de actualizarse sin tener que bucear en los logs de Vercel.
+export const syncRuns = pgTable(
+  'sync_runs',
+  {
+    id:      serial('id').primaryKey(),
+    mangaId: text('manga_id')
+      .notNull()
+      .references(() => mangas.id, { onDelete: 'cascade' }),
+    // 'added' = se insertaron capítulos | 'nothing' = sin novedades
+    // 'error' = falló la descarga o el sondeo | 'partial' = alguno entró y otro falló
+    status:        text('status').notNull(),
+    chaptersAdded: integer('chapters_added').notNull().default(0),
+    /** Capítulos insertados en esta pasada, para mostrarlos en el admin. */
+    chapters:      real('chapters').array().notNull().default([]),
+    /** Mensaje de error o resumen legible. */
+    detail:        text('detail'),
+    /** Milisegundos que tardó la pasada de este manga. */
+    durationMs:    integer('duration_ms'),
+    createdAt:     timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    index('sync_runs_manga_id_idx').on(t.mangaId),
+    index('sync_runs_created_at_idx').on(t.createdAt),
+  ],
+);
+
 // ── Rate limit store (ventana deslizante distribuida) ────────────────────────
 // Permite que el rate limiter funcione correctamente en entornos multi-instancia
 // (ej: Vercel serverless con múltiples regiones). La clave es "tipo:ip[:mangaId]".
@@ -195,3 +239,5 @@ export type CommentRow         = typeof comments.$inferSelect;
 export type ReadingHistoryRow  = typeof readingHistory.$inferSelect;
 export type ReportRow          = typeof reports.$inferSelect;
 export type ReportInsert       = typeof reports.$inferInsert;
+export type SyncRunRow         = typeof syncRuns.$inferSelect;
+export type SyncRunInsert      = typeof syncRuns.$inferInsert;
