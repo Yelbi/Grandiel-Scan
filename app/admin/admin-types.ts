@@ -1,7 +1,7 @@
 import type { Manga } from '@/lib/types';
 import type React from 'react';
 
-export type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'autodiscover' | 'delete' | 'reports' | 'verify';
+export type Tab   = 'manga' | 'chapter' | 'edit-manga' | 'edit-chapter' | 'bulk' | 'autodiscover' | 'sources' | 'delete' | 'reports' | 'verify';
 export type Alert = { type: 'ok' | 'err'; msg: string } | null;
 
 export type BulkStatus = 'pending' | 'probing' | 'saving' | 'done' | 'error' | 'skip';
@@ -43,6 +43,7 @@ export const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'chapter',      label: 'Añadir Capítulo', icon: 'fas fa-plus-circle' },
   { id: 'bulk',         label: 'Carga Masiva',     icon: 'fas fa-layer-group' },
   { id: 'autodiscover', label: 'Auto-Descubrir',   icon: 'fas fa-bolt'        },
+  { id: 'sources',      label: 'Automático',       icon: 'fas fa-robot'       },
   { id: 'verify',       label: 'Verificar Caps',   icon: 'fas fa-shield-alt'  },
   { id: 'edit-manga',   label: 'Editar Manga',     icon: 'fas fa-pen'         },
   { id: 'edit-chapter', label: 'Editar Capítulo',  icon: 'fas fa-edit'        },

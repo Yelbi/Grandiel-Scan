@@ -1,0 +1,73 @@
+# Dispara la búsqueda de capítulos nuevos cada 3 horas.
+#
+# Por qué aquí y no en vercel.json: en el plan Hobby de Vercel los cron jobs solo
+# se ejecutan una vez al día, y ese hueco ya lo usa /api/cron/cleanup. GitHub
+# Actions no tiene ese límite y además permite lanzarlo a mano desde la web.
+#
+# Requiere dos secrets en el repo (Settings → Secrets and variables → Actions):
+#   SITE_URL     https://grandielscan.com
+#   CRON_SECRET  el mismo valor que la variable CRON_SECRET de Vercel
+
+name: Sincronizar capítulos
+
+on:
+  schedule:
+    # Cada 3 horas en punto (UTC). GitHub puede retrasarlo unos minutos si hay carga.
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Solo detectar, sin guardar nada'
+        type: boolean
+        default: false
+
+# Si una pasada anterior sigue viva, no arrancar otra encima.
+concurrency:
+  group: sync-chapters
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Llamar al endpoint de sincronización
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DRY: ${{ inputs.dry_run && '1' || '0' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SITE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Faltan los secrets SITE_URL o CRON_SECRET en el repositorio."
+            exit 1
+          fi
+
+          # --max-time cubre los 60 s de la función más el arranque en frío.
+          http_code=$(curl -sS -o response.json -w '%{http_code}' \
+            --max-time 90 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${SITE_URL}/api/cron/sync?limit=10&dry=${DRY}")
+
+          echo "HTTP ${http_code}"
+          cat response.json
+          echo
+
+          if [ "${http_code}" != "200" ]; then
+            echo "::error::La sincronización falló con HTTP ${http_code}"
+            exit 1
+          fi
+
+          # Resumen visible en la pestaña Summary del run
+          {
+            echo "### Sincronización de capítulos"
+            echo ""
+            echo "- Mangas revisados: $(jq -r '.processed // 0' response.json)"
+            echo "- Capítulos añadidos: $(jq -r '.chaptersAdded // 0' response.json)"
+            echo "- Quedaron en cola: $(jq -r '.budgetExhausted // false' response.json)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Avisar (sin romper el job) de los mangas que fallaron
+          jq -r '.results[]? | select(.status=="error" or .status=="partial")
+                 | "::warning::" + .mangaId + ": " + (.detail // "sin detalle")' response.json

@@ -9,6 +9,7 @@ import { AddChapterTab }   from './tabs/AddChapterTab';
 import { BulkUploadTab }   from './tabs/BulkUploadTab';
 import { AutoDiscoverTab } from './tabs/AutoDiscoverTab';
 import { VerifyTab }       from './tabs/VerifyTab';
+import { SourcesTab }      from './tabs/SourcesTab';
 import { EditMangaTab }    from './tabs/EditMangaTab';
 import { EditChapterTab }  from './tabs/EditChapterTab';
 import { DeleteTab }       from './tabs/DeleteTab';
@@ -77,6 +78,7 @@ export default function AdminClient({ initialMangas }: { initialMangas: Manga[] 
       {tab === 'bulk'         && <BulkUploadTab   {...tabProps} />}
       {tab === 'autodiscover' && <AutoDiscoverTab {...tabProps} />}
       {tab === 'verify'       && <VerifyTab       {...tabProps} />}
+      {tab === 'sources'      && <SourcesTab      notify={notify} />}
       {tab === 'edit-manga'   && <EditMangaTab    {...tabProps} />}
       {tab === 'edit-chapter' && <EditChapterTab  {...tabProps} />}
       {tab === 'delete'       && <DeleteTab       {...tabProps} />}

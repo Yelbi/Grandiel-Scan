@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { rateLimitStore, comments } from '@/lib/db/schema';
+import { rateLimitStore, comments, syncRuns } from '@/lib/db/schema';
 import { lt, and, eq, sql } from 'drizzle-orm';
 
 /**
@@ -45,6 +45,18 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('[cron/cleanup] Error limpiando comentarios borrados:', err);
     results.commentsError = 1;
+  }
+
+  try {
+    // 3. Podar el historial de sincronizaciones (~2.400 filas/mes con 10 mangas cada 3 h)
+    const syncResult = await db
+      .delete(syncRuns)
+      .where(lt(syncRuns.createdAt, sql`now() - INTERVAL '30 days'`))
+      .returning({ id: syncRuns.id });
+    results.syncRunsDeleted = syncResult.length;
+  } catch (err) {
+    console.error('[cron/cleanup] Error limpiando sync_runs:', err);
+    results.syncRunsError = 1;
   }
 
   console.log('[cron/cleanup] Completado:', results);
