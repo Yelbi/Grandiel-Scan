@@ -2,11 +2,11 @@ import webpush from 'web-push';
 import { db } from './db';
 import { pushSubscriptions, favorites } from './db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { SITE_HOST } from './site';
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const siteHost = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://grandielscan.com')
-  .replace(/^https?:\/\//, '');
+const siteHost = SITE_HOST;
 
 let pushReady = false;
 

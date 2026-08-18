@@ -91,20 +91,47 @@ un fixture con la forma nueva** y luego toca el parser.
 
 ### 1. Migración de la base de datos
 
-Supabase → **SQL Editor** → pegar y ejecutar
-[`scripts/sql/001-sincronizacion-automatica.sql`](scripts/sql/001-sincronizacion-automatica.sql).
-Es idempotente. Añade cinco columnas a `mangas` y la tabla `sync_runs`.
+Abre el archivo [`scripts/sql/001-sincronizacion-automatica.sql`](scripts/sql/001-sincronizacion-automatica.sql),
+copia **su contenido** (no la ruta del archivo) y pégalo en Supabase → **SQL Editor** → *Run*.
 
-### 2. Secrets en GitHub
+> El editor de Supabase espera SQL, no rutas. Si pegas `scripts/sql/001-…sql`
+> responde `syntax error at or near "scripts"`.
 
-Repo → Settings → Secrets and variables → **Actions**:
+Es idempotente: se puede ejecutar varias veces. Añade cinco columnas a `mangas`
+y la tabla `sync_runs`.
+
+### 2. Crear `CRON_SECRET` en Vercel
+
+Vercel → Settings → Environment Variables → **Add**, en *All Environments*:
+
+| Variable | Valor |
+|---|---|
+| `CRON_SECRET` | Una cadena aleatoria larga: `openssl rand -hex 32` |
+
+No es opcional. Los dos endpoints de cron empiezan así:
+
+```ts
+if (!process.env.CRON_SECRET || secret !== `Bearer ${process.env.CRON_SECRET}`)
+  return 401;
+```
+
+Sin la variable devuelven **401 siempre**, incluso a las llamadas legítimas de
+Vercel. Es lo que le venía pasando al cron de limpieza diario.
+
+### 3. Secrets en GitHub
+
+Repo → Settings → Secrets and variables → **Actions** → botón verde
+**New repository secret**.
+
+Esa página tiene dos apartados: usa **Repository secrets**, el de abajo.
+*Environment secrets* es para despliegues por entornos y el workflow no los ve.
 
 | Secret | Valor |
 |---|---|
-| `SITE_URL` | `https://grandielscan.com` |
+| `SITE_URL` | `https://grandiel-scan-swart.vercel.app` (sin barra final) |
 | `CRON_SECRET` | El mismo valor que la variable `CRON_SECRET` de Vercel |
 
-### 3. Configurar cada manga
+### 4. Configurar cada manga
 
 Panel `/admin` → pestaña **Automático**. Por cada serie hacen falta dos datos:
 
@@ -125,7 +152,7 @@ Luego, en este orden:
 Los botones de simular y sincronizar leen lo guardado, no lo que hay en pantalla:
 guarda antes de usarlos.
 
-### 4. Comprobar el workflow
+### 5. Comprobar el workflow
 
 Repo → Actions → **Sincronizar capítulos** → *Run workflow*, marcando *dry run* la
 primera vez. El resumen del run dice cuántos mangas revisó y cuántos capítulos entraron.

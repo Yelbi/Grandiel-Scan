@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 import { notFound } from 'next/navigation';
 import ChapterReader from '@/components/chapter/ChapterReader';
 import { getChapter, getMangaById } from '@/lib/data';
@@ -12,7 +13,7 @@ interface Props {
   params: Promise<{ mangaId: string; cap: string }>;
 }
 
-const BASE_URL = 'https://grandielscan.com';
+const BASE_URL = SITE_URL;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mangaId, cap } = await params;

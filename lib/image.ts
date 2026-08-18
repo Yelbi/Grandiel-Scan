@@ -10,6 +10,10 @@ const EXACT_HOSTS = new Set<string>([
   'cdn.arenascan.com',
   'olympusscans.com',
   'olympusbiblioteca.com',
+  // Dominios nuevos de Olympus (2026)
+  'media.imagesolymp.xyz',
+  'imagesolymp.xyz',
+  'olympusxyz.com',
 ]);
 
 // Hosts permitidos por sufijo (equivale a *.host del CSP/remotePatterns).
@@ -18,6 +22,8 @@ const SUFFIX_HOSTS: readonly string[] = [
   '.supabase.co',
   '.olympusscans.com',
   '.olympusbiblioteca.com',
+  '.imagesolymp.xyz',
+  '.olympusxyz.com',
 ];
 
 /** True si el host (sin protocolo) está en la whitelist. */

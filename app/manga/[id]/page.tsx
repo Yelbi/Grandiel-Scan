@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 // force-dynamic: root layout calls headers() for CSP nonce — incompatible with ISR.
 // generateStaticParams + revalidate = DYNAMIC_SERVER_USAGE crash in production.
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const manga = await getMangaById(id);
   if (!manga) return {};
 
-  const BASE_URL = 'https://grandielscan.com';
+  const BASE_URL = SITE_URL;
   const descSnippet = manga.description.length > 150
     ? manga.description.substring(0, manga.description.lastIndexOf(' ', 150)) + '...'
     : manga.description;

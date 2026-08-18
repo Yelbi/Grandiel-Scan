@@ -136,6 +136,10 @@ Verificado en esta máquina con las variables reales de la integración:
 - **Source maps borrados tras subirlos.** `deleteSourcemapsAfterUpload: true`
   evita que queden servidos en `/_next/static`, donde cualquiera podría leer el
   código original.
-- **Cron monitorizado.** `automaticVercelMonitors: true` registra
-  `/api/cron/cleanup` (el de `vercel.json`) como Cron Monitor: Sentry avisa
-  también cuando el cron **no** se ejecuta.
+- **Los crons NO están monitorizados por Sentry.** La opción que lo hacía
+  (`automaticVercelMonitors`) solo funciona en builds con webpack, y Next 16
+  compila con Turbopack. Se retiró de `next.config.ts` porque era ignorada y
+  emitía un aviso de obsolescencia en cada arranque. Si un cron deja de
+  ejecutarse, Sentry no avisa: para la sincronización de capítulos eso lo cubre
+  el historial de la pestaña **Automático** y los fallos del workflow de GitHub
+  Actions, que sí llegan por correo.

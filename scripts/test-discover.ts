@@ -68,6 +68,34 @@ const slugOnly = `<a href="/capitulo/50123/capitulo-77/"><img src="x.jpg"></a>`;
 const r3 = extractChapters(slugOnly, 'https://ejemplo.com/s/x');
 check('saca el 77 del slug', r3.chapters[0]?.chapter === 77, `(dio ${JSON.stringify(r3.chapters)})`);
 
+console.log('\n── Regresión: JSON con objetos que NO son capítulos ──');
+// Caso real: olympusxyz.com sirve un bloque JSON con menús/etiquetas cuyos
+// objetos tienen {id, name}. La heurística antigua los tomaba por capítulos y
+// devolvía 6 falsos con ids de 1-2 cifras, que habrían apuntado a carpetas del
+// CDN equivocadas. Un capítulo fantasma es peor que no encontrar ninguno.
+const ruido = `<script type="application/json">${JSON.stringify({
+  0: { id: 6,  name: '7' },
+  1: { id: 11, name: 'Acción' },
+  2: { id: 24, title: '23' },
+  3: { id: 32, slug: 'terror' },
+  4: { id: 41, name: 'Publicado 2026' },
+})}</script>`;
+const rRuido = extractChapters(ruido, 'https://ejemplo.com/series/x');
+check('no confunde {id,name} suelto con capítulos', rRuido.chapters.length === 0,
+      `(dio ${rRuido.chapters.length}: ${JSON.stringify(rRuido.chapters)})`);
+
+console.log('\n── Pero sí acepta capítulos etiquetados de verdad ──');
+const bueno = `<script type="application/json">${JSON.stringify({
+  chapters: [
+    { id: 33433, name: 'Capítulo 1' },
+    { id: 42022, number: 168.2 },
+  ],
+})}</script>`;
+const rBueno = extractChapters(bueno, 'https://ejemplo.com/series/x');
+check('lee texto etiquetado y clave numérica explícita', rBueno.chapters.length === 2,
+      `(dio ${rBueno.chapters.length})`);
+check('conserva el decimal 168.2', rBueno.chapters.some(c => c.chapter === 168.2));
+
 console.log('\n── Página sin lista de capítulos ──');
 const r4 = extractChapters('<html><body><p>Nada por aquí</p></body></html>', 'https://ejemplo.com/');
 check('devuelve error explicativo', r4.chapters.length === 0 && !!r4.error);

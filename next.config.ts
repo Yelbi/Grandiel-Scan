@@ -64,6 +64,13 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'olympusbiblioteca.com' },
       { protocol: 'https', hostname: '*.olympusscans.com' },
       { protocol: 'https', hostname: 'olympusscans.com' },
+      // Dominios nuevos de Olympus (2026). El CDN de imágenes y el sitio de la
+      // serie cambiaron de host; sin esto el optimizador rechaza las portadas.
+      { protocol: 'https', hostname: 'media.imagesolymp.xyz' },
+      { protocol: 'https', hostname: '*.imagesolymp.xyz' },
+      { protocol: 'https', hostname: 'imagesolymp.xyz' },
+      { protocol: 'https', hostname: '*.olympusxyz.com' },
+      { protocol: 'https', hostname: 'olympusxyz.com' },
     ],
   },
 };
@@ -93,11 +100,17 @@ export default withSentryConfig(nextConfig, {
   // Ojo: /monitoring está excluido del matcher del middleware.
   tunnelRoute: '/monitoring',
 
-  // Registra el cron de vercel.json (/api/cron/cleanup) como Cron Monitor en Sentry,
-  // para enterarse también cuando NO se ejecuta.
-  automaticVercelMonitors: true,
-
   // Silencioso en local; en CI/Vercel sí queremos ver si falla la subida de source maps.
   silent: !process.env.CI,
-  disableLogger: true,
 });
+
+// Nota sobre dos opciones que se quitaron de aquí:
+//
+//   automaticVercelMonitors  registraba los crons de vercel.json como Cron Monitor
+//                            en Sentry. Solo funciona en builds con webpack.
+//   disableLogger            eliminaba los logs de depuración del SDK del bundle.
+//                            Igual: solo con webpack.
+//
+// Next.js 16 compila con Turbopack por defecto, así que ambas eran ignoradas y
+// además emitían un aviso de obsolescencia en cada arranque. Mantenerlas solo
+// daba la falsa impresión de que el cron estaba vigilado.
