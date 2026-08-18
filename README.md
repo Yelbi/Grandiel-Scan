@@ -4,26 +4,30 @@ Sitio web para leer manhwas y mangas en español.
 
 ## 🚀 Inicio Rápido
 
-### Opción 1: Doble Clic (Windows)
+Requiere **Node.js 20 o superior**. En CachyOS / Arch: `sudo pacman -S nodejs npm`
 
-1. Haz doble clic en `iniciar-servidor.bat`
-2. El navegador se abrirá automáticamente en `http://localhost:8000`
-3. Presiona `Ctrl+C` en la terminal para detener el servidor
-
-### Opción 2: Línea de Comandos
+### Linux y macOS
 
 ```bash
-# Con Python (recomendado)
-python server.py
-
-# O con Python 3 explícitamente
-python3 server.py
-
-# Servidor HTTP simple de Python (alternativa básica)
-python -m http.server 8000
+./iniciar-servidor.sh          # menú interactivo
+./iniciar-servidor.sh dev      # directo al servidor de desarrollo
 ```
 
-Luego abre tu navegador en: `http://localhost:8000`
+### Windows
+
+Doble clic en `iniciar-servidor.bat`.
+
+### A mano, en cualquier sistema
+
+```bash
+npm install
+npm run dev
+```
+
+Luego abre `http://localhost:3000`.
+
+> Hace falta un `.env.local` con las variables de Supabase y Sentry.
+> Copia `.env.example` y rellena los valores reales.
 
 ## 📁 Estructura del Proyecto
 

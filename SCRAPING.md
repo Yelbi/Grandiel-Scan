@@ -91,17 +91,26 @@ un fixture con la forma nueva** y luego toca el parser.
 
 ### 1. Migración de la base de datos
 
-Supabase → **SQL Editor** → pegar y ejecutar
-[`scripts/sql/001-sincronizacion-automatica.sql`](scripts/sql/001-sincronizacion-automatica.sql).
-Es idempotente. Añade cinco columnas a `mangas` y la tabla `sync_runs`.
+Abre el archivo [`scripts/sql/001-sincronizacion-automatica.sql`](scripts/sql/001-sincronizacion-automatica.sql),
+copia **su contenido** (no la ruta del archivo) y pégalo en Supabase → **SQL Editor** → *Run*.
+
+> El editor de Supabase espera SQL, no rutas. Si pegas `scripts/sql/001-…sql`
+> responde `syntax error at or near "scripts"`.
+
+Es idempotente: se puede ejecutar varias veces. Añade cinco columnas a `mangas`
+y la tabla `sync_runs`.
 
 ### 2. Secrets en GitHub
 
-Repo → Settings → Secrets and variables → **Actions**:
+Repo → Settings → Secrets and variables → **Actions** → botón verde
+**New repository secret**.
+
+Esa página tiene dos apartados: usa **Repository secrets**, el de abajo.
+*Environment secrets* es para despliegues por entornos y el workflow no los ve.
 
 | Secret | Valor |
 |---|---|
-| `SITE_URL` | `https://grandielscan.com` |
+| `SITE_URL` | `https://grandielscan.com` (sin barra final) |
 | `CRON_SECRET` | El mismo valor que la variable `CRON_SECRET` de Vercel |
 
 ### 3. Configurar cada manga
