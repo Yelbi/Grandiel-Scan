@@ -50,8 +50,11 @@ export default async function ChapterPage({ params }: Props) {
 
   const allCaps = [...manga.chapters].sort((a, b) => a - b);
   const idx = allCaps.findIndex((c) => Math.abs(c - capNum) < 0.001);
+  // idx === -1 cuando el capítulo existe pero la lista de manga.chapters aún es la
+  // cacheada (tags 'chapters' y 'mangas' revalidan a distinto ritmo). Sin este
+  // guardia, `allCaps[idx + 1]` devolvía allCaps[0] y "siguiente" apuntaba al cap. 1.
   const prevCap = idx > 0 ? allCaps[idx - 1] : null;
-  const nextCap = idx < allCaps.length - 1 ? allCaps[idx + 1] : null;
+  const nextCap = idx !== -1 && idx < allCaps.length - 1 ? allCaps[idx + 1] : null;
 
   return (
     <ChapterReader

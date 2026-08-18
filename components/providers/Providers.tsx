@@ -34,22 +34,34 @@ export function useThemeContext() {
   return useContext(ThemeContext);
 }
 
+function applyThemeAttribute(t: Theme) {
+  document.documentElement.setAttribute('data-theme', t);
+}
+
 function ThemeProvider({ children }: { children: ReactNode }) {
+  // El valor inicial solo importa hasta el primer efecto: el script pre-paint de
+  // layout.tsx ya escribió data-theme antes de que React monte, y aquí se adopta.
   const [theme, setThemeState] = useState<Theme>('dark');
 
   useEffect(() => {
+    // Misma cascada que el script pre-paint: localStorage → data-theme (que el
+    // script derivó de prefers-color-scheme). Adoptarlo evita el parpadeo de
+    // pasar por 'dark' antes de aplicar la preferencia real del usuario.
+    let resolved: Theme | null = null;
     try {
       const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.THEME);
-      if (stored === 'light' || stored === 'dark') setThemeState(stored);
+      if (stored === 'light' || stored === 'dark') resolved = stored;
     } catch {}
+    if (!resolved) {
+      resolved = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+    setThemeState(resolved);
+    applyThemeAttribute(resolved);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
+    applyThemeAttribute(t);
     try { localStorage.setItem(CONFIG.STORAGE_KEYS.THEME, t); } catch {}
   }, []);
 

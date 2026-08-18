@@ -7,6 +7,7 @@ import Providers from '@/components/providers/Providers';
 import SwRegister from '@/components/SwRegister';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
+import { CONFIG } from '@/lib/config';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://grandielscan.com'),
@@ -61,7 +62,7 @@ export default async function RootLayout({
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('${CONFIG.STORAGE_KEYS.THEME}');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
           }}
         />
         {/* Google Fonts */}

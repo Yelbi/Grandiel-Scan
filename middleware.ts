@@ -14,6 +14,8 @@ function buildCsp(nonce: string): string {
     // Incluir CDNs de imágenes para fetch() y push notifications.
     // Google Fonts debe estar aquí además de en style-src porque el SW intercepta
     // el fetch() de <link rel="stylesheet"> y connect-src rige las peticiones del SW.
+    // Sentry no necesita entrada propia: sus eventos salen por el túnel /monitoring
+    // (tunnelRoute en next.config.ts), que es mismo origen y ya cubre 'self'.
     "connect-src 'self' *.supabase.co va.vercel-scripts.com dashboard.olympusscans.com dashboard.olympusbiblioteca.com media.ikigaimangas.cloud *.olympusbiblioteca.com olympusbiblioteca.com *.olympusscans.com olympusscans.com cdn.arenascan.com fonts.googleapis.com fonts.gstatic.com",
     "manifest-src 'self'",
     "worker-src 'self'",
@@ -141,7 +143,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Ejecutar en todas las rutas excepto archivos estáticos y assets
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // Ejecutar en todas las rutas excepto archivos estáticos y assets.
+    // 'monitoring' es el túnel de Sentry (tunnelRoute): pasar cada evento por el
+    // refresco de sesión de Supabase sería trabajo inútil en cada error reportado.
+    '/((?!_next/static|_next/image|monitoring|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

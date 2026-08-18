@@ -1,9 +1,12 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import Link from 'next/link';
 
-export default function GlobalError({
+// Límite de error de las rutas bajo app/. El fallo del propio RootLayout lo cubre
+// app/global-error.tsx, que es un componente distinto.
+export default function RootError({
   error,
   reset,
 }: {
@@ -11,6 +14,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Reportar a Sentry además de la consola: los errores de cliente en producción
+    // no se ven en ningún sitio si solo se hace console.error.
+    Sentry.captureException(error);
     console.error(error);
   }, [error]);
 

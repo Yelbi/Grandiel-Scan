@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import Link from 'next/link';
 
@@ -11,6 +12,9 @@ export default function ChapterError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Reportar a Sentry además de la consola: los errores de cliente en producción
+    // no se ven en ningún sitio si solo se hace console.error.
+    Sentry.captureException(error);
     console.error(error);
   }, [error]);
 
