@@ -279,6 +279,26 @@ export async function getMangasByIds(ids: string[]): Promise<Manga[]> {
   }
 }
 
+/**
+ * Comprueba si la base de datos responde.
+ *
+ * El resto de funciones de este archivo capturan sus errores y devuelven listas
+ * vacías para que un fallo de base no tumbe la web entera. El efecto secundario
+ * es que "la base está caída" y "no hay nada publicado" son indistinguibles
+ * desde fuera. Esto permite separarlos y dar al visitante el mensaje correcto.
+ *
+ * Solo se llama cuando ya sabemos que no hay datos, así que no añade coste al
+ * camino normal.
+ */
+export async function isDatabaseReachable(): Promise<boolean> {
+  try {
+    await db.execute(sql`select 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Atomically increments the view counter for a manga. */
 export async function incrementViews(mangaId: string): Promise<void> {
   try {

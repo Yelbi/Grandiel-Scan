@@ -76,6 +76,16 @@ En su lugar hay dos estrategias genéricas en cascada:
 
 Si ninguna encuentra nada, devuelve un error explicativo en vez de fallar en silencio.
 
+**Por qué la heurística del JSON es estricta.** La primera versión aceptaba
+cualquier objeto con un `id` y un número en `name`/`title`/`slug`. Objetos así
+—menús, géneros, etiquetas— abundan en el JSON de cualquier web, y contra una
+serie real devolvió 6 capítulos inventados con ids de 1-2 cifras cuando los
+reales son de cinco. Se habrían insertado capítulos apuntando a carpetas del CDN
+equivocadas. Ahora el número solo se acepta si viene de una clave explícita
+(`number`, `chapter`, `chapter_number`) o de un texto etiquetado
+("Capítulo 45"); un número suelto ya no cuela. **Un capítulo fantasma es peor que
+no encontrar ninguno**, y esa regla debe guiar cualquier ajuste futuro del parser.
+
 Hay pruebas con fixtures sintéticos:
 
 ```bash
@@ -190,6 +200,14 @@ caído se quedaría clavado al frente de la cola bloqueando a los demás en cada
 
 ## Límites conocidos
 
+- **No sirve si el origen monta la lista con JavaScript.** Este es el límite duro.
+  Las dos estrategias leen el HTML que devuelve el servidor; si la lista de
+  capítulos se pinta después en el navegador, ahí no hay nada que leer.
+  Comprobado con `olympusxyz.com`: su página de serie son 19 KB con **un solo**
+  enlace de capítulo, aunque en el navegador se vean 346. Para esos orígenes hace
+  falta o una vista que renderice en servidor, o un navegador headless (que no
+  cabe en los 60 s de una función de Vercel).
+  El botón **Probar lectura del origen** distingue los dos casos en un segundo.
 - **Depende de la maquetación ajena.** Ningún parser genérico sobrevive a cualquier
   rediseño. Cuando uno rompa, el historial lo dirá y hay que añadir un fixture.
 - **Un origen por manga.** Si una serie se mueve de sitio, hay que reconfigurarla.

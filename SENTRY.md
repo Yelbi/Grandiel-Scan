@@ -115,7 +115,7 @@ Verificado en esta máquina con las variables reales de la integración:
 | `instrumentation.ts` | Carga las configs de servidor/edge y registra `onRequestError`. **Sin este archivo, los errores de servidor no llegaban a Sentry.** |
 | `instrumentation-client.ts` | Config del navegador (sustituye a `sentry.client.config.ts`, obsoleto desde Next 15.3). |
 | `sentry.server.config.ts` | Runtime Node: rutas de API, Server Components. |
-| `sentry.edge.config.ts` | Runtime Edge: `middleware.ts`. |
+| `sentry.edge.config.ts` | Runtime Edge: `proxy.ts`. |
 | `app/global-error.tsx` | Captura los fallos del propio `RootLayout`, donde `app/error.tsx` ya no puede renderizar. |
 | `app/error.tsx`, `app/manga/[id]/error.tsx`, `app/chapter/[mangaId]/[cap]/error.tsx` | Reportan a Sentry además de `console.error`. |
 | `next.config.ts` | Source maps, túnel `/monitoring` y monitor del cron. |
@@ -123,7 +123,7 @@ Verificado en esta máquina con las variables reales de la integración:
 ### Detalles que conviene conocer
 
 - **Túnel `/monitoring`.** Los eventos del navegador no van a `ingest.sentry.io`;
-  salen por `grandielscan.com/monitoring`. Dos razones: la CSP de `middleware.ts`
+  salen por el propio dominio en `/monitoring`. Dos razones: la CSP de `proxy.ts`
   solo permite `connect-src 'self'`, y los bloqueadores de anuncios filtran
   `sentry.io`. La ruta está excluida del matcher del middleware.
 - **Solo reporta en producción.** En local no se envía nada. Para probarlo en

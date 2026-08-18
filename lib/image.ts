@@ -1,6 +1,6 @@
 /**
  * Whitelist única de hosts permitidos para imágenes externas.
- * DEBE coincidir con `remotePatterns` en next.config.ts y con `img-src` en middleware.ts.
+ * DEBE coincidir con `remotePatterns` en next.config.ts y con `img-src` en proxy.ts.
  * Si añades un host aquí, actualiza también esos dos sitios.
  */
 const EXACT_HOSTS = new Set<string>([

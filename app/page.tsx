@@ -10,8 +10,7 @@ import MangaCard from '@/components/manga/MangaCard';
 import ContinueReading from '@/components/manga/ContinueReading';
 import HeroSection from '@/components/home/HeroSection';
 import MostViewedPodium from '@/components/home/MostViewedPodium';
-import { MangaGridSkeleton } from '@/components/manga/MangaCardSkeleton';
-import { getRecentMangas, getMostViewed, getMangaCount } from '@/lib/data';
+import { getRecentMangas, getMostViewed, getMangaCount, isDatabaseReachable } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Grandiel Scan - Manhwas en Español | Inicio',
@@ -43,6 +42,12 @@ export default async function HomePage() {
   } catch (err) {
     if (process.env.NODE_ENV === 'development') console.error('[HomePage] Error cargando datos:', err);
   }
+
+  // Sin datos hay dos motivos muy distintos y hasta ahora se veían igual: que la
+  // base no responda, o que de verdad no haya nada publicado. Solo se comprueba
+  // en ese caso, así que no cuesta nada en el camino normal.
+  const sinDatos = recentMangas.length === 0;
+  const baseCaida = sinDatos ? !(await isDatabaseReachable()) : false;
 
   // DB ya devuelve ordenado por lastUpdated DESC — no se necesita re-ordenar.
   const recent = recentMangas.slice(0, 12);
@@ -113,7 +118,26 @@ export default async function HomePage() {
               ))}
             </ul>
           ) : (
-            <MangaGridSkeleton count={12} />
+            /* Antes aquí había un esqueleto de carga. Como esta rama solo se
+               alcanza cuando la consulta YA terminó y vino vacía, el esqueleto
+               se quedaba parpadeando para siempre y era indistinguible de una
+               página que nunca carga. */
+            <div className="no-results">
+              <i
+                className={baseCaida ? 'fas fa-plug-circle-xmark' : 'fas fa-book-open'}
+                aria-hidden="true"
+              />
+              {baseCaida ? (
+                <>
+                  <p>No se pudieron cargar los mangas en este momento.</p>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '.9rem' }}>
+                    Es un problema temporal de nuestro lado. Vuelve a intentarlo en unos minutos.
+                  </p>
+                </>
+              ) : (
+                <p>Todavía no hay mangas publicados. Vuelve pronto.</p>
+              )}
+            </div>
           )}
           <div className="section-cta">
             <Link href="/mangas" className="btn">

@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 import path from 'path';
 import { withSentryConfig } from '@sentry/nextjs';
 
-// La CSP con nonces se genera por request en middleware.ts.
+// La CSP con nonces se genera por request en proxy.ts.
 // Aquí solo se definen los headers que son estáticos y no cambian por request.
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -94,7 +94,7 @@ export default withSentryConfig(nextConfig, {
 
   // ── Envío de eventos desde el navegador ────────────────────────────────────
   // Los eventos salen por https://grandielscan.com/monitoring en vez de ir
-  // directos a ingest.sentry.io. Dos motivos: la CSP de middleware.ts solo
+  // directos a ingest.sentry.io. Dos motivos: la CSP de proxy.ts solo
   // permite connect-src 'self', y los bloqueadores de anuncios filtran sentry.io
   // (una parte grande del público de un sitio de manhwas los usa).
   // Ojo: /monitoring está excluido del matcher del middleware.

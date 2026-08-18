@@ -1,6 +1,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Antes era middleware.ts. Next.js 16 renombró la convención a proxy.ts y avisa
+ * de obsolescencia en cada arranque mientras se use el nombre viejo.
+ *
+ * El cargador de Next resuelve el manejador así:
+ *     const handlerUserland = (isProxy ? mod.proxy : mod.middleware) || mod.default
+ * es decir, el archivo debe exportar una función llamada `proxy`. El `config`
+ * con el matcher no cambia.
+ *
+ * Aquí vive todo lo que se ejecuta antes de cada petición: la CSP con nonce por
+ * request, el refresco de sesión de Supabase, la purga de cookies sb-* y el
+ * Basic Auth que protege /admin.
+ */
+
 function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
@@ -51,7 +65,7 @@ function purgeStaleSbCookies(req: NextRequest, response: NextResponse) {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
   const csp = buildCsp(nonce);
 

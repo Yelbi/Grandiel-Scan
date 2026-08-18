@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 
 // Cargado por `instrumentation.ts` cuando NEXT_RUNTIME === 'edge'.
-// Cubre `middleware.ts`, donde vive la CSP, el refresco de sesión y el Basic Auth de admin.
+// Cubre `proxy.ts`, donde vive la CSP, el refresco de sesión y el Basic Auth de admin.
 const dsn = process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 Sentry.init({
