@@ -61,6 +61,9 @@ const IMG_EXTS = new Set(['webp', 'jpg', 'jpeg', 'png', 'avif', 'gif']);
 const NO_DIR_LISTING_HOSTS = new Set([
   'dashboard.olympusbiblioteca.com',
   'dashboard.olympusscans.com',
+  // CDN nuevo de Olympus: tampoco expone listados, y probarlo son ~0,7 s tirados
+  // en cada capítulo.
+  'media.imagesolymp.xyz',
 ]);
 
 const IMGUR_PLACEHOLDER = 'imgur.com/w33tpvZ';
@@ -552,6 +555,20 @@ async function probeCopiaPages(base: string, ext: string, session: Session): Pro
     i += BATCH_SIZE;
   }
   return pages;
+}
+
+/* ── Confirma un patrón simple con páginas consecutivas ──────────────────
+   Sondea que existan varias páginas seguidas desde `start`. Sirve para
+   distinguir "el patrón simple es el bueno" de "existe 01.webp por
+   casualidad" con solo un par de peticiones.                            ── */
+async function confirmSimpleRun(
+  base: string, ext: string, start: number, pad: number, session: Session, need = 3,
+): Promise<boolean> {
+  const urls = Array.from({ length: need }, (_, k) =>
+    base + String(start + k).padStart(pad, '0') + '.' + ext,
+  );
+  const hits = await probeBatch(urls, session);
+  return hits.every(Boolean);
 }
 
 /* ── Encuentra el primer índice de página simple que existe ─────────────
@@ -1255,11 +1272,28 @@ export async function probeChapter(opts: ProbeOptions): Promise<ProbeResult> {
     return probeResult({ pages, pattern: 'copia-pages', count: pages.length });
   }
 
+  // ── Cortocircuito: ¿ya está claro que el patrón es el simple? ──────────
+  //
+  // Los scans profundos de abajo son el último recurso: barren rangos amplios
+  // y cuestan miles de peticiones secuenciales. Ejecutarlos cuando el patrón
+  // simple ya está a la vista es tiempo tirado. Medido contra un capítulo real
+  // de 96 páginas: 4378 peticiones en 52 oleadas y 26 s, cuando la respuesta
+  // ya se conocía tras la primera oleada de comprobaciones.
+  //
+  // Tres páginas consecutivas bastan como señal: un CDN de partes prefijadas
+  // no tiene 01/02/03 sueltos por casualidad. Cuesta 3 peticiones y ahorra
+  // varios miles. Si la confirmación falla se sigue el camino largo de antes,
+  // así que ningún patrón que antes se detectaba deja de detectarse.
+  const simpleConfirmado =
+    hasSimple3 ? await confirmSimpleRun(base, ext, 1, 3, session)
+    : hasSimple2 ? await confirmSimpleRun(base, ext, 1, 2, session)
+    : false;
+
   // Scan profundo: busca en lote cualquier número de parte (capítulos 4+)
   // Resuelve el caso c-743-54_01.webp cuando no se proporcionó chapterHint.
-  // Se omite para CDNs conocidos (ej: ikigaimangas) donde estos patrones no existen,
-  // evitando cientos de peticiones secuenciales innecesarias antes de llegar a simple-3digit.
-  if (!autoViewerUrl) {
+  // Se omite para CDNs con visor conocido (ej: ikigaimangas) y cuando el patrón
+  // simple ya quedó confirmado arriba.
+  if (!autoViewerUrl && !simpleConfirmado) {
     for (const { prefix, padPart } of prefixVariants) {
       const pages = await probePrefixedSubPartDeep(base, ext, prefix, padPart, session);
       if (pages.length > 0) {
